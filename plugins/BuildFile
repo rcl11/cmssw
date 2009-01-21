@@ -1,0 +1,11 @@
+<use name=FWCore/Framework>
+<use name=FWCore/MessageLogger>
+<use name=FWCore/ParameterSet>
+<use name=FWCore/PluginManager>
+<use name=FWCore/Utilities>
+<use name=AnalysisDataFormats/TauAnalysis>
+<use name=PhysicsTools/Utilities>
+<flags CXXFLAGS="-g -O0"> 
+<library file="*.cc" name=TauAnalysisCandidateToolsPlugins>
+  <flags EDM_PLUGIN=1>
+</library>
