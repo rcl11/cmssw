@@ -1,0 +1,6 @@
+<use name=FWCore/Framework>
+<use name=FWCore/ParameterSet>
+<export>
+  <lib name=TauAnalysisCandidateTools>
+</export>
+
