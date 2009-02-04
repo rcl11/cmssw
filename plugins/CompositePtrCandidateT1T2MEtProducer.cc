@@ -1,17 +1,18 @@
-#include "TauAnalysis/CandidateTools/plugins/CompositeRefCandidateT1T2MEtProducer.h"
+#include "TauAnalysis/CandidateTools/plugins/CompositePtrCandidateT1T2MEtProducer.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "DataFormats/Common/interface/View.h"
 
 #include "PhysicsTools/Utilities/interface/deltaR.h"
 
 #include "TauAnalysis/CandidateTools/interface/FetchCollection.h"
 
-#include "AnalysisDataFormats/TauAnalysis/interface/CompositeRefCandidateT1T2MEt.h"
-#include "AnalysisDataFormats/TauAnalysis/interface/CompositeRefCandidateT1T2MEtFwd.h"
+#include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEt.h"
+#include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEtFwd.h"
 
 template<typename T1, typename T2>
-CompositeRefCandidateT1T2MEtProducer<T1,T2>::CompositeRefCandidateT1T2MEtProducer(const edm::ParameterSet& cfg)
+CompositePtrCandidateT1T2MEtProducer<T1,T2>::CompositePtrCandidateT1T2MEtProducer(const edm::ParameterSet& cfg)
   : algorithm_(cfg), cfgError_(0)
 {
   useLeadingTausOnly_ = cfg.getParameter<bool>("useLeadingTausOnly");
@@ -26,36 +27,38 @@ CompositeRefCandidateT1T2MEtProducer<T1,T2>::CompositeRefCandidateT1T2MEtProduce
 //    in case it is needed for the reconstruction mode 
 //    specified in the configuration parameter set
   if ( srcMET_.label() == "" && recoMode_ != "" ) {
-    edm::LogError ("CompositeRefCandidateT1T2MEtProducer") << " Configuration Parameter srcMET undefined," 
+    edm::LogError ("CompositePtrCandidateT1T2MEtProducer") << " Configuration Parameter srcMET undefined," 
 							   << " needed for recoMode = " << recoMode_ << " !!";
     cfgError_ = 1;
   }
 
-  produces<CompositeRefCandidateCollection>("");
+  produces<CompositePtrCandidateCollection>("");
 }
   
 template<typename T1, typename T2>
-CompositeRefCandidateT1T2MEtProducer<T1,T2>::~CompositeRefCandidateT1T2MEtProducer()
+CompositePtrCandidateT1T2MEtProducer<T1,T2>::~CompositePtrCandidateT1T2MEtProducer()
 {
 // nothing to be done yet...
 }
 
 template<typename T1, typename T2>
-void CompositeRefCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const edm::EventSetup& es)
+void CompositePtrCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const edm::EventSetup& es)
 {
 //--- print-out an error message and add an empty collection to the event 
 //    in case of erroneous configuration parameters
   if ( cfgError_ ) {
     edm::LogError ("produce") << " Error in Configuration ParameterSet" 
-			      << " --> CompositeRefCandidateT1T2MEt collection will NOT be produced !!";
-    std::auto_ptr<CompositeRefCandidateCollection> emptyCompositeRefCandidateCollection(new CompositeRefCandidateCollection());
-    evt.put(emptyCompositeRefCandidateCollection);
+			      << " --> CompositePtrCandidateT1T2MEt collection will NOT be produced !!";
+    std::auto_ptr<CompositePtrCandidateCollection> emptyCompositePtrCandidateCollection(new CompositePtrCandidateCollection());
+    evt.put(emptyCompositePtrCandidateCollection);
     return;
   }
 
-  edm::Handle<std::vector<T1> > leg1Collection;
+  typedef edm::View<T1> T1View;
+  edm::Handle<T1View> leg1Collection;
   pf::fetchCollection(leg1Collection, srcLeg1_, evt);
-  edm::Handle<std::vector<T2> > leg2Collection;
+  typedef edm::View<T2> T2View;
+  edm::Handle<T2View> leg2Collection;
   pf::fetchCollection(leg2Collection, srcLeg2_, evt);
   
   reco::CandidatePtr metPtr;
@@ -69,9 +72,9 @@ void CompositeRefCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const
       metPtr = metCollection->ptrAt(0);
     } else {
       edm::LogError ("produce") << " Found " << metCollection->size() << " MET objects in collection = " << srcMET_ << ","
-				<< " --> CompositeRefCandidateT1T2MEt collection will NOT be produced !!";
-      std::auto_ptr<CompositeRefCandidateCollection> emptyCompositeRefCandidateCollection(new CompositeRefCandidateCollection());
-      evt.put(emptyCompositeRefCandidateCollection);
+				<< " --> CompositePtrCandidateT1T2MEt collection will NOT be produced !!";
+      std::auto_ptr<CompositePtrCandidateCollection> emptyCompositePtrCandidateCollection(new CompositePtrCandidateCollection());
+      evt.put(emptyCompositePtrCandidateCollection);
       return;
     }
   } 
@@ -79,7 +82,7 @@ void CompositeRefCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const
 //--- check if only one combination of tau decay products 
 //    (the combination of highest Pt object in leg1 collection + highest Pt object in leg2 collection)
 //    shall be produced, or all possible combinations of leg1 and leg2 objects
-  std::auto_ptr<CompositeRefCandidateCollection> compositeRefCandidateCollection(new CompositeRefCandidateCollection());
+  std::auto_ptr<CompositePtrCandidateCollection> compositePtrCandidateCollection(new CompositePtrCandidateCollection());
   if ( useLeadingTausOnly_ ) {
 
 //--- find highest Pt particles in leg1 and leg2 collections
@@ -87,10 +90,10 @@ void CompositeRefCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const
     double leg1PtMax = 0.;
     for ( unsigned idxLeg1 = 0, numLeg1 = leg1Collection->size(); 
 	  idxLeg1 < numLeg1; ++idxLeg1 ) {
-      const T1& leg1 = leg1Collection->at(idxLeg1);
-      if ( idxLeadingLeg1 == -1 || leg1.pt() > leg1PtMax ) {
+      T1Ptr leg1Ptr = leg1Collection->ptrAt(idxLeg1);
+      if ( idxLeadingLeg1 == -1 || leg1Ptr->pt() > leg1PtMax ) {
 	idxLeadingLeg1 = idxLeg1;
-	leg1PtMax = leg1.pt();
+	leg1PtMax = leg1Ptr->pt();
       }
     }
 
@@ -98,30 +101,30 @@ void CompositeRefCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const
     double leg2PtMax = 0.;
     for ( unsigned idxLeg2 = 0, numLeg2 = leg2Collection->size(); 
 	  idxLeg2 < numLeg2; ++idxLeg2 ) {
-      const T2& leg2 = leg2Collection->at(idxLeg2);
+      T2Ptr leg2Ptr = leg2Collection->ptrAt(idxLeg2);
 
-//--- do not create CompositeRefCandidateT1T2MEt object 
+//--- do not create CompositePtrCandidateT1T2MEt object 
 //    for combination of particle with itself
       if ( idxLeadingLeg1 != -1 ) {
-	const T1& leadingLeg1 = leg1Collection->at(idxLeadingLeg1);
-	double dR = reco::deltaR(leadingLeg1.p4(), leg2.p4());
+	T1Ptr leadingLeg1Ptr = leg1Collection->ptrAt(idxLeadingLeg1);
+	double dR = reco::deltaR(leadingLeg1Ptr->p4(), leg2Ptr->p4());
 	if ( dR < dRmin12_ ) continue;
       }
 
-      if ( idxLeadingLeg2 == -1 || leg2.pt() > leg2PtMax ) {
+      if ( idxLeadingLeg2 == -1 || leg2Ptr->pt() > leg2PtMax ) {
 	idxLeadingLeg2 = idxLeg2;
-	leg2PtMax = leg2.pt();
+	leg2PtMax = leg2Ptr->pt();
       }
     }
 
     if ( idxLeadingLeg1 != -1 &&
 	 idxLeadingLeg2 != -1 ) {
-      T1Ref leadingLeg1Ref(leg1Collection, idxLeadingLeg1);
-      T2Ref leadingLeg2Ref(leg2Collection, idxLeadingLeg2);
+      T1Ptr leadingLeg1Ptr = leg1Collection->ptrAt(idxLeadingLeg1);
+      T2Ptr leadingLeg2Ptr = leg2Collection->ptrAt(idxLeadingLeg2);
 
-      CompositeRefCandidateT1T2MEt<T1,T2> compositeRefCandidate = 
-	algorithm_.buildCompositeRefCandidate(leadingLeg1Ref, leadingLeg2Ref, metPtr);
-      compositeRefCandidateCollection->push_back(compositeRefCandidate);
+      CompositePtrCandidateT1T2MEt<T1,T2> compositePtrCandidate = 
+	algorithm_.buildCompositePtrCandidate(leadingLeg1Ptr, leadingLeg2Ptr, metPtr);
+      compositePtrCandidateCollection->push_back(compositePtrCandidate);
     } else {
       if ( verbosity_ >= 1 ) {
 	edm::LogInfo ("produce") << " Found no combination of particles in Collections" 
@@ -131,25 +134,25 @@ void CompositeRefCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const
   } else {
     for ( unsigned idxLeg1 = 0, numLeg1 = leg1Collection->size(); 
 	  idxLeg1 < numLeg1; ++idxLeg1 ) {
-      T1Ref leg1Ref(leg1Collection, idxLeg1);
+      T1Ptr leg1Ptr = leg1Collection->ptrAt(idxLeg1);
       for ( unsigned idxLeg2 = 0, numLeg2 = leg2Collection->size(); 
 	    idxLeg2 < numLeg2; ++idxLeg2 ) {
-	T2Ref leg2Ref(leg2Collection, idxLeg2);
+	T2Ptr leg2Ptr = leg2Collection->ptrAt(idxLeg2);
 
-//--- do not create CompositeRefCandidateT1T2MEt object 
+//--- do not create CompositePtrCandidateT1T2MEt object 
 //    for combination of particle with itself
-	double dR = reco::deltaR(leg1Ref->p4(), leg2Ref->p4());
+	double dR = reco::deltaR(leg1Ptr->p4(), leg2Ptr->p4());
 	if ( dR < dRmin12_ ) continue;
 
-	CompositeRefCandidateT1T2MEt<T1,T2> compositeRefCandidate = 
-	  algorithm_.buildCompositeRefCandidate(leg1Ref, leg2Ref, metPtr);
-	compositeRefCandidateCollection->push_back(compositeRefCandidate);
+	CompositePtrCandidateT1T2MEt<T1,T2> compositePtrCandidate = 
+	  algorithm_.buildCompositePtrCandidate(leg1Ptr, leg2Ptr, metPtr);
+	compositePtrCandidateCollection->push_back(compositePtrCandidate);
       }
     }
   }
 
-//--- add the collection of reconstructed CompositeRefCandidateT1T2MEts to the event
-  evt.put(compositeRefCandidateCollection);
+//--- add the collection of reconstructed CompositePtrCandidateT1T2MEts to the event
+  evt.put(compositePtrCandidateCollection);
 }
 
 #include "DataFormats/Candidate/interface/Candidate.h" 
@@ -157,11 +160,11 @@ void CompositeRefCandidateT1T2MEtProducer<T1,T2>::produce(edm::Event& evt, const
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/PatCandidates/interface/Tau.h"
 
-typedef CompositeRefCandidateT1T2MEtProducer<reco::Candidate, reco::Candidate> DiCandidatePairProducer;
-typedef CompositeRefCandidateT1T2MEtProducer<pat::Electron, pat::Tau> PATElecTauPairProducer;
-typedef CompositeRefCandidateT1T2MEtProducer<pat::Muon, pat::Tau> PATMuTauPairProducer;
-typedef CompositeRefCandidateT1T2MEtProducer<pat::Tau, pat::Tau> PATDiTauPairProducer;
-typedef CompositeRefCandidateT1T2MEtProducer<pat::Electron, pat::Muon> PATElecMuPairProducer;
+typedef CompositePtrCandidateT1T2MEtProducer<reco::Candidate, reco::Candidate> DiCandidatePairProducer;
+typedef CompositePtrCandidateT1T2MEtProducer<pat::Electron, pat::Tau> PATElecTauPairProducer;
+typedef CompositePtrCandidateT1T2MEtProducer<pat::Muon, pat::Tau> PATMuTauPairProducer;
+typedef CompositePtrCandidateT1T2MEtProducer<pat::Tau, pat::Tau> PATDiTauPairProducer;
+typedef CompositePtrCandidateT1T2MEtProducer<pat::Electron, pat::Muon> PATElecMuPairProducer;
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 

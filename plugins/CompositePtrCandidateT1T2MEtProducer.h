@@ -1,7 +1,7 @@
-#ifndef TauAnalysis_CandidateTools_CompositeRefCandidateT1T2MEtProducer_h
-#define TauAnalysis_CandidateTools_CompositeRefCandidateT1T2MEtProducer_h
+#ifndef TauAnalysis_CandidateTools_CompositePtrCandidateT1T2MEtProducer_h
+#define TauAnalysis_CandidateTools_CompositePtrCandidateT1T2MEtProducer_h
 
-/** \class CompositeRefCandidateT1T2MEtProducer
+/** \class CompositePtrCandidateT1T2MEtProducer
  *
  * Produce combinations of leptonic and hadronic decay products 
  * of a pair of tau leptons plus missing transverse momentum 
@@ -14,7 +14,7 @@
  *
  * \version $Revision: 1.1 $
  *
- * $Id: CompositeRefCandidateT1T2MEtProducer.h,v 1.1 2009/01/29 13:22:18 veelken Exp $
+ * $Id: CompositePtrCandidateT1T2MEtProducer.h,v 1.1 2009/02/04 15:41:35 veelken Exp $
  *
  */
 
@@ -25,30 +25,28 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/InputTag.h"
 
-#include "TauAnalysis/CandidateTools/interface/CompositeRefCandidateT1T2MEtAlgorithm.h"
+#include "TauAnalysis/CandidateTools/interface/CompositePtrCandidateT1T2MEtAlgorithm.h"
 
 #include <string>
 
 template<typename T1, typename T2>
-class CompositeRefCandidateT1T2MEtProducer : public edm::EDProducer 
+class CompositePtrCandidateT1T2MEtProducer : public edm::EDProducer 
 {
-  typedef std::vector<T1> T1Collection;
-  typedef edm::Ref<T1Collection> T1Ref;
-  typedef std::vector<T2> T2Collection;
-  typedef edm::Ref<T2Collection> T2Ref;
+  typedef edm::Ptr<T1> T1Ptr;
+  typedef edm::Ptr<T2> T2Ptr;
 
-  typedef std::vector<CompositeRefCandidateT1T2MEt<T1,T2> > CompositeRefCandidateCollection;
+  typedef std::vector<CompositePtrCandidateT1T2MEt<T1,T2> > CompositePtrCandidateCollection;
   
  public:
 
-  explicit CompositeRefCandidateT1T2MEtProducer(const edm::ParameterSet&);
-  ~CompositeRefCandidateT1T2MEtProducer();
+  explicit CompositePtrCandidateT1T2MEtProducer(const edm::ParameterSet&);
+  ~CompositePtrCandidateT1T2MEtProducer();
 
   void produce(edm::Event&, const edm::EventSetup&);
 
  private:
 
-  CompositeRefCandidateT1T2MEtAlgorithm<T1,T2> algorithm_;
+  CompositePtrCandidateT1T2MEtAlgorithm<T1,T2> algorithm_;
   
   bool useLeadingTausOnly_;
   edm::InputTag srcLeg1_;

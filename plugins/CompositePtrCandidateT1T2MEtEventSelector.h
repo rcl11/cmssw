@@ -1,16 +1,16 @@
 //
-// $Id: CompositeRefCandidateT1T2MEtEventSelector.h,v 1.1 2009/01/23 14:58:11 veelken Exp $
+// $Id: CompositePtrCandidateT1T2MEtEventSelector.h,v 1.1 2009/02/04 15:41:35 veelken Exp $
 //
 
-#ifndef TauAnalysis_CandidateTools_CompositeRefCandidateT1T2MEtEventSelector_h
-#define TauAnalysis_CandidateTools_CompositeRefCandidateT1T2MEtEventSelector_h
+#ifndef TauAnalysis_CandidateTools_CompositePtrCandidateT1T2MEtEventSelector_h
+#define TauAnalysis_CandidateTools_CompositePtrCandidateT1T2MEtEventSelector_h
 
 #include "PhysicsTools/UtilAlgos/interface/AnySelector.h"
 #include "PhysicsTools/UtilAlgos/interface/ObjectCountEventSelector.h"
 #include "PhysicsTools/UtilAlgos/interface/MinNumberSelector.h"
 #include "PhysicsTools/PatUtils/interface/MaxNumberSelector.h"
 
-#include "AnalysisDataFormats/TauAnalysis/interface/CompositeRefCandidateT1T2MEt.h"
+#include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEt.h"
 
 #include <vector>
 

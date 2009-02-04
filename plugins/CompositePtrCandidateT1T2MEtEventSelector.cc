@@ -1,4 +1,4 @@
-#include "TauAnalysis/CandidateTools/plugins/CompositeRefCandidateT1T2MEtEventSelector.h"
+#include "TauAnalysis/CandidateTools/plugins/CompositePtrCandidateT1T2MEtEventSelector.h"
 
 #include "PhysicsTools/UtilAlgos/interface/EventSelectorBase.h"
 

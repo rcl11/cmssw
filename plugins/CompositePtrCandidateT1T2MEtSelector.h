@@ -1,9 +1,9 @@
 //
-// $Id: CompositeRefCandidateT1T2MEtSelector.h,v 1.3 2008/06/19 13:22:12 gpetrucc Exp $
+// $Id: CompositePtrCandidateT1T2MEtSelector.h,v 1.1 2009/02/04 15:41:35 veelken Exp $
 //
 
-#ifndef TauAnalysis_CandidateTools_CompositeRefCandidateT1T2MEtSelector_h
-#define TauAnalysis_CandidateTools_CompositeRefCandidateT1T2MEtSelector_h
+#ifndef TauAnalysis_CandidateTools_CompositePtrCandidateT1T2MEtSelector_h
+#define TauAnalysis_CandidateTools_CompositePtrCandidateT1T2MEtSelector_h
 
 #include "DataFormats/Common/interface/RefVector.h"
 
@@ -12,7 +12,7 @@
 #include "PhysicsTools/UtilAlgos/interface/ObjectSelector.h"
 #include "PhysicsTools/UtilAlgos/interface/SingleElementCollectionSelector.h"
 
-#include "AnalysisDataFormats/TauAnalysis/interface/CompositeRefCandidateT1T2MEt.h"
+#include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEt.h"
 
 #include <vector>
 

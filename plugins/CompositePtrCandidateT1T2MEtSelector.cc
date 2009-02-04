@@ -1,4 +1,4 @@
-#include "TauAnalysis/CandidateTools/plugins/CompositeRefCandidateT1T2MEtSelector.h"
+#include "TauAnalysis/CandidateTools/plugins/CompositePtrCandidateT1T2MEtSelector.h"
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 
