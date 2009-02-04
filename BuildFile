@@ -1,6 +1,21 @@
 <use name=FWCore/Framework>
 <use name=FWCore/ParameterSet>
+<use name=FWCore/MessageLogger>
+<use name=DataFormats/Candidate>
+<use name=DataFormats/Math>
+<use name=AnalysisDataFormats/TauAnalysis>
+<use name=PhysicsTools/Utilities>
+<use name=root>
+
 <export>
   <lib name=TauAnalysisCandidateTools>
+  <use name=FWCore/Framework>
+  <use name=FWCore/ParameterSet>
+  <use name=FWCore/MessageLogger>
+  <use name=DataFormats/Candidate>
+  <use name=DataFormats/Math>
+  <use name=AnalysisDataFormats/TauAnalysis>
+  <use name=PhysicsTools/Utilities>
+  <use name=root>
 </export>
 

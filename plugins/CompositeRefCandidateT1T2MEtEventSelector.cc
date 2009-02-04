@@ -1,0 +1,17 @@
+#include "TauAnalysis/CandidateTools/plugins/CompositeRefCandidateT1T2MEtEventSelector.h"
+
+#include "PhysicsTools/UtilAlgos/interface/EventSelectorBase.h"
+
+#include "FWCore/Framework/interface/MakerMacros.h"
+
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, DiCandidatePairMinEventSelector, "DiCandidatePairMinEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATElecTauPairMinEventSelector, "PATElecTauPairMinEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATMuTauPairMinEventSelector, "PATMuTauPairMinEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATDiTauPairMinEventSelector, "PATDiTauPairMinEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATElecMuPairMinEventSelector, "PATElecMuPairMinEventSelector");
+
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, DiCandidatePairMaxEventSelector, "DiCandidatePairMaxEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATElecTauPairMaxEventSelector, "PATElecTauPairMaxEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATMuTauPairMaxEventSelector, "PATMuTauPairMaxEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATDiTauPairMaxEventSelector, "PATDiTauPairMaxEventSelector");
+DEFINE_EDM_PLUGIN(EventSelectorPluginFactory, PATElecMuPairMaxEventSelector, "PATElecMuPairMaxEventSelector");
