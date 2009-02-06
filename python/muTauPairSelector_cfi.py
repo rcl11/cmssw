@@ -16,7 +16,7 @@ selectedMuTauPairsAntiOverlapVeto = cms.EDFilter("PATMuTauPairSelector",
 # require muon and tau not to be back-to-back
 selectedMuTauPairsAcoplanarityIndividual = cms.EDFilter("PATMuTauPairSelector",
      src = selectedMuTauPairsAntiOverlapVeto.src,
-     cut = cms.string('dPhi12 < 2.4'),
+     cut = cms.string('dPhi1MET < 2.4'),
      filter = cms.bool(False)
 )
 
