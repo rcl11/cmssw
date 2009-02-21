@@ -27,6 +27,7 @@ selectedElecTauPairsAcoplanarityCumulative.src = cms.InputTag("selectedElecTauPa
 selectedElecTauPairsZeroChargeIndividual = cms.EDFilter("PATElecTauPairSelector",
      src = selectedElecTauPairsAntiOverlapVeto.src,
      cut = cms.string('charge = 0'),
+     #cut = cms.string('(leg1.charge + leg2.leadTrack.charge) = 0'), # NOTE: to be used for background studies only !!                    
      filter = cms.bool(False)
 )
 
