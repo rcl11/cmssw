@@ -14,13 +14,14 @@
  *
  * \version $Revision: 1.1 $
  *
- * $Id: CompositePtrCandidateT1T2MEtProducer.h,v 1.1 2009/02/04 15:41:35 veelken Exp $
+ * $Id: CompositePtrCandidateT1T2MEtProducer.h,v 1.1 2009/02/04 17:32:15 veelken Exp $
  *
  */
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDProducer.h"
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/InputTag.h"
