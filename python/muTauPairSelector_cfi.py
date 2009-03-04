@@ -31,25 +31,22 @@ selectedMuTauPairsZeroChargeIndividual = cms.EDFilter("PATMuTauPairSelector",
      filter = cms.bool(False)
 )
 
+selectedMuTauPairsZeroChargeCumulative = copy.deepcopy(selectedMuTauPairsZeroChargeIndividual)
+selectedMuTauPairsZeroChargeCumulative.src = cms.InputTag("selectedMuTauPairsAcoplanarityCumulative")
+
 #require cut transverse mass of muon and MET
 selectedMuTauPairsMt1METIndividual = cms.EDFilter("PATMuTauPairSelector",
      src = selectedMuTauPairsAntiOverlapVeto.src,
      cut = cms.string('mt1MET < 60.'),
      filter = cms.bool(False)
 )
-#
+
 selectedMuTauPairsMt1METCumulative = copy.deepcopy(selectedMuTauPairsMt1METIndividual)
 selectedMuTauPairsMt1METCumulative.src = cms.InputTag("selectedMuTauPairsZeroChargeCumulative")
-
-
-
-selectedMuTauPairsZeroChargeCumulative = copy.deepcopy(selectedMuTauPairsZeroChargeIndividual)
-selectedMuTauPairsZeroChargeCumulative.src = cms.InputTag("selectedMuTauPairsAcoplanarityCumulative")
 
 selectMuTauPairs = cms.Sequence( selectedMuTauPairsAntiOverlapVeto
                                 *selectedMuTauPairsAcoplanarityIndividual
                                 *selectedMuTauPairsAcoplanarityCumulative
                                 *selectedMuTauPairsZeroChargeIndividual
                                 *selectedMuTauPairsZeroChargeCumulative
-                                *selectedMuTauPairsMt1METCumulative
-                               )
+                                *selectedMuTauPairsMt1METCumulative )
