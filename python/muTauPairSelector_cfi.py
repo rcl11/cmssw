@@ -49,4 +49,5 @@ selectMuTauPairs = cms.Sequence( selectedMuTauPairsAntiOverlapVeto
                                 *selectedMuTauPairsAcoplanarityCumulative
                                 *selectedMuTauPairsZeroChargeIndividual
                                 *selectedMuTauPairsZeroChargeCumulative
+                                *selectedMuTauPairsMt1METIndividual
                                 *selectedMuTauPairsMt1METCumulative )
