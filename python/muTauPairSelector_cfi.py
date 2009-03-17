@@ -51,3 +51,38 @@ selectMuTauPairs = cms.Sequence( selectedMuTauPairsAntiOverlapVeto
                                 *selectedMuTauPairsZeroChargeCumulative
                                 *selectedMuTauPairsMt1METIndividual
                                 *selectedMuTauPairsMt1METCumulative )
+
+# define additional collections of muon candidates
+# with loose track and ECAL isolation applied
+# (NOTE: to be used for the purpose of factorizing efficiencies
+#        of muon isolation from other event selection criteria,
+#        in order to avoid problems with limited Monte Carlo statistics)
+
+selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsAntiOverlapVeto)
+selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src = cms.InputTag("allMuTauPairsLooseMuonIsolation")
+
+selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsAcoplanarityIndividual)
+selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation.src = selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src
+
+selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation)
+selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation.src = cms.InputTag("selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation")
+
+selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsZeroChargeIndividual)
+selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation.src = selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src
+
+selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation)
+selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation.src = cms.InputTag("selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation")
+
+selectedMuTauPairsMt1METIndividualLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsMt1METIndividual)
+selectedMuTauPairsMt1METIndividualLooseMuonIsolation.src = selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src
+
+selectedMuTauPairsMt1METCumulativeLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsMt1METIndividualLooseMuonIsolation)
+selectedMuTauPairsMt1METCumulativeLooseMuonIsolation.src = cms.InputTag("selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation")
+
+selectMuTauPairsLooseMuonIsolation = cms.Sequence( selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation
+                                                  *selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation
+                                                  *selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation
+                                                  *selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation
+                                                  *selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation
+                                                  *selectedMuTauPairsMt1METIndividualLooseMuonIsolation
+                                                  *selectedMuTauPairsMt1METCumulativeLooseMuonIsolation )
