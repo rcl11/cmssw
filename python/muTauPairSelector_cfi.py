@@ -13,16 +13,6 @@ selectedMuTauPairsAntiOverlapVeto = cms.EDFilter("PATMuTauPairSelector",
      filter = cms.bool(False)
 )
 
-# require muon and tau not to be back-to-back
-selectedMuTauPairsAcoplanarityIndividual = cms.EDFilter("PATMuTauPairSelector",
-     src = selectedMuTauPairsAntiOverlapVeto.src,
-     cut = cms.string('dPhi1MET < 2.4'),
-     filter = cms.bool(False)
-)
-
-selectedMuTauPairsAcoplanarityCumulative = copy.deepcopy(selectedMuTauPairsAcoplanarityIndividual)
-selectedMuTauPairsAcoplanarityCumulative.src = cms.InputTag("selectedMuTauPairsAntiOverlapVeto")
-
 # require muon and tau to form a zero-charge pair
 selectedMuTauPairsZeroChargeIndividual = cms.EDFilter("PATMuTauPairSelector",
      src = selectedMuTauPairsAntiOverlapVeto.src,
@@ -32,7 +22,7 @@ selectedMuTauPairsZeroChargeIndividual = cms.EDFilter("PATMuTauPairSelector",
 )
 
 selectedMuTauPairsZeroChargeCumulative = copy.deepcopy(selectedMuTauPairsZeroChargeIndividual)
-selectedMuTauPairsZeroChargeCumulative.src = cms.InputTag("selectedMuTauPairsAcoplanarityCumulative")
+selectedMuTauPairsZeroChargeCumulative.src = cms.InputTag("selectedMuTauPairsAntiOverlapVeto")
 
 #require cut transverse mass of muon and MET
 selectedMuTauPairsMt1METIndividual = cms.EDFilter("PATMuTauPairSelector",
@@ -45,8 +35,6 @@ selectedMuTauPairsMt1METCumulative = copy.deepcopy(selectedMuTauPairsMt1METIndiv
 selectedMuTauPairsMt1METCumulative.src = cms.InputTag("selectedMuTauPairsZeroChargeCumulative")
 
 selectMuTauPairs = cms.Sequence( selectedMuTauPairsAntiOverlapVeto
-                                *selectedMuTauPairsAcoplanarityIndividual
-                                *selectedMuTauPairsAcoplanarityCumulative
                                 *selectedMuTauPairsZeroChargeIndividual
                                 *selectedMuTauPairsZeroChargeCumulative
                                 *selectedMuTauPairsMt1METIndividual
@@ -61,17 +49,11 @@ selectMuTauPairs = cms.Sequence( selectedMuTauPairsAntiOverlapVeto
 selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsAntiOverlapVeto)
 selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src = cms.InputTag("allMuTauPairsLooseMuonIsolation")
 
-selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsAcoplanarityIndividual)
-selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation.src = selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src
-
-selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation)
-selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation.src = cms.InputTag("selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation")
-
 selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsZeroChargeIndividual)
 selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation.src = selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src
 
 selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation)
-selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation.src = cms.InputTag("selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation")
+selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation.src = cms.InputTag("selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation")
 
 selectedMuTauPairsMt1METIndividualLooseMuonIsolation = copy.deepcopy(selectedMuTauPairsMt1METIndividual)
 selectedMuTauPairsMt1METIndividualLooseMuonIsolation.src = selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation.src
@@ -80,8 +62,6 @@ selectedMuTauPairsMt1METCumulativeLooseMuonIsolation = copy.deepcopy(selectedMuT
 selectedMuTauPairsMt1METCumulativeLooseMuonIsolation.src = cms.InputTag("selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation")
 
 selectMuTauPairsLooseMuonIsolation = cms.Sequence( selectedMuTauPairsAntiOverlapVetoLooseMuonIsolation
-                                                  *selectedMuTauPairsAcoplanarityIndividualLooseMuonIsolation
-                                                  *selectedMuTauPairsAcoplanarityCumulativeLooseMuonIsolation
                                                   *selectedMuTauPairsZeroChargeIndividualLooseMuonIsolation
                                                   *selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation
                                                   *selectedMuTauPairsMt1METIndividualLooseMuonIsolation
