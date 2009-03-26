@@ -1,7 +1,8 @@
 import FWCore.ParameterSet.Config as cms
-import copy
 
-from TauAnalysis.CandidateTools.elecTauPairSelector_cfi import *
+#--------------------------------------------------------------------------------
+# produce combinations of electron + tau-jet pairs
+#--------------------------------------------------------------------------------
 
 allElecTauPairs = cms.EDProducer("PATElecTauPairProducer",
   useLeadingTausOnly = cms.bool(False),
@@ -13,6 +14,6 @@ allElecTauPairs = cms.EDProducer("PATElecTauPairProducer",
   verbosity = cms.untracked.int32(0)
 )
 
-produceElecTauPairs = cms.Sequence( allElecTauPairs * selectElecTauPairs )
+produceElecTauPairs = cms.Sequence( allElecTauPairs )
 
 

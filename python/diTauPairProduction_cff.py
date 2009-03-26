@@ -1,21 +1,23 @@
 import FWCore.ParameterSet.Config as cms
 import copy
 
-from TauAnalysis.CandidateTools.diTauPairSelector_cfi import *
+#--------------------------------------------------------------------------------
+# produce combinations of tau-jet + tau-jet pairs
+#--------------------------------------------------------------------------------
 
 allDiTauPairs = cms.EDProducer("PATDiTauPairProducer",
   useLeadingTausOnly = cms.bool(False),
-  srcLeg1 = cms.InputTag('allLayer1PFTausForTauAnalyses'),
-  srcLeg2 = cms.InputTag('allLayer1PFTausForTauAnalyses'),
+  srcLeg1 = cms.InputTag('allLayer1Taus'),
+  srcLeg2 = cms.InputTag('allLayer1Taus'),
   dRmin12 = cms.double(0.3),
   srcMET = cms.InputTag('allLayer1METs'),
   recoMode = cms.string(""),
   verbosity = cms.untracked.int32(0)
 )
 
-#--------------------------------------------------------------------------------
-# selection of first tau-jet
-#--------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+# produce tau-jet + tau-jet pairs with tau-jet selection criteria applied on first leg
+#---------------------------------------------------------------------------------------
 
 # require 1st tau candidate to be within geometric acceptance of Pixel + SiTracker detectors
 selectedDiTauPairs1stTauEta21Individual = copy.deepcopy(allDiTauPairs)
@@ -69,9 +71,9 @@ selectedDiTauPairs1stTauProngIndividual.srcLeg1 = cms.InputTag('selectedLayer1Ta
 selectedDiTauPairs1stTauProngCumulative = copy.deepcopy(selectedDiTauPairs1stTauProngIndividual)
 selectedDiTauPairs1stTauProngCumulative.srcLeg1 = cms.InputTag('selectedLayer1TausForDiTauProngCumulative')
 
-#--------------------------------------------------------------------------------
-# selection of second tau-jet
-#--------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+# produce tau-jet + tau-jet pairs with tau-jet selection criteria applied on second leg
+#----------------------------------------------------------------------------------------
 
 # require 2nd tau candidate to be within geometric acceptance of Pixel + SiTracker detectors
 selectedDiTauPairs2ndTauEta21Individual = copy.deepcopy(selectedDiTauPairs1stTauProngCumulative)
@@ -139,5 +141,4 @@ produceDiTauPairs = cms.Sequence( allDiTauPairs
                                  *selectedDiTauPairs2ndTauLeadTrkPtIndividual * selectedDiTauPairs2ndTauLeadTrkPtCumulative
                                  *selectedDiTauPairs2ndTauTrkIsoIndividual * selectedDiTauPairs2ndTauTrkIsoCumulative
                                  *selectedDiTauPairs2ndTauEcalIsoIndividual * selectedDiTauPairs2ndTauEcalIsoCumulative
-                                 *selectedDiTauPairs2ndTauProngIndividual * selectedDiTauPairs2ndTauProngCumulative
-                                 *selectDiTauPairs )
+                                 *selectedDiTauPairs2ndTauProngIndividual * selectedDiTauPairs2ndTauProngCumulative )

@@ -1,7 +1,9 @@
 import FWCore.ParameterSet.Config as cms
 import copy
 
-from TauAnalysis.RecoTools.pftauPatSelector_cfi import *
+#--------------------------------------------------------------------------------  
+# produce collections of tau-jet + tau-jet pairs passing selection criteria
+#--------------------------------------------------------------------------------
 
 # require the two tau-jets to be separated in eta-phi,
 # in order to ensure that both do not refer to one and the same physical particle

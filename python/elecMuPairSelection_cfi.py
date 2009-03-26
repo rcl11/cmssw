@@ -1,7 +1,9 @@
 import FWCore.ParameterSet.Config as cms
 import copy
 
-from TauAnalysis.RecoTools.pftauPatSelector_cfi import *
+#--------------------------------------------------------------------------------  
+# produce collections of electron + muons pairs passing selection criteria
+#--------------------------------------------------------------------------------
 
 # require muon and tau not to be back-to-back
 selectedElecMuPairsAcoplanarity = cms.EDFilter("PATElecMuPairSelector",
@@ -21,5 +23,5 @@ selectedElecMuPairsZeroChargeCumulative = copy.deepcopy(selectedElecMuPairsZeroC
 selectedElecMuPairsZeroChargeCumulative.src = cms.InputTag("selectedElecMuPairsAcoplanarity")
 
 selectElecMuPairs = cms.Sequence( selectedElecMuPairsAcoplanarity
-                                  *selectedElecMuPairsZeroChargeIndividual
-                                  *selectedElecMuPairsZeroChargeCumulative )
+                                 *selectedElecMuPairsZeroChargeIndividual
+                                 *selectedElecMuPairsZeroChargeCumulative )

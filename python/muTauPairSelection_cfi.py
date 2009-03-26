@@ -1,7 +1,9 @@
 import FWCore.ParameterSet.Config as cms
 import copy
 
-from TauAnalysis.RecoTools.pftauPatSelector_cfi import *
+#--------------------------------------------------------------------------------  
+# produce collections of muon + tau-jet pairs passing selection criteria
+#--------------------------------------------------------------------------------
 
 # require muon and tau-jet to be separated in eta-phi,
 # in order to ensure that both do not refer to one and the same physical particle
@@ -66,3 +68,5 @@ selectMuTauPairsLooseMuonIsolation = cms.Sequence( selectedMuTauPairsAntiOverlap
                                                   *selectedMuTauPairsZeroChargeCumulativeLooseMuonIsolation
                                                   *selectedMuTauPairsMt1METIndividualLooseMuonIsolation
                                                   *selectedMuTauPairsMt1METCumulativeLooseMuonIsolation )
+
+selectMuTauPairsAll = cms.Sequence( selectMuTauPairs * selectMuTauPairsLooseMuonIsolation )
