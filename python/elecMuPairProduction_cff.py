@@ -10,7 +10,7 @@ allElecMuPairs = cms.EDProducer("PATElecMuPairProducer",
   srcLeg1 = cms.InputTag('selectedLayer1ElectronsTrkIPcumulative'),
   srcLeg2 = cms.InputTag('selectedLayer1MuonsTrkIPcumulative'),
   dRmin12 = cms.double(-1.),
-  srcMET = cms.InputTag('allLayer1METs'),
+  srcMET = cms.InputTag('layer1METs'),
   recoMode = cms.string(""),
   verbosity = cms.untracked.int32(0)
 )
