@@ -8,5 +8,6 @@
   <use name=PhysicsTools/UtilAlgos>
   <use name=PhysicsTools/Utilities>
   <use name=AnalysisDataFormats/TauAnalysis>
+  <use name=TauAnalysis/CandidateTools>
 </library>
 
