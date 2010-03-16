@@ -8,10 +8,17 @@
 <use name=DataFormats/METReco>
 <use name=AnalysisDataFormats/TauAnalysis>
 <use name=PhysicsTools/Utilities>
+<use name=RecoVertex/VertexPrimitives>
+<use name=RecoVertex/KalmanVertexFit>
+<use name=TrackingTools/TransientTrack>
+<use name=TrackingTools/TrajectoryState>
 <use name=root>
 
 <export>
   <lib name=TauAnalysisCandidateTools>
+  <use name=RecoVertex/VertexPrimitives>
+  <use name=TrackingTools/TransientTrack>
+  <use name=TrackingTools/TrajectoryState>
   <use name=FWCore/Framework>
   <use name=FWCore/ParameterSet>
   <use name=FWCore/MessageLogger>
