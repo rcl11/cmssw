@@ -64,6 +64,11 @@ void cleanupPV(const reco::Vertex& pv, const reco::BeamSpot& bs, const Transient
       vector<TransientTrack>& leg1TransTracks, vector<TransientTrack>& leg2TransTracks, 
       TransientVertex& cleanPV)
 {
+  if ( !trackBuilder ) {
+    edm::LogError("cleanupPV") << "Invalid pointer to trackBuilder object --> skipping !!";
+    return;
+  }
+
    typedef std::map<TrackBaseRef, TransientTrack, RefToBaseLess<Track> > TransientTrackMap;
    // Only used if there are not enough unique tracks to make a fit
    vector<TransientTrack> pvOriginalTracks; 
@@ -72,10 +77,10 @@ void cleanupPV(const reco::Vertex& pv, const reco::BeamSpot& bs, const Transient
    TransientTrackMap pvTracks;
    for(Vertex::trackRef_iterator iter = pv.tracks_begin(); iter != pv.tracks_end(); ++iter) 
    {
-      // Build the transient track
-      TransientTrack track = trackBuilder->build(iter->castTo<TrackRef>());
-      pvTracks.insert(make_pair(*iter, track));
-      pvOriginalTracks.push_back(track);
+     // Build the transient track
+     TransientTrack track = trackBuilder->build(iter->castTo<TrackRef>());
+     pvTracks.insert(make_pair(*iter, track));
+     pvOriginalTracks.push_back(track);
    }
 
    edm::LogInfo("cleanupPV")  << "Before cleaning PV has " << pvOriginalTracks.size() << " tracks";
@@ -106,9 +111,8 @@ void cleanupPV(const reco::Vertex& pv, const reco::BeamSpot& bs, const Transient
          TransientTrack newTrack = trackBuilder->build(trackRef);
          leg1TransTracks.push_back(newTrack);
       }
-
-
    }
+
    for(vector<TrackBaseRef>::const_iterator track = leg2Tracks.begin(); track != leg2Tracks.end(); ++track)
    {
       TransientTrackMap::iterator pos = pvTracks.find(*track);
