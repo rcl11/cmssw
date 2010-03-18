@@ -109,7 +109,7 @@ fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const Cand
 
    TransientVertex cleanPV;
    // Get the clean PV and trans tracks.
-   cleanupPV(pv, bs, trackBuilder, leg1Tracks, leg2Tracks, leg1TransTracks, leg2TransTracks, cleanPV)
+   cleanupPV(pv, bs, trackBuilder, leg1Tracks, leg2Tracks, leg1TransTracks, leg2TransTracks, cleanPV);
 
    // There are four fits, for all comibination of forward/backward ansatzs.
    // We fit all four, then take the best as the solution
