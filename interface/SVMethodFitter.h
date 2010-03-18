@@ -109,8 +109,7 @@ fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const Cand
 
    TransientVertex cleanPV;
    // Get the clean PV and trans tracks.
-   cleanupPV(pv, bs, trackBuilder, leg1Tracks, leg2Tracks, leg1TransTracks, leg2TransTracks, cleanPV);
-
+   cleanupPV(pv, bs, trackBuilder, leg1Tracks, leg2Tracks, leg1TransTracks, leg2TransTracks, cleanPV)
 
    // There are four fits, for all comibination of forward/backward ansatzs.
    // We fit all four, then take the best as the solution
@@ -130,8 +129,8 @@ fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const Cand
 
       // Build the fitter
       mySoln.fitter = 
-         boost::shared_ptr<DiTauFitterInterface>( new DiTauFitter<T1,T2>(
-                  leg1, leg1TransTracks, leg2, leg2TransTracks, cleanPV, met, soln));
+         boost::shared_ptr<DiTauFitterInterface>(new DiTauFitter<T1,T2>(leg1, leg1TransTracks, leg2, leg2TransTracks, 
+									cleanPV, met, soln));
 
       // Set as active fit
       minuit.SetObjectFit(mySoln.fitter.get());
