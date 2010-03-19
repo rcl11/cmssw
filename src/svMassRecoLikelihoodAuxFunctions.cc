@@ -308,5 +308,31 @@ namespace svMassReco {
     return std::make_pair(nuFourVector1, nuFourVector2);
   }
 
+  double m12SquaredUpperBound(const FourVector& visP4, const ThreeVector& tauDir)
+  {
+     /* Helper template used to distinguish between leptonic decays and hadronic
+      * decays.  In leptonic decays, the 2 neutrino system can have a mass, which
+      * must be fitted.  For 1-nu hadronic decays, this always zero.  For e/mu
+      * decays, it is defined by m12^2 = mTau^2 + mLepton^2 - 2 mTau E_rest, where
+      * E_rest is the energy of the lepton in tau rest frame.  E_rest is bounded
+      * from below by sqrt(mLepton^2 + pLeptonPerp^2) 
+      */ 
+     double visPerpSquared = tauDir.unit().Cross(visP4.Vect()).mag2();
+     double visMassSquared = visP4.mass()*visP4.mass();
+     return (tauMass*tauMass + visMassSquared - 2*tauMass*sqrt(visMassSquared + visPerpSquared));
+  }
+
+  // Determine if two tracks are identically (but from different collections)
+  bool tracksAreMatched(const reco::TrackBaseRef& trk1, const reco::TrackBaseRef& trk2) 
+  {
+    double dEta = trk1->eta() - trk2->eta();
+    double dPhi = trk1->phi() - trk2->phi();
+    double dR2 = dEta*dEta + dPhi*dPhi;
+    if ( dR2 < (0.01*0.01) && trk1->charge() == trk2->charge() ) {
+      if ( fabs(trk1->pt() - trk2->pt())/(trk2->pt()+trk1->pt()) < 0.05 ) return true;
+    }
+    return false;
+  }
+
 }
 

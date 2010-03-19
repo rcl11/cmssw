@@ -16,6 +16,7 @@
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoDiTauLikelihood.h"
+#include "TauAnalysis/CandidateTools/interface/SVmassRecoSolution.h"
 
 using namespace reco;
 using namespace std;
@@ -23,10 +24,11 @@ using namespace std;
 namespace svMassReco {
 
   /// Function for Minuit to minimize
+  template<typename T1, typename T2>
   void objectiveFcn(Int_t& npars, Double_t* grad, Double_t& fcn, Double_t* pars, Int_t flag)
   {
     // Get the fit object
-    SVmassRecoDiTauLikelihoodBase* fit = dynamic_cast<SVmassRecoDiTauLikelihoodBase*>(gMinuit->GetObjectFit());
+    SVmassRecoDiTauLikelihood<T1,T2>* fit = dynamic_cast<SVmassRecoDiTauLikelihood<T1,T2>*>(gMinuit->GetObjectFit());
     if ( !fit ) {
       edm::LogError("objectiveFcn") << "Call of gMinuit::GetObjectFit returned NULL pointer !!";
       return;
@@ -37,59 +39,6 @@ namespace svMassReco {
     if ( error != 0 ) {
       //std::cout << "UNPHYSICAL FIT" << std::endl;
     }
-  }
-
-  struct Solution 
-  {
-    boost::shared_ptr<SVmassRecoDiTauLikelihoodBase> fitter;
-    int solnType;
-    double nllOfFit;
-    double metNLL;
-    int migradResult;
-    int svFitResult;
-    reco::Candidate::Point pv;
-    reco::Candidate::Point sv1;
-    reco::Candidate::Point sv2;
-    double leg1MScale;
-    double leg2MScale;
-    int leg1Type;
-    int leg2Type;
-    FourVector leg1VisP4;
-    FourVector leg1NuP4;
-    FourVector leg2VisP4;
-    FourVector leg2NuP4;
-    // Sort operator
-    bool operator<(const Solution& rhs) const { 
-      // Prefer physical solutions first
-      //if(svFitResult != rhs.svFitResult)
-      //   return (svFitResult < rhs.svFitResult);
-      //else // take the one with a better NLL
-      return (nllOfFit < rhs.nllOfFit);
-    }
-    friend std::ostream& operator<< (std::ostream& o, const Solution& soln);
-  };
-
-  /// Pretty print a solution
-  std::ostream& operator<< (std::ostream& o, const Solution& soln);
-
-  /// Predicate to key tracks
-  template<typename T>
-  struct RefToBaseLess : public std::binary_function<edm::RefToBase<T>, edm::RefToBase<T>, bool> 
-  {
-    inline bool operator()(const edm::RefToBase<T> &r1, const edm::RefToBase<T> &r2) const
-    {
-      return r1.id() < r2.id() || (r1.id() == r2.id() && r1.key() < r2.key());
-    }
-  };
-
-  /// auxiliary Function to compare two tracks
-  bool isMatched(const TrackBaseRef&, const TrackBaseRef&); 
-
-  /// Function to determine whether the given type is valid for the SV fitter
-  /// Default case - specific implemntations in SVMethodT1T2Algorithm.cc
-  template<typename T> bool typeIsSupportedBySVFitter() 
-  { 
-    return false; 
   }
 
   template<typename T1, typename T2>
@@ -107,10 +56,10 @@ namespace svMassReco {
     ~SVmassRecoFitter() {}
 
     /// Class to fit a ditau candidate.  T1 and T2 must be either pat::Muon, pat::Electron, or pat::Tau type
-    std::vector<Solution> fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, 
+    std::vector<Solution<T1,T2> > fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, 
 				      const Vertex& pv, const BeamSpot& bs, const TransientTrackBuilder* trackBuilder)
     {
-      if ( !(typeIsSupportedBySVFitter<T1>() && typeIsSupportedBySVFitter<T2>()) ) return std::vector<Solution>();
+      if ( !(typeIsSupportedBySVFitter<T1>() && typeIsSupportedBySVFitter<T2>()) ) return std::vector<Solution<T1,T2> >();
 
       const T1& leg1 = *leg1Ptr;
       const T2& leg2 = *leg2Ptr;
@@ -133,23 +82,23 @@ namespace svMassReco {
       
       // There are four fits, for all comibination of forward/backward ansatzs.
       // We fit all four, then take the best as the solution
-      std::vector<Solution> fits;
+      std::vector<Solution<T1,T2> > fits;
       
       // Do each fit
       for ( size_t soln = 0; soln < 4; soln++ ) {
 	// Our fitter of 11 parameters
 	//TMinuit minuit(11);
 	gMinuit = &minuit_;
-	minuit_.SetFCN(objectiveFcn);
+	minuit_.SetFCN(objectiveFcn<T1,T2>);
 	// Neg. log likelihood
 	//minuit_.SetErrorDef(0.5);
 	//minuit_.SetPrintLevel(-1);
 
-	Solution mySoln;
+	Solution<T1,T2> mySoln;
 	mySoln.solnType = soln;
 
 	// Build the fitter
-	mySoln.fitter = boost::shared_ptr<SVmassRecoDiTauLikelihoodBase>(
+	mySoln.fitter = boost::shared_ptr<SVmassRecoDiTauLikelihood<T1,T2> >(
           new SVmassRecoDiTauLikelihood<T1,T2>(leg1, leg1TransTracks, leg2, leg2TransTracks, cleanPV, met, soln));
 
 	// Set as active fit
@@ -287,7 +236,7 @@ namespace svMassReco {
 	} else {
 	  // Delete it if we can match it
 	  for ( TransientTrackMap::iterator pvTrack = pvTracks.begin(); pvTrack != pvTracks.end(); ++pvTrack ) {
-	    if ( isMatched(pvTrack->first, *track) ) {
+	    if ( tracksAreMatched(pvTrack->first, *track) ) {
 	      edm::LogInfo("cleanupPV")  << "Matched a leg1 track by comparison";
 	      pvTracks.erase(pvTrack);
 	      break;
@@ -308,7 +257,7 @@ namespace svMassReco {
 	} else {
 	  // Delete it if we can match it
 	  for ( TransientTrackMap::iterator pvTrack = pvTracks.begin(); pvTrack != pvTracks.end(); ++pvTrack ) {
-	    if ( isMatched(pvTrack->first, *track) ) {
+	    if ( tracksAreMatched(pvTrack->first, *track) ) {
 	      edm::LogInfo("cleanupPV")  << "Matched a leg2 track by comparison";
 	      pvTracks.erase(pvTrack);
 	      break;
