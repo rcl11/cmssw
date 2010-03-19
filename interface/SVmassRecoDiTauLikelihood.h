@@ -1,14 +1,49 @@
 #ifndef TauAnalysis_CandidateTools_SVmassRecoDiTauLikelihood_h
 #define TauAnalysis_CandidateTools_SVmassRecoDiTauLikelihood_h
 
-/* 
- * svMassReco::SVmassRecoDiTauLikelihood
+/*
+* classes SVmassRecoDiTauLikelihood*
+*
+ * Authors: Evan K. Friis, Christian Veelken, UC Davis
  *
- * Author: Evan K. Friis, UC Davis
- *
- * Class to compute the NLL of a di-tau system
- *
- */
+* A composite object to compute the likelihood of a diTau system.  Each diTau
+* system has likelihood components that below to both 'legs', and then each
+* leg has individual likelihood components.
+*
+* Common likelihoods:
+*  o Likelihood of candidate primary vertex given measured primary vertex fit 
+*  o Likelihood of MET given the missing energy on each leg
+*
+* Descriptions of the likelihood contributions from the legs are defined in
+* TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegLikelihood.h
+*
+* The main interfaces to the class are defiend in the abstract base class
+* SVmassRecoDiTauLikelihoodBase.  The implementation depends on the type of leg
+* (pat::Muon, pat::Electron, etc) and is implemented in the templated derived
+* class SVmassRecoDiTauLikelihood<Leg1Type,Leg2Type>.
+*
+* The negative log likelihood of the entire system is given by the function
+*   double nll(Double_t* pars, Int_t &status, bool verbose=true);
+*
+* which computes the negative log likelihood of the entire system given
+* the vector of paramters defined in Double_t *pars.
+*
+* The numbering of parameters is defined as follows
+* -  0	   pv - x component 
+* -  1	   pv - y component 
+* -  2	   pv - z component 
+* -  3	   sv - x component for leg 1
+* -  4	   sv - y component for leg 1
+* -  5	   sv - z component for leg 1
+* -  6	   neutrino system mass scaler for leg 1 
+* -  7	   sv - x component for leg 2 
+* -  8	   sv - y component for leg 2 
+* -  9	   sv - z component for leg 2 
+* -  10	   neutrino system mass scaler for leg 2 
+*
+* The neutrino system mass scaler only applies for leptonic tau decays. For
+* hadronic decays, it is fixed at zero.
+*/
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -27,7 +62,8 @@ namespace svMassReco
 {
 
   /// Find a valid initial position for a leg
-  std::pair<GlobalPoint, GlobalError> findValidSV(const GlobalPoint& pv, SVmassRecoSingleLegLikelihoodBase* leg);
+  std::pair<GlobalPoint, GlobalError> 
+     findValidSV(const GlobalPoint& pv, SVmassRecoSingleLegLikelihoodBase* leg);
   
   /// Pure abstract class to interface with Minuit
   class SVmassRecoDiTauLikelihoodBase : public TObject
@@ -37,20 +73,24 @@ namespace svMassReco
     virtual ~SVmassRecoDiTauLikelihoodBase(){};
     /// Get nll given parameters
     virtual double nll(Double_t* pars, Int_t &status, bool verbose=true) = 0;
-    /// Get MET NLL
+    /// Get MET NLL for the last points fitted
     virtual double metNLL() const = 0;
-    /// To set up parameters for the fit
+
+    /// Setup the parameters in Minuit and find reasonable physical initial
+    /// values
     virtual void setupParametersFromScratch(TMinuit& minuit, bool useGeoLimits) = 0;
+
+    /// Copy the parameters from another minuit fit instance
     virtual void setupParametersFromPrevious(const TMinuit& from, TMinuit& to, 
 					     bool useM12Limits, bool useGeoLimits) = 0;
 
     /// Fix the PV in the fit
     virtual void lockPV(TMinuit& minuit) = 0;
-    /// Release the PV in the fit
+    /// Allow the PV to float in the fit
     virtual void releasePV(TMinuit& minuit) = 0;
     /// Fix the Nu mass scales in the fit
     virtual void lockNuMassScalers(TMinuit& minuit) = 0;
-    /// Release the nu mass scales in the fit
+    /// Allow the nuMass scales to float in the fit
     virtual void releaseNuMassScalers(TMinuit& minuit) = 0;
       
     /// Enable/disable MET in the fit
@@ -100,7 +140,7 @@ namespace svMassReco
        /* npars layout:  (PV x,y,z), (Leg1 x,y,z,m12) (Leg2 x,y,z,m12) */
        fitPV_ = GlobalPoint(pars[0], pars[1], pars[2]);
 
-       // Get the NLL of the PV
+       // Get the NLL of the PV given the vertex fit
        pvNLL_ = nllPointGivenVertex(fitPV_, pv_);
        nllOutput += pvNLL_;
 	 
@@ -116,19 +156,22 @@ namespace svMassReco
        if ( leg1Status ) status |= 0x1;
        if ( leg2Status ) status |= 0x2;
        
+       // Cache the status
        lastStatus_ = status;
        
-       // Constrain by MET
+       // Constrain by MET, if desired.
+       // Compute the four vector sum of invisible objects
        nus_ = leg2_->nuP4() + leg1_->nuP4();
        metNLL_ = nllNuSystemGivenMET(nus_, met_);
        if ( enableMET_ ) nllOutput += metNLL_;
 
-       // Log NLL result
+       // Cache NLL result
        lastNLL_ = nllOutput;
        
        return nllOutput;
      }
 
+     // Get the NLL of the MET that was last computed
      double metNLL() const { return metNLL_; };
 
      /// Pretty print the current status

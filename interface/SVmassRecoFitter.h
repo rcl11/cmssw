@@ -34,7 +34,6 @@ namespace svMassReco {
 
     Int_t error = 0;
     fcn = fit->nll(pars, error);
-    //std::cout << *fit << std::endl;
     if ( error != 0 ) {
       //std::cout << "UNPHYSICAL FIT" << std::endl;
     }

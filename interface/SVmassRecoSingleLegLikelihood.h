@@ -18,8 +18,6 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
-#include "TMinuit.h"
-
 // Load the actual NLL distributions
 #include "TauAnalysis/CandidateTools/interface/svMassRecoLikelihoodAuxFunctions.h"
 
