@@ -10,7 +10,7 @@
 #include "PhysicsTools/JetMCUtils/interface/JetMCTag.h"
 #include "DataFormats/JetReco/interface/GenJet.h"
 
-#include "TauAnalysis/CandidateTools/interface/SVMethodLikelihoods.h"
+#include "TauAnalysis/CandidateTools/interface/svMassRecoLikelihoodAuxFunctions.h"
 
 using namespace reco;
 using namespace edm;
@@ -209,7 +209,7 @@ void GenTauTestProducer::produce(Event& evt, const EventSetup& setup)
 
       int error;
       std::pair<reco::Candidate::LorentzVector,reco::Candidate::LorentzVector> theCompNuP4s = 
-         TauVertex::compInvisibleLeg(tau->p4().Vect().Unit(), theVisP4, 1.78, estNuMass, error);
+         svMassReco::compInvisibleLeg(tau->p4().Vect().Unit(), theVisP4, 1.78, estNuMass, error);
 
       visP4_px->push_back(theVisP4.px());
       visP4_py->push_back(theVisP4.py());
