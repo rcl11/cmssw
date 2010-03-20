@@ -1,6 +1,35 @@
 #ifndef TauAnalysis_CandidateTools_SVmassRecoFitter_h
 #define TauAnalysis_CandidateTools_SVmassRecoFitter_h
 
+/*
+ * SVmassRecoFitter
+ *
+ * Authors: Evan K. Friis, Christian Veelken (UC Davis)
+ *
+ * Class used to fit the composite mass of diTau candidates.
+ *
+ * The method fits the three coordinates of the PV and the three coordinates of
+ * both secondary vertices. 
+ *
+ * There are four possible solutions for any fit, corresponding to the 2
+ * possible alignments of the neutrino direction in the rest rame of each leg.
+ * All four solutions are returned, in the format
+ * std::vector<svMassReco::Solution<T1,T2>>.  The solutions are ordered by
+ * increasing negative log likelihood, so the first solution shoudl generally
+ * be the best.
+ *
+ * The computation of the likelihood for a given set of fit parameters is done
+ * by the template class SVmassRecoDiTauLikelihood.  This class computes
+ * likelihoods that are specific to the di-tau system, such as the
+ * compatability with the measured PV and the measured MET.  The
+ * SVmassRecoDiTauLikelihood additionally owns two
+ * SVmassRecoSingleLegLikelihood instances.  Each of these instances computes
+ * the likelihoods that are leg specific - the compatability of the associated
+ * SV with the leg tracks, the likelihood of the visible decay angle, and the
+ * likelihood of the PV-SV leg decay length given the total energy of the leg.
+ * 
+ */
+
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
@@ -50,8 +79,8 @@ namespace svMassReco {
     {
       std::cout << "<SVmassRecoFitter::SVmassRecoFitter>:" << std::endl;
       std::cout << " disabling MINUIT output..." << std::endl;
-      minuit_.SetErrorDef(0.5);
       minuit_.SetPrintLevel(-1);
+      minuit_.SetErrorDef(0.5);
     }
     ~SVmassRecoFitter() {}
 
