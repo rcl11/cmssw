@@ -134,7 +134,7 @@ namespace svMassReco {
 	minuit_.SetObjectFit(mySoln.fitter.get());
 	// Prepare Minuit for this fit, including choosing initial parameters
 	mySoln.fitter->setupParametersFromScratch(minuit_, true);
-	mySoln.fitter->enableMET(false);
+	mySoln.fitter->enableMET(true);
 
 	edm::LogInfo("SVMethod") << "Locking Nu Mass Scales";
 	mySoln.fitter->lockNuMassScalers(minuit_);

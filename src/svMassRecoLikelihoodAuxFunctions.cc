@@ -157,16 +157,37 @@ namespace svMassReco {
   
   double nllNuSystemGivenMET(const FourVector& nus, const reco::MET* met)
   {
-    // ROUGHLY parameterized BY EYE from CMS AN-2009/039 Fig. 25a (For PF Jets)
-    double sigma = 6.56 + (8.47/500)*met->sumEt();
-    // FIXME FUDGE factor
-    sigma = sigma/4.0;
-    double sigmaSquared = square(sigma);
-    double nllX = square(nus.px()-met->px())/(2*sigmaSquared);
-    double nllY = square(nus.py()-met->py())/(2*sigmaSquared);
-    return (nllX + nllY + 2*nlGaussianNorm(sigma));
+    // MET likelihood split into perp/par components *along* the fitted nu
+    // system direction
+    double parSigma =  1.14770e+00 + 3.62242e-02*met->sumEt();
+    double perpSigma = 2.75926e-01 + 3.70582e-02*met->sumEt();
+
+    double output = 0.0;
+
+    if(nus.pt() > 0)
+    {
+      double recoMETparToNu = (met->px()*nus.px() + met->py()*nus.py())/nus.pt();
+      double recoMETperpToNu = (met->px()*nus.py() - met->py()*nus.px())/nus.pt();
+
+      double recoMETparResidual = recoMETparToNu - nus.pt();
+      double recoMETperpResidual = recoMETperpToNu; // the fitted nus have no perp component by construction
+
+      output += 0.5*square(recoMETparResidual/parSigma);
+      output += nlGaussianNorm(parSigma);
+
+      output += 0.5*square(recoMETperpResidual/perpSigma);
+      output += nlGaussianNorm(perpSigma);
+    } else  // fitted nu total is zero (unlikely!), so directions are undefined
+    {
+      double recoMETparResidual = met->pt();
+      output += 0.5*square(recoMETparResidual/parSigma);
+      output += nlGaussianNorm(parSigma);
+      // ignore perpindicular coordinate, but ee
+      output += nlGaussianNorm(perpSigma);
+    }
+    return output;
   }
-  
+
   // Unsupported reco::Candidate case
   template<> double nllVisRapidityGivenMomentum<reco::Candidate>(const reco::Candidate& obj, double rapidity, double momentum)
   {
