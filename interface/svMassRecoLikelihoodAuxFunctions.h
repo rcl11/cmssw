@@ -18,14 +18,21 @@ namespace svMassReco {
   /// Should use PDT tables...
   const double tauMass = 1.77685;
   const double tauLifetime = 290.6e-15;
-  const double chargedPionMass = 0.13957;
-  const double muonMass = 0.105658;
-  const double electronMass = 5.109989e-4;
 
   /// Tired of all these namespaces
   typedef reco::Candidate::LorentzVector FourVector;
   typedef std::pair<FourVector, FourVector> FourVectorPair;
   typedef reco::Candidate::Vector ThreeVector;
+
+  /// inline definitions of auxiliary functions
+  inline double square(double x) { return x*x; }
+  inline double cube(double x) { return x*x*x; }
+
+  inline double nlGaussianNorm(double sigma, int dimension=1) { 
+    // Norm of Gaussian = 
+    //  1/(sigma*(2*pi)^(k/2))
+    return (log(sigma) + (dimension/2.0)*log(TMath::TwoPi()));
+  }
 
   /**************************************************************
    * Likelihoods for the various constraints used in the fitter *
@@ -73,84 +80,11 @@ namespace svMassReco {
   /// Compute the two solutions for the missing four vector of a tau decay, given the measured
   /// tau direction, visible four vector, and estimated (or exact) mass of the missing energy system.
   /// Error returns as 1 if unphysical result
-  FourVectorPair compInvisibleLeg(const ThreeVector& motherDirection,
-                                  const FourVector& visibleP4, const double massMother, 
-                                  const double m12Squared, int& error);
+  FourVectorPair compInvisibleLeg(const ThreeVector&, const FourVector&, const double, const double, int&);
 
   /// Compute the upper limit on the neutrino system mass^2 given the tau direction
   /// and visible momentum
-  double m12SquaredUpperBound(const FourVector& visP4, const ThreeVector& tauDir);
-
-  /**************************************************************
-   * Helper functions for type dependent functionality          *
-   **************************************************************/
-
-///--- Index the different types used
-  template<typename T> int legTypeLabel(const T& leg) { return -30; }
-  template<> inline int legTypeLabel<pat::Electron>(const pat::Electron& leg) { return -2; }
-  template<> inline int legTypeLabel<pat::Muon>(const pat::Muon& leg) { return -1; }
-  template<> inline int legTypeLabel<pat::Tau>(const pat::Tau& leg) { return leg.decayMode(); }
-
-///--- Get the tracks associated to the leg
-  template<typename T> std::vector<reco::TrackBaseRef> getTracks(const T& leg) {
-     // default case
-     return std::vector<reco::TrackBaseRef>();
-  }
-  // Get tracks from tau
-  template<> inline std::vector<reco::TrackBaseRef> getTracks<pat::Tau>(const pat::Tau& tau) {
-     std::vector<reco::TrackBaseRef> output;
-    const reco::PFCandidateRefVector& signalCHs = tau.signalPFChargedHadrCands();
-    for ( size_t itrk = 0; itrk < signalCHs.size(); itrk++ ) {
-      output.push_back(reco::TrackBaseRef(signalCHs.at(itrk)->trackRef()));
-    }
-    return output;
-  }
-  // Get track from muon
-  template<> inline std::vector<reco::TrackBaseRef> getTracks<pat::Muon>(const pat::Muon& muon) {
-     std::vector<reco::TrackBaseRef> output;
-    output.push_back(reco::TrackBaseRef(muon.track())); //track() returns only inner track
-    return output;
-  }
-  // Get track from electron
-  template<> inline std::vector<reco::TrackBaseRef> getTracks<pat::Electron>(const pat::Electron& elec) {
-     std::vector<reco::TrackBaseRef> output;
-    output.push_back(reco::TrackBaseRef(elec.gsfTrack())); // Track or GSF track?
-    return output;
-  }
-
-///--- Get the hypothesis for the mass of a charged constituent
-  template<typename T> double chargedMass2ByType() { return -1; } //default
-  // Hadronic case (pion)
-  template<> inline double chargedMass2ByType<pat::Tau>() { return chargedPionMass*chargedPionMass; }
-  // Muonic case
-  template<> inline double chargedMass2ByType<pat::Muon>() { return muonMass*muonMass; }
-  // Electronic case
-  template<> inline double chargedMass2ByType<pat::Electron>() { return electronMass*electronMass; }
-
-  
-///--- Get the visible neutral components, if they exist
-  template<typename T> FourVector getNeutralP4(const T& object) { return FourVector(); }
-  /// Only the tau has associated neutral objects
-  template<> inline FourVector getNeutralP4<pat::Tau>(const pat::Tau& tau) {
-    FourVector output;
-    const reco::PFCandidateRefVector& signalGammas = tau.signalPFGammaCands();
-    for ( size_t gamma = 0; gamma < signalGammas.size(); ++gamma ) {
-      output += signalGammas[gamma]->p4();
-    }
-    return output;
-  }
-
-///--- Determine is the leg's invisible component can have mass (i.e. one or two neutrinos)
-  template <typename T> bool nuSystemIsMassless() { return true; }
-  template<> inline bool nuSystemIsMassless<pat::Tau>() { return true;}
-  template<> inline bool nuSystemIsMassless<pat::Electron>() { return false;}
-  template<> inline bool nuSystemIsMassless<pat::Muon>() { return false;}
-
-///--- Helper function to determine if the given type is supported
-  template<typename T> bool typeIsSupportedBySVFitter()  { return false; }
-  template<> inline bool typeIsSupportedBySVFitter<pat::Tau>() { return true; }
-  template<> inline bool typeIsSupportedBySVFitter<pat::Muon>() { return true; }
-  template<> inline bool typeIsSupportedBySVFitter<pat::Electron>() { return true; }
+  double m12SquaredUpperBound(const FourVector&, const ThreeVector&);
 }
 
 #endif

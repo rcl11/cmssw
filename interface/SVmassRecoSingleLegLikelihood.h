@@ -7,9 +7,9 @@
  * Author: Evan K. Friis, UC Davis
  *
  * Class that computes the negative log likelihood for a 'leg' in a ditau candidate.
- * Main functionality is held in the abstract base class LegFitterSVmassRecoSingleLegLikelihoodBase, 
- * with specific implementations for type T = pat::Muons, Electrons, and Taus 
- * defined in SVmassRecoSingleLegLikelihood<T>
+ * All pat::Electron, pat::Muon and pat::Tau specific code to access variables used in the fit
+ * is encapsulated in an object of type SVmassRecoSingleLegExtractorBase passed
+ * to SVmassRecoSingleLegLikelihood object in the constructor.
  *
  */
 
@@ -18,29 +18,27 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
-// Load the actual NLL distributions
 #include "TauAnalysis/CandidateTools/interface/svMassRecoLikelihoodAuxFunctions.h"
-
-// Get Initial conditions finder
-#include "TauAnalysis/CandidateTools/interface/SVmassRecoLegInitialConditionsFinder.h"
+#include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorBase.h"
 
 namespace svMassReco 
 {
 
-template<typename T>
 class SVmassRecoSingleLegLikelihood
 {
    public:
-      SVmassRecoSingleLegLikelihood(const T& object, const std::vector<reco::TransientTrack>& tracks, bool ansatzForward):
-         object_(object),tracks_(tracks),tscps_(std::vector<TrajectoryStateClosestToPoint>(tracks.size())),nTracks_(tracks.size()),
-         ansatzForward_(ansatzForward){};
+      SVmassRecoSingleLegLikelihood(const SVmassRecoSingleLegExtractorBase& extractor, 
+				    const std::vector<reco::TransientTrack>& tracks, bool ansatzForward)
+	: extractor_(extractor),
+	  tracks_(tracks),
+	  tscps_(std::vector<TrajectoryStateClosestToPoint>(tracks.size())), nTracks_(tracks.size()),
+  	  ansatzForward_(ansatzForward)
+      {};
 
       virtual ~SVmassRecoSingleLegLikelihood() {};
 
       /// Get a valid initial condition for the SV associated to this leg
-      std::pair<GlobalPoint, GlobalError> findInitialConditions(const GlobalPoint& pv) {
-         return findInitialSecondaryVertex<T>(pv, this);
-      }
+      std::pair<GlobalPoint, GlobalError> findInitialSecondaryVertex(const GlobalPoint&);
 
       /// Set points to determine NLL 
       void setPoints(const GlobalPoint& pv, double x, double y, double z, 
@@ -88,8 +86,27 @@ class SVmassRecoSingleLegLikelihood
       }
 
       /// Return the appropriate NLL for the vis rapidity
+      double nllVisRapidityGivenMomentumElectronCase(double, double) const;
+      double nllVisRapidityGivenMomentumMuonCase(double, double) const;
+      double nllVisRapidityGivenMomentumTauJetCase(int, double, double) const;
       double nllRapidity() const { 
-         return nllVisRapidityGivenMomentum<T>(object_, this->visRapidity(), this->visP4().P()); 
+	int legTypeLabel = extractor_.legTypeLabel();
+	double rapidity = this->visRapidity();
+	double momentum = this->visP4().P(); 
+	switch ( legTypeLabel ) { // legTypeLabel values defined in TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorT.h
+	case -30:
+	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(reco::Candidate)>:" << std::endl;
+	  return 0.;
+	case -2:
+	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Electron)>:" << std::endl;
+	  return nllVisRapidityGivenMomentumElectronCase(rapidity, momentum);
+	case -1:
+	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Muon)>:" << std::endl;
+	  return nllVisRapidityGivenMomentumMuonCase(rapidity, momentum);
+	default:
+	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Tau)>:" << std::endl;
+	  return nllVisRapidityGivenMomentumTauJetCase(legTypeLabel, rapidity, momentum);
+	}
       }
 
       /// Secondary vertex associated with this leg
@@ -113,8 +130,7 @@ class SVmassRecoSingleLegLikelihood
       }
 
       /// Uncorrected visible P4 (i.e. straight from the pat::Tau, etc)
-      virtual FourVector uncorrectedP4() const { return object_.p4(); };
-
+      virtual FourVector uncorrectedP4() const { return extractor_.p4(); };
 
       /// Get the total four momentum of the tracks at the point closes to the SV
       FourVector visChargedP4() const {
@@ -128,24 +144,33 @@ class SVmassRecoSingleLegLikelihood
 
       /// Get the neutral visible p4, specific to each data type
       FourVector visNeutralP4() const { 
-         return getNeutralP4<T>(object_); 
+	return extractor_.getNeutralP4(); 
       }
 
       /// Helper function to build fourvector from momentum, with the correct mass
       FourVector chargedP4FromMomentum(const GlobalVector& p) const 
       {
-         return FourVector(p.x(), p.y(), p.z(), sqrt(p.mag2() + chargedMass2ByType<T>()));
+         return FourVector(p.x(), p.y(), p.z(), sqrt(p.mag2() + extractor_.chargedMass2()));
       }
 
       /// Method to get the type of Leg 
       int legType() const { 
-         return legTypeLabel<T>(object_); 
+	return extractor_.legTypeLabel();
+      }
+
+      bool nuSystemIsMassless() const {
+	return extractor_.nuSystemIsMassless();
       }
 
       /// Access to tracks
-      const std::vector<reco::TransientTrack>& tracks() const {return tracks_;};
+      //const std::vector<reco::TransientTrack>& tracks() const { return tracks_; };
 
-      friend std::ostream& operator<< (std::ostream &out, SVmassRecoSingleLegLikelihood<T> &fit) { fit.printTo(out); return out; };
+      friend std::ostream& operator<< (std::ostream &out, const SVmassRecoSingleLegLikelihood& fit) 
+      { 
+	fit.printTo(out); 
+	return out; 
+      };
+
       void printTo(std::ostream &out) const
       {
          using namespace std;
@@ -182,7 +207,7 @@ class SVmassRecoSingleLegLikelihood
 
    private:
       // Leg object
-      const T& object_;
+      const SVmassRecoSingleLegExtractorBase& extractor_;
 
       /// The associated tracks
       const std::vector<reco::TransientTrack>& tracks_;
@@ -204,51 +229,6 @@ class SVmassRecoSingleLegLikelihood
       // Nu p4
       FourVector nuP4_;     
 };
-
-/*
-  /// HELPER FUNCTIONS
-
-  /// Get the tracks from a given type
-  template<typename T> int legTypeLabel(const T& leg);
-    
-  /// Get the tracks from a given type
-  template<typename T> std::vector<reco::TrackBaseRef> getTracks(const T& leg);
-      
-  /// Template to determine the mass hypothesis for tracks for the various decay types (muon/electon/pion)
-  template<typename T> double chargedMass2ByType();
-
-  double m12SquaredUpperBound(const FourVector& visP4, const ThreeVector& tauDir);
-
-  // Default case is false - allow it to float. 
-  template <typename T> bool fixM12ScaleParameter();
-
-  /// Template to get the neutral components of a compound object
-  template<typename T> FourVector getNeutralP4(const T& object);
-
-  // Type specific implementation
-  template<typename T>
-  class SVmassRecoSingleLegLikelihood : public SVmassRecoSingleLegLikelihoodBase
-  {
-   public: 
-    SVmassRecoSingleLegLikelihood(const T& object, const std::vector<reco::TransientTrack>& tracks, bool ansatzForward)
-      : SVmassRecoSingleLegLikelihoodBase(tracks),object_(object),ansatzForward_(ansatzForward)
-    {};
-    virtual ~SVmassRecoSingleLegLikelihood() {};
-
-
-
-    /// Raw p4 of the object
-    FourVector uncorrectedP4() const 
-    { 
-      return object_.p4(); 
-    };
-
-
-   protected:
-
-  private:
-  };
-*/
 
 }
 

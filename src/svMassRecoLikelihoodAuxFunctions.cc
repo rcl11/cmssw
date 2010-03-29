@@ -14,15 +14,6 @@
 
 namespace svMassReco {
 
-  inline double square(double x) { return x*x; }
-  inline double cube(double x) { return x*x*x; }
-
-  inline double nlGaussianNorm(double sigma, int dimension=1) { 
-    // Norm of Gaussian = 
-    //  1/(sigma*(2*pi)^(k/2))
-    return (log(sigma) + (dimension/2.0)*log(TMath::TwoPi()));
-  }
-
   double nllPointGiven2DError(const GlobalPoint& point, const GlobalPoint& central, const GlobalError& error)
   {
     AlgebraicVector3 displacement(point.x()-central.x(), point.y()-central.y(), point.z()-central.z());
@@ -186,81 +177,6 @@ namespace svMassReco {
       output += nlGaussianNorm(perpSigma);
     }
     return output;
-  }
-
-  // Unsupported reco::Candidate case
-  template<> double nllVisRapidityGivenMomentum<reco::Candidate>(const reco::Candidate& obj, double rapidity, double momentum)
-  {
-    double mean = 0;
-    double sigma = 0;
-    mean = 2.238*TMath::Power(momentum, 0.2036);
-    sigma = 0.0901 + 0.0006182*momentum;
-    double landau = TMath::Landau(rapidity, mean, sigma, true);
-    if ( landau < 1.0e-10 ) landau = 1.0e-10; // sanity check
-    return -1*log(landau);
-  }
-  
-  // Different vis rapidity distributions
-  template<> double nllVisRapidityGivenMomentum<pat::Electron>(const pat::Electron& obj, double rapidity, double momentum)
-  {
-    double mean = 0;
-    double sigma = 0;
-    mean = 2.238*TMath::Power(momentum, 0.2036);
-    sigma = 0.0901 + 0.0006182*momentum;
-    double landau = TMath::Landau(rapidity, mean, sigma, true);
-    if ( landau < 1.0e-10 ) landau = 1.0e-10; // sanity check
-    return -1*log(landau);
-  }
-  
-  template<> double nllVisRapidityGivenMomentum<pat::Muon>(const pat::Muon& obj, double rapidity, double momentum)
-  {
-    double mean = 0;
-    double sigma = 0;
-    mean = 2.251*TMath::Power(momentum, 0.2013);
-    sigma = 0.09365 + 0.0005191*momentum;
-    double landau = TMath::Landau(rapidity, mean, sigma, true);
-    if ( landau < 1.0e-10 ) landau = 1.0e-10; // sanity check
-    return -1*log(landau);
-  }
-  
-  // Tau case is special as distribution depends on decay mode
-  template<> double nllVisRapidityGivenMomentum<pat::Tau>(const pat::Tau& tau, double rapidity, double momentum)
-  {
-    double mean = 0;
-    double sigma = 0;
-    int decayMode = tau.decayMode();
-    switch ( decayMode ) {
-    case 0: // 1 prong 0 pi0
-      mean = 1.987*TMath::Power(momentum, 0.2215);
-      sigma = 0.2215 + 0.0007142*momentum;
-      break;
-    case 1: // 1 prong 1 pi0
-      mean = 2.03*TMath::Power(momentum, 0.2073);
-      sigma = 0.1162 + 0.0001587*momentum;
-      break;
-    case 2: // 1 prong 2 pi0
-      mean = 1.864*TMath::Power(momentum, 0.2149);
-      sigma = 0.0962 + 0.0001395*momentum;
-      break;
-    case 10: // 3 prong 0 pi0
-      mean = 1.996*TMath::Power(momentum, 0.1987);
-      sigma = 0.1429 + 4.695e-5*momentum;
-      break;
-    case 11: // 3 prong 1 pi0
-      mean = 1.868*TMath::Power(momentum, 0.214);
-      sigma = 0.1037 + 4.702e-5*momentum;
-      break;
-    default: // all others
-      mean = 1.996*TMath::Power(momentum, 0.1987);
-      sigma = 0.1429 + 4.695e-5*momentum;
-      break;
-    }
-    // Single prong no pi0 case is landau distributed
-    if ( decayMode == 0 ) {
-      return -1*log(TMath::Landau(rapidity, mean, sigma, true));
-    } else { // otherwise gaussian
-      return (square(rapidity-mean)/(2*square(sigma)) + nlGaussianNorm(sigma));
-    }
   }
 
   FourVectorPair compInvisibleLeg(const ThreeVector& motherDirection, 

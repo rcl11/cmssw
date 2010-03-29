@@ -14,7 +14,7 @@
  * There are four possible solutions for any fit, corresponding to the 2
  * possible alignments of the neutrino direction in the rest rame of each leg.
  * All four solutions are returned, in the format
- * std::vector<svMassReco::Solution<T1,T2>>.  The solutions are ordered by
+ * std::vector<svMassReco::Solution>.  The solutions are ordered by
  * increasing negative log likelihood, so the first solution shoudl generally
  * be the best.
  *
@@ -46,6 +46,7 @@
 
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoDiTauLikelihood.h"
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoSolution.h"
+#include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorT.h"
 
 using namespace reco;
 using namespace std;
@@ -57,7 +58,7 @@ namespace svMassReco {
   void objectiveFcn(Int_t& npars, Double_t* grad, Double_t& fcn, Double_t* pars, Int_t flag)
   {
     // Get the fit object
-    SVmassRecoDiTauLikelihood<T1,T2>* fit = dynamic_cast<SVmassRecoDiTauLikelihood<T1,T2>*>(gMinuit->GetObjectFit());
+    SVmassRecoDiTauLikelihood* fit = dynamic_cast<SVmassRecoDiTauLikelihood*>(gMinuit->GetObjectFit());
     if ( !fit ) {
       edm::LogError("objectiveFcn") << "Call of gMinuit::GetObjectFit returned NULL pointer !!";
       return;
@@ -85,10 +86,12 @@ namespace svMassReco {
     ~SVmassRecoFitter() {}
 
     /// Class to fit a ditau candidate.  T1 and T2 must be either pat::Muon, pat::Electron, or pat::Tau type
-    std::vector<Solution<T1,T2> > fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, 
+    std::vector<Solution> fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, 
 				      const Vertex& pv, const BeamSpot& bs, const TransientTrackBuilder* trackBuilder)
     {
-      if ( !(typeIsSupportedBySVFitter<T1>() && typeIsSupportedBySVFitter<T2>()) ) return std::vector<Solution<T1,T2> >();
+      if ( !(leg1extractor_.typeIsSupportedBySVFitter() && leg2extractor_.typeIsSupportedBySVFitter()) ) {
+	return std::vector<Solution>();
+      }
 
       const T1& leg1 = *leg1Ptr;
       const T2& leg2 = *leg2Ptr;
@@ -97,9 +100,13 @@ namespace svMassReco {
       // TODO make const ref.
       const reco::MET* met = metPtr.get();
       
+      // initialize extractor objects with leg1, leg2 objects passed as function arguments
+      leg1extractor_.setLeg(leg1);
+      leg2extractor_.setLeg(leg2);
+
       // Get the tracks associated on each leg
-      vector<TrackBaseRef> leg1Tracks = getTracks<T1>(leg1);
-      vector<TrackBaseRef> leg2Tracks = getTracks<T2>(leg2);
+      vector<TrackBaseRef> leg1Tracks = leg1extractor_.getTracks();
+      vector<TrackBaseRef> leg2Tracks = leg2extractor_.getTracks();
       
       // Containers for the transient tracks on each leg
       vector<TransientTrack> leg1TransTracks;
@@ -111,7 +118,7 @@ namespace svMassReco {
       
       // There are four fits, for all comibination of forward/backward ansatzs.
       // We fit all four, then take the best as the solution
-      std::vector<Solution<T1,T2> > fits;
+      std::vector<Solution> fits;
       
       // Do each fit
       for ( size_t soln = 0; soln < 4; soln++ ) {
@@ -123,21 +130,22 @@ namespace svMassReco {
 	//minuit_.SetErrorDef(0.5);
 	//minuit_.SetPrintLevel(-1);
 
-	Solution<T1,T2> mySoln;
+	Solution mySoln;
 	mySoln.solnType = soln;
+        mySoln.solnIsValid = true;
 
 	// Build the fitter
-	mySoln.fitter = boost::shared_ptr<SVmassRecoDiTauLikelihood<T1,T2> >(
-          new SVmassRecoDiTauLikelihood<T1,T2>(leg1, leg1TransTracks, leg2, leg2TransTracks, cleanPV, met, soln));
+	boost::shared_ptr<SVmassRecoDiTauLikelihood> fitter(
+	  new SVmassRecoDiTauLikelihood(leg1extractor_, leg1TransTracks, leg2extractor_, leg2TransTracks, cleanPV, met, soln));
 
 	// Set as active fit
-	minuit_.SetObjectFit(mySoln.fitter.get());
+	minuit_.SetObjectFit(fitter.get());
 	// Prepare Minuit for this fit, including choosing initial parameters
-	mySoln.fitter->setupParametersFromScratch(minuit_, true);
-	mySoln.fitter->enableMET(true);
+	fitter->setupParametersFromScratch(minuit_, true);
+	fitter->enableMET(true);
 
 	edm::LogInfo("SVMethod") << "Locking Nu Mass Scales";
-	mySoln.fitter->lockNuMassScalers(minuit_);
+	fitter->lockNuMassScalers(minuit_);
 
 	// Minimize!
 	edm::LogInfo("SVMethod") << "Beginning minimization";
@@ -145,13 +153,13 @@ namespace svMassReco {
 
 	// Hopefully we are near the minimum now. Release the mass scalers
 	edm::LogInfo("SVMethod") << "Release Nu Mass Scales";
-	mySoln.fitter->releaseNuMassScalers(minuit_);
+	fitter->releaseNuMassScalers(minuit_);
 
 	// Minimize again
 	//mySoln.migradResult = minuit_.Migrad();
 	
 	// Now finally fit the PV simultaneously
-	//mySoln.fitter->releasePV(minuit_);
+	//fitter->releasePV(minuit_);
 	
 	// Minimize
 	//mySoln.migradResult = minuit_.Migrad();
@@ -162,7 +170,7 @@ namespace svMassReco {
 
 	//edm::LogInfo("SVMethod") << "Removing nu scale limits...";
 	// Now remove all limits
-	//mySoln.fitter->setupParametersFromPrevious(minuit_, minuit_, false, true);
+	//fitter->setupParametersFromPrevious(minuit_, minuit_, false, true);
 	//edm::LogInfo("SVMethod") << "Reminimizing";
 	//mySoln.migradResult = minuit_.Migrad();
 	
@@ -205,15 +213,15 @@ namespace svMassReco {
 	pars[9] = sv2_z;
 	pars[10] = m2scale;
 	
-	mySoln.nllOfFit = mySoln.fitter->nll(pars, error);
-	mySoln.metNLL = mySoln.fitter->metNLL();
+	mySoln.nllOfFit = fitter->nll(pars, error);
+	mySoln.metNLL = fitter->metNLL();
 	mySoln.svFitResult = error; // will be 1,2 or 3 if non-physical
-	mySoln.leg1VisP4 = mySoln.fitter->leg1()->visP4();
-	mySoln.leg2VisP4 = mySoln.fitter->leg2()->visP4();
-	mySoln.leg1NuP4 = mySoln.fitter->leg1()->nuP4();
-	mySoln.leg2NuP4 = mySoln.fitter->leg2()->nuP4();
-	mySoln.leg1Type = mySoln.fitter->leg1()->legType();
-	mySoln.leg2Type = mySoln.fitter->leg2()->legType();
+	mySoln.leg1VisP4 = fitter->leg1Likelihood()->visP4();
+	mySoln.leg2VisP4 = fitter->leg2Likelihood()->visP4();
+	mySoln.leg1NuP4 = fitter->leg1Likelihood()->nuP4();
+	mySoln.leg2NuP4 = fitter->leg2Likelihood()->nuP4();
+	mySoln.leg1Type = fitter->leg1Likelihood()->legType();
+	mySoln.leg2Type = fitter->leg2Likelihood()->legType();
 	fits.push_back(mySoln);
 	//edm::LogInfo("SVMethodFitResults") << mySoln;
       }
@@ -319,6 +327,9 @@ namespace svMassReco {
     }
     
   private:
+    SVmassRecoSingleLegExtractorT<T1> leg1extractor_;
+    SVmassRecoSingleLegExtractorT<T2> leg2extractor_;
+
     TMinuit minuit_;
   };
 

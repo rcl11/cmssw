@@ -13,11 +13,10 @@
 
 namespace svMassReco {
 
-   template<typename T1, typename T2>
    struct Solution 
    {
-      boost::shared_ptr<SVmassRecoDiTauLikelihood<T1,T2> > fitter;
       int solnType;
+      bool solnIsValid;
       double nllOfFit;
       double metNLL;
       int migradResult;
@@ -42,7 +41,7 @@ namespace svMassReco {
          return (nllOfFit < rhs.nllOfFit);
       }
 
-      friend std::ostream& operator<< (std::ostream& o, const Solution<T1,T2>& soln)
+      friend std::ostream& operator<< (std::ostream& o, const Solution& soln)
       {
          FourVector totalP4 = soln.leg1VisP4 + soln.leg2VisP4 + soln.leg1NuP4 + soln.leg2NuP4;
          return o 
