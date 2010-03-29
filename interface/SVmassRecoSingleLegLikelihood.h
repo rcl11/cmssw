@@ -95,16 +95,16 @@ class SVmassRecoSingleLegLikelihood
 	double momentum = this->visP4().P(); 
 	switch ( legTypeLabel ) { // legTypeLabel values defined in TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorT.h
 	case -30:
-	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(reco::Candidate)>:" << std::endl;
+	  //std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(reco::Candidate)>:" << std::endl;
 	  return 0.;
 	case -2:
-	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Electron)>:" << std::endl;
+	  //std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Electron)>:" << std::endl;
 	  return nllVisRapidityGivenMomentumElectronCase(rapidity, momentum);
 	case -1:
-	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Muon)>:" << std::endl;
+	  //std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Muon)>:" << std::endl;
 	  return nllVisRapidityGivenMomentumMuonCase(rapidity, momentum);
 	default:
-	  std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Tau)>:" << std::endl;
+	  //std::cout << "<SVmassRecoSingleLegLikelihood::nllRapidity(pat::Tau)>:" << std::endl;
 	  return nllVisRapidityGivenMomentumTauJetCase(legTypeLabel, rapidity, momentum);
 	}
       }
