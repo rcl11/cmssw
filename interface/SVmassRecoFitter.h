@@ -45,8 +45,8 @@
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoDiTauLikelihood.h"
-#include "TauAnalysis/CandidateTools/interface/SVmassRecoSolution.h"
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorT.h"
+#include "AnalysisDataFormats/TauAnalysis/interface/SVmassRecoSolution.h"
 
 using namespace reco;
 using namespace std;
@@ -86,11 +86,11 @@ namespace svMassReco {
     ~SVmassRecoFitter() {}
 
     /// Class to fit a ditau candidate.  T1 and T2 must be either pat::Muon, pat::Electron, or pat::Tau type
-    std::vector<Solution> fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, 
-				      const Vertex& pv, const BeamSpot& bs, const TransientTrackBuilder* trackBuilder)
+    std::vector<SVmassRecoSolution> fitVertices(const edm::Ptr<T1>& leg1Ptr, const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, 
+						const Vertex& pv, const BeamSpot& bs, const TransientTrackBuilder* trackBuilder)
     {
       if ( !(leg1extractor_.typeIsSupportedBySVFitter() && leg2extractor_.typeIsSupportedBySVFitter()) ) {
-	return std::vector<Solution>();
+	return std::vector<SVmassRecoSolution>();
       }
 
       const T1& leg1 = *leg1Ptr;
@@ -118,25 +118,19 @@ namespace svMassReco {
       
       // There are four fits, for all comibination of forward/backward ansatzs.
       // We fit all four, then take the best as the solution
-      std::vector<Solution> fits;
+      std::vector<SVmassRecoSolution> solutions;
       
       // Do each fit
-      for ( size_t soln = 0; soln < 4; soln++ ) {
-	// Our fitter of 11 parameters
-	//TMinuit minuit(11);
+      for ( size_t iSolution = 0; iSolution < 4; ++iSolution ) {
 	gMinuit = &minuit_;
 	minuit_.SetFCN(objectiveFcn<T1,T2>);
-	// Neg. log likelihood
-	//minuit_.SetErrorDef(0.5);
-	//minuit_.SetPrintLevel(-1);
 
-	Solution mySoln;
-	mySoln.solnType = soln;
-        mySoln.solnIsValid = true;
+        // Solutions not yet sorted by log-likelihood; set rank to -1
+	SVmassRecoSolution solution(true, -1);
 
 	// Build the fitter
 	boost::shared_ptr<SVmassRecoDiTauLikelihood> fitter(
-	  new SVmassRecoDiTauLikelihood(leg1extractor_, leg1TransTracks, leg2extractor_, leg2TransTracks, cleanPV, met, soln));
+	  new SVmassRecoDiTauLikelihood(leg1extractor_, leg1TransTracks, leg2extractor_, leg2TransTracks, cleanPV, met, iSolution));
 
 	// Set as active fit
 	minuit_.SetObjectFit(fitter.get());
@@ -150,30 +144,16 @@ namespace svMassReco {
 	// Minimize!
 	edm::LogInfo("SVMethod") << "Beginning minimization";
 	minuit_.Migrad();
+	//int migradStatus = minuit_.Migrad();
 
 	// Hopefully we are near the minimum now. Release the mass scalers
 	edm::LogInfo("SVMethod") << "Release Nu Mass Scales";
 	fitter->releaseNuMassScalers(minuit_);
-
-	// Minimize again
-	//mySoln.migradResult = minuit_.Migrad();
-	
-	// Now finally fit the PV simultaneously
-	//fitter->releasePV(minuit_);
-	
-	// Minimize
-	//mySoln.migradResult = minuit_.Migrad();
 	
 	// Now allow MET in the fit
 	edm::LogInfo("SVMethod") << "Reminimize";
-	mySoln.migradResult = minuit_.Migrad();
+	int migradStatus = minuit_.Migrad();
 
-	//edm::LogInfo("SVMethod") << "Removing nu scale limits...";
-	// Now remove all limits
-	//fitter->setupParametersFromPrevious(minuit_, minuit_, false, true);
-	//edm::LogInfo("SVMethod") << "Reminimizing";
-	//mySoln.migradResult = minuit_.Migrad();
-	
 	// Get results
 	Double_t pv_x, pv_y, pv_z, dummyError;
 	minuit_.GetParameter(0, pv_x, dummyError);
@@ -191,12 +171,12 @@ namespace svMassReco {
 	minuit_.GetParameter(8, sv2_y, dummyError);
 	minuit_.GetParameter(9, sv2_z, dummyError);
 	minuit_.GetParameter(10, m2scale, dummyError);
-	
-	mySoln.pv = reco::Candidate::Point(pv_x, pv_y, pv_z);
-	mySoln.sv1 = reco::Candidate::Point(sv1_x, sv1_y, sv1_z);
-	mySoln.sv2 = reco::Candidate::Point(sv2_x, sv2_y, sv2_z);
-	mySoln.leg1MScale = m1scale;
-	mySoln.leg2MScale = m2scale;
+
+	solution.setSVrefittedPrimaryVertexPos(reco::Candidate::Point(pv_x, pv_y, pv_z));
+	solution.setDecayVertexPosLeg1(reco::Candidate::Point(sv1_x, sv1_y, sv1_z));
+	solution.setDecayVertexPosLeg2(reco::Candidate::Point(sv2_x, sv2_y, sv2_z));
+        solution.setMscale1(m1scale);
+	solution.setMscale2(m2scale);
 	
 	// Make sure this is a legal solution
 	int error = 0;
@@ -212,27 +192,34 @@ namespace svMassReco {
 	pars[8] = sv2_y;
 	pars[9] = sv2_z;
 	pars[10] = m2scale;
-	
-	mySoln.nllOfFit = fitter->nll(pars, error);
-	mySoln.metNLL = fitter->metNLL();
-	mySoln.svFitResult = error; // will be 1,2 or 3 if non-physical
-	mySoln.leg1VisP4 = fitter->leg1Likelihood()->visP4();
-	mySoln.leg2VisP4 = fitter->leg2Likelihood()->visP4();
-	mySoln.leg1NuP4 = fitter->leg1Likelihood()->nuP4();
-	mySoln.leg2NuP4 = fitter->leg2Likelihood()->nuP4();
-	mySoln.leg1Type = fitter->leg1Likelihood()->legType();
-	mySoln.leg2Type = fitter->leg2Likelihood()->legType();
-	fits.push_back(mySoln);
-	//edm::LogInfo("SVMethodFitResults") << mySoln;
+
+	solution.setMigradStatus(migradStatus);
+	solution.setLogLikelihood(fitter->nll(pars, error));
+	solution.setLogLikelihoodMEt(fitter->metNLL());
+	solution.setSVfitStatus(error); // will be 1,2 or 3 in case solution is non-physical, 4 in case any parameter is "not-a-number"
+	solution.setP4VisLeg1(fitter->leg1Likelihood()->visP4());
+	solution.setP4VisLeg2(fitter->leg2Likelihood()->visP4());
+	reco::Candidate::LorentzVector p4Leg1 = fitter->leg1Likelihood()->visP4() + fitter->leg1Likelihood()->nuP4();
+	double x1 = ( p4Leg1.P() > 0. ) ? (fitter->leg1Likelihood()->visP4().P()/p4Leg1.P()) : -1.;
+	solution.setX1(x1);
+	reco::Candidate::LorentzVector p4Leg2 = fitter->leg2Likelihood()->visP4() + fitter->leg2Likelihood()->nuP4();
+	double x2 = ( p4Leg2.P() > 0. ) ? (fitter->leg2Likelihood()->visP4().P()/p4Leg2.P()) : -1.;
+	solution.setX2(x2);
+	solution.setP4(p4Leg1 + p4Leg2);
+
+	solutions.push_back(solution);
       }
 
       // Sort the solution by how good the fit is
-      sort(fits.begin(), fits.end());
+      sort(solutions.begin(), solutions.end());
 
-      // Print
-      for ( size_t iFit = 0; iFit < 4; iFit++ ) edm::LogInfo("fitResults") << fits[iFit];
+      size_t numSolutions = solutions.size();
+      for ( size_t iSolution = 0; iSolution < numSolutions; ++iSolution ) {
+	solutions[iSolution].setRank(iSolution);
+	edm::LogInfo("fitResults") << solutions[iSolution];
+      }
 
-      return fits;
+      return solutions;
     }
 
   protected:    

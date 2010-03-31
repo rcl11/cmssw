@@ -178,7 +178,7 @@ namespace svMassReco
 
      /// Copy the parameters from another minuit fit instance
      void setupParametersFromPrevious(const TMinuit& from, TMinuit& to, 
-           bool useM12Limits, bool useGeoLimits)
+				      bool useM12Limits, bool useGeoLimits)
      {
        double xyLimit = 0.;
        double zLimit = 0.;
