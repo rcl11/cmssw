@@ -7,7 +7,6 @@
 <use name=DataFormats/Math>
 <use name=DataFormats/METReco>
 <use name=AnalysisDataFormats/TauAnalysis>
-<use name=PhysicsTools/Utilities>
 <use name=RecoVertex/VertexPrimitives>
 <use name=RecoVertex/KalmanVertexFit>
 <use name=TrackingTools/TransientTrack>
@@ -28,7 +27,6 @@
   <use name=DataFormats/Math>
   <use name=DataFormats/METReco>
   <use name=AnalysisDataFormats/TauAnalysis>
-  <use name=PhysicsTools/Utilities>
   <use name=root>
 </export>
 
