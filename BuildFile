@@ -12,6 +12,7 @@
 <use name=TrackingTools/TransientTrack>
 <use name=TrackingTools/TrajectoryState>
 <use name=root>
+<use name=rootminuit>
 
 <export>
   <lib name=TauAnalysisCandidateTools>
@@ -28,5 +29,6 @@
   <use name=DataFormats/METReco>
   <use name=AnalysisDataFormats/TauAnalysis>
   <use name=root>
+  <use name=rootminuit>
 </export>
 
