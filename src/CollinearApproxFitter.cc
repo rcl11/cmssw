@@ -120,7 +120,7 @@ CollinearApproxCompatibility CollinearApproxFitter::fit(const reco::Candidate::L
   minuit_.SetFCN(objectiveFcn);
   gMinuit = &minuit_;
 
-  std::cout << " starting Migrad minimization..." << std::endl;
+  //std::cout << " starting Migrad minimization..." << std::endl;
   minuit_.Migrad();
 
   int minuitStatus = minuit_.GetStatus();
