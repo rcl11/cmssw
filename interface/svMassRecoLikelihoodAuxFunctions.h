@@ -38,6 +38,9 @@ namespace svMassReco {
    * Likelihoods for the various constraints used in the fitter *
    **************************************************************/
 
+  /// Negative log likelihood for a given lepton energy in a tau rest frame
+  double nllLeptonTauRestFrameEnergy(double m12Squared, double leptonMass);
+
   /// Negative log likelihood for a point to be compatabile with a measured vertex
   double nllPointGivenVertex(const GlobalPoint& point, const TransientVertex& vertex);
 

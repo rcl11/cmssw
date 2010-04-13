@@ -51,16 +51,32 @@ namespace svMassReco
 	tscps_[itrk] = tracks_[itrk].trajectoryStateClosestToPoint(sv_);
       }
       /// Update all the kinematic quantities
-	visP4_ = fitVisP4();
-	nuP4_ = fitNuP4(m12scale, error);
-	p4_ = visP4_ + nuP4_;
+      m12Scale_ = m12scale;
+      visP4_ = fitVisP4();
+      nuP4_ = fitNuP4(m12scale, error);
+      p4_ = visP4_ + nuP4_;
     }
 
     /// Total NLL for this leg
     double nllOfLeg() const 
     { 
-      return nllTopological() + nllRapidity() + nllDecayLength() + nllM12Penalty(); 
-    };
+      return nllTopological() + nllRapidity() + nllDecayLength() 
+         + nllM12Penalty() + nllTauRestFrameEnergy(); 
+    }
+
+    /// NLL of visible energy in the rest frame of the tau 
+    double nllTauRestFrameEnergy() const {
+      // Only applies to leptonic decays with two neutrinos
+      if(!nuSystemIsMassless())
+      {
+         // Get upper bound for nu system mass given perpendicular compenent of vis. p
+         double m12SquaredUpperBoundVal = m12SquaredUpperBound(this->visP4(), this->dir());
+         double computedM12Squared = m12Scale_*m12Scale_*m12SquaredUpperBoundVal;
+         // Compute the likelihood for this m12 value
+         return nllLeptonTauRestFrameEnergy(computedM12Squared, this->visP4().mass());
+      }
+      return 0.; // hadronic case has no contribution
+    }
 
     /// NLL to keep the fit physical
     double nllM12Penalty() const {
@@ -217,6 +233,8 @@ namespace svMassReco
     /* Fit parameters */
     // Which neutrino solution to use
     bool ansatzForward_;
+    // Scale parameter to determine nu system mass
+    double m12Scale_;
     // The secondary vertex
     GlobalPoint sv_;
     // Inferred direction of tau lepton

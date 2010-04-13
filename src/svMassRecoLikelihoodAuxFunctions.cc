@@ -123,6 +123,30 @@ namespace svMassReco {
     return nllPointGiven2DError(tcsp.referencePoint(), tcsp.position(), 
 				tcsp.theState().cartesianError().position());
   }
+
+  double nllLeptonTauRestFrameEnergy(double m12Squared, double leptonMass)
+  {
+     /*
+      * Relation of neutrino system mass to lepton nergy in the tau rest frame
+      * m_{12}^2 = m_\tau^2 + m_\ell^2 - 2 m_\tau E_rest 
+      *
+      * E_rest = (m_\tau^2 + m_\ell^2 - m_{12}^2)/2 m_\tau
+      *
+      * dWidth/dE = p*E*(3*Emax - 2*E - m_\ell^2/E)
+      *
+      * where Emax = (m_tau^2 + m_ell^2)/(2m_tau)
+      */
+     double e_rest = (tauMass*tauMass + leptonMass*leptonMass - m12Squared)/(2*tauMass);
+     double e_max = (tauMass*tauMass + leptonMass*leptonMass)/(2*tauMass);
+     double momentum_squared = e_rest*e_rest - leptonMass*leptonMass;
+     if(e_rest <= leptonMass || momentum_squared <= 0 || e_rest > e_max)
+        return 30.0; //?
+
+     double log_width = -0.5*log(momentum_squared) -log(e_rest) 
+        -log(3*e_max - 2*e_rest - leptonMass*leptonMass/e_rest);
+
+     return log_width;
+  }
   
   double nllPointGivenVertex(const GlobalPoint& point, const TransientVertex& vertex)
   {
