@@ -211,7 +211,7 @@ namespace svMassReco {
       }
 
       // Sort the solution by how good the fit is
-      sort(solutions.begin(), solutions.end());
+      //sort(solutions.begin(), solutions.end());
 
       size_t numSolutions = solutions.size();
       for ( size_t iSolution = 0; iSolution < numSolutions; ++iSolution ) {
