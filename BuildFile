@@ -10,10 +10,10 @@
 <use name=RecoVertex/VertexPrimitives>
 <use name=RecoVertex/KalmanVertexFit>
 <use name=TrackingTools/TransientTrack>
+<use name=TrackingTools/Records>
 <use name=TrackingTools/TrajectoryState>
 <use name=root>
 <use name=rootminuit>
-
 <export>
   <lib name=TauAnalysisCandidateTools>
   <use name=RecoVertex/VertexPrimitives>
