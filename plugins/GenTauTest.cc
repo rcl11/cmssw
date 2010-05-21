@@ -278,5 +278,5 @@ void GenTauTestProducer::produce(Event& evt, const EventSetup& setup)
    evt.put(nuPar, "nuPar");
 }
    
-DEFINE_ANOTHER_FWK_MODULE(GenTauTestProducer);
+DEFINE_FWK_MODULE(GenTauTestProducer);
 
