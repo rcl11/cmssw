@@ -21,7 +21,6 @@
 
 #include "TauAnalysis/CandidateTools/interface/svMassRecoLikelihoodAuxFunctions.h"
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorBase.h"
-#include "TauAnalysis/CandidateTools/interface/SVFitTrackPositionFinder.h"
 
 #include "TrackingTools/GeomPropagators/interface/AnalyticalTrajectoryExtrapolatorToLine.h"
 
