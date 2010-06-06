@@ -10,11 +10,12 @@
  *
  * \version $Revision: 1.1 $
  *
- * $Id: SVmassRecoSingleLegExtractorT.h,v 1.1 2009/06/11 07:23:28 veelken Exp $
+ * $Id: SVmassRecoSingleLegExtractorT.h,v 1.1 2010/03/29 17:07:14 veelken Exp $
  *
  */
 
 #include "DataFormats/TauReco/interface/PFTauDecayMode.h"
+#include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorBase.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
@@ -33,8 +34,46 @@ class SVmassRecoSingleLegExtractorT : public SVmassRecoSingleLegExtractorBase
   void setLeg(const T& leg) { leg_ = &leg; }
 
   // define "default" return values
+  
   // for generic reco::Candidate case
-  const reco::Candidate::LorentzVector& p4() const { return leg_->p4(); }
+  reco::Candidate::LorentzVector p4() const { 
+     // get nominal mass
+     //double mass = nominalMass();
+     reco::Candidate::LorentzVector output = leg_->p4();
+     //output.SetE(TMath::Sqrt(output.P()*output.P() + mass*mass));
+     return output;
+  }
+
+
+  // Get the expected mass for this tau type 
+  double nominalMass() const {
+     double mass = leg_->p4().mass();
+     switch( legTypeLabel() ) {
+        case -2: 
+           // electron
+           mass = 5.109989e-4;
+           break;
+        case -1:
+           //muon
+           mass = 0.1056584;
+           break;
+        case 0:
+           mass = 0.1395702;
+           break;
+        case 1:
+           // rho
+           mass = 0.77549;
+           break;
+        case 2:
+        case 10:
+        case 11:
+           // a1
+           mass = 1.230;
+           break;
+     }
+     return mass;
+  }
+
   bool typeIsSupportedBySVFitter() const { return false; }
   reco::Candidate::LorentzVector getNeutralP4() const { return reco::Candidate::LorentzVector(0,0,0,0); }
   double chargedMass2() const { return 0.; }
@@ -111,7 +150,7 @@ template<>
 std::vector<reco::TrackBaseRef> SVmassRecoSingleLegExtractorT<pat::Muon>::getTracks() const
 {
   std::vector<reco::TrackBaseRef> tracks;
-  tracks.push_back(reco::TrackBaseRef(leg_->track()));
+  tracks.push_back(reco::TrackBaseRef(leg_->innerTrack()));
   return tracks;
 }
 

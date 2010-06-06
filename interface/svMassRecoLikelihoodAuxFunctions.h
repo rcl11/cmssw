@@ -50,15 +50,9 @@ namespace svMassReco {
   /// Negative log likelihood for a tau of given energy to have reconstructed decay length
   double nllTauDecayLengthGivenMomentum(double length, double momentum);
 
-  /// Returns negative log likelihood function for the visible decay products to
-  /// have given rapidity (defined w.r.t. the reconstructed tau direction) given
-  /// the measured momentum. Determined from MC, for each decay type.  
-  template<typename T>
-  double nllVisRapidityGivenMomentum(const T& obj, double rapidity, double momentum);
-
   /// Compute the negative log likelihood of measured MET given fitted invisible four
   /// vector sum
-  double nllNuSystemGivenMET(const FourVector& nus, const reco::MET* met); 
+  double nllNuSystemGivenMET(const FourVector& nus, const FourVector& direction, const reco::MET* met); 
 
   /**************************************************************
    * Utilities to separate leg tracks from the PV tracks        *
@@ -83,11 +77,10 @@ namespace svMassReco {
   /// Compute the two solutions for the missing four vector of a tau decay, given the measured
   /// tau direction, visible four vector, and estimated (or exact) mass of the missing energy system.
   /// Error returns as 1 if unphysical result
-  FourVectorPair compInvisibleLeg(const ThreeVector&, const FourVector&, const double, const double, int&);
+  //FourVectorPair compInvisibleLeg(const ThreeVector&, const FourVector&, const double, const double, int&);
 
-  /// Compute the upper limit on the neutrino system mass^2 given the tau direction
-  /// and visible momentum
-  double m12SquaredUpperBound(const FourVector&, const ThreeVector&);
+  FourVector computeTauMomentum(const ThreeVector& tauDir, const FourVector& visible, double theta);
+
 }
 
 #endif

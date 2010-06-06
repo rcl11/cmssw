@@ -24,16 +24,16 @@
 * the vector of paramters defined in Double_t *pars.
 *
 * The numbering of parameters is defined as follows
-* -  0	   pv - x component 
-* -  1	   pv - y component 
-* -  2	   pv - z component 
-* -  3	   sv - x component for leg 1
-* -  4	   sv - y component for leg 1
-* -  5	   sv - z component for leg 1
+* -  0	   pv - x component relative to initial clean PV
+* -  1	   pv - y component relative to initial clean PV
+* -  2	   pv - z component relative to initial clean PV
+* -  3	   sv - r component for leg 1 relative to initial PV
+* -  4	   sv - theta component for leg 1 relative to fitted PV
+* -  5	   sv - phi component for leg 1 relative to fitted PV
 * -  6	   neutrino system mass scaler for leg 1 
-* -  7	   sv - x component for leg 2 
-* -  8	   sv - y component for leg 2 
-* -  9	   sv - z component for leg 2 
+* -  7	   sv - r component for leg 2 relative to fitted PV
+* -  8	   sv - theta component for leg 2 relative to fitted PV
+* -  9	   sv - z component for leg 2 relative to fitted PV
 * -  10	   neutrino system mass scaler for leg 2 
 *
 * The neutrino system mass scaler only applies for leptonic tau decays. For
@@ -64,15 +64,15 @@ namespace svMassReco
 			       const std::vector<reco::TransientTrack>& leg1Tracks,
 			       const SVmassRecoSingleLegExtractorBase& leg2extractor, 
 			       const std::vector<reco::TransientTrack>& leg2Tracks, 
-			       const TransientVertex& pv, const reco::MET* met, unsigned char soln)
+			       const TransientVertex& pv, const reco::MET* met)
        : pv_(pv),
          met_(met)
      {
        // build each leg fitter
        leg1Likelihood_ = 
-	 std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg1extractor, leg1Tracks, soln & 0x01));
+	 std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg1extractor, leg1Tracks));
        leg2Likelihood_ = 
-	 std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg2extractor, leg2Tracks, soln & 0x02));
+	 std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg2extractor, leg2Tracks));
        enableMET_ = true;
      }
      virtual ~SVmassRecoDiTauLikelihood(){};
@@ -80,44 +80,31 @@ namespace svMassReco
      /// Get NLL given parameters
      double nll(Double_t* pars, Int_t& status, bool verbose=false)
      {
-       // Update our status
-       status = 0;
-
-       // Make sure no parameters have blown up
-       for ( size_t ipar = 0; ipar<11; ++ipar ) {
-	 if ( isnan(pars[ipar]) || isinf(pars[ipar]) ) {
-	   status |= 0x4;
-	   return 1.e6;
-	 }
-       }
 
        double nllOutput = 0;
-       /* npars layout:  (PV x,y,z), (Leg1 x,y,z,m12) (Leg2 x,y,z,m12) */
-       fitPV_ = GlobalPoint(pars[0], pars[1], pars[2]);
+       /* npars layout:  (PV dx,dy,dz), (Leg1 x,y,z,m12) (Leg2 x,y,z,m12) */
+
+       // Fitted PV is original PV position plus a fitted correction factor
+       fitPV_ = pv_.position() + GlobalVector(pars[0], pars[1], pars[2]);
 
        // Get the NLL of the PV given the vertex fit
        pvNLL_ = nllPointGivenVertex(fitPV_, pv_);
        nllOutput += pvNLL_;
 	 
-       int leg1Status=0; 
-       int leg2Status=0;
        // Get the NLL for each leg
-       leg1Likelihood_->setPoints(fitPV_, pars[3], pars[4], pars[5], pars[6], leg1Status);
+       leg1Likelihood_->setPoints(fitPV_, pars[3], pars[4], pars[5], pars[6]);
+
        nllOutput += leg1Likelihood_->nllOfLeg();
-       leg2Likelihood_->setPoints(fitPV_, pars[7], pars[8], pars[9], pars[10], leg2Status);
+
+       leg2Likelihood_->setPoints(fitPV_, pars[7], pars[8], pars[9], pars[10]);
+
        nllOutput += leg2Likelihood_->nllOfLeg();
 
-       // Check if either leg failed
-       if ( leg1Status ) status |= 0x1;
-       if ( leg2Status ) status |= 0x2;
-       
-       // Cache the status
-       lastStatus_ = status;
-       
        // Constrain by MET, if desired.
        // Compute the four vector sum of invisible objects
        nus_ = leg2Likelihood_->nuP4() + leg1Likelihood_->nuP4();
-       metNLL_ = nllNuSystemGivenMET(nus_, met_);
+       // MET is parameterized w.r.t muon direction
+       metNLL_ = nllNuSystemGivenMET(nus_, leg1Likelihood_->visP4(), met_);
        if ( enableMET_ ) nllOutput += metNLL_;
 
        // Cache NLL result
@@ -126,107 +113,67 @@ namespace svMassReco
        return nllOutput;
      }
 
+     // P4 of both di tau system
+     FourVector p4() const { return leg1Likelihood_->fittedP4() + leg2Likelihood_->fittedP4(); }
+
+     // P4 of all fitted invisible objects 
+     const FourVector& invisibleP4() const { return nus_; }
+
+     const GlobalPoint& fittedPV() const { return fitPV_; };
+
      /// Get MET NLL for the last points fitted
      double metNLL() const { return metNLL_; };
 
+     /// Get eotal NLL for the last points fitted
+     double getNLL() const { return lastNLL_; };
+
      /// Setup the parameters in Minuit and find reasonable physical initial
      /// values
-     void setupParametersFromScratch(TMinuit& minuit, bool useGeoLimits)
+     void setupParametersFromScratch(TMinuit& minuit)
      {
-       double xyLimit = 0.;
-       double zLimit = 0.;
-       if ( useGeoLimits ) {
-	 xyLimit = 3.0; //cm
-	 zLimit = 30.0; //cm
-       }
 
        edm::LogInfo("SVMethod") << "Setting up initial PV";
        // ParNo, Name, InitValue, InitError, Limits
-       minuit.DefineParameter(0, "pv_x", pv_.position().x(), pv_.positionError().cxx(), -1*xyLimit, xyLimit);
-       minuit.DefineParameter(1, "pv_y", pv_.position().y(), pv_.positionError().cyy(), -1*xyLimit, xyLimit);
-       minuit.DefineParameter(2, "pv_z", pv_.position().z(), pv_.positionError().czz(), -1*zLimit, zLimit);
+       minuit.DefineParameter(0, "pv_x", 0, pv_.positionError().cxx(), 0, 0);
+       minuit.DefineParameter(1, "pv_y", 0, pv_.positionError().cyy(), 0, 0);
+       minuit.DefineParameter(2, "pv_z", 0, pv_.positionError().czz(), 0, 0);
        
-       edm::LogInfo("SVMethod") << "Finding initial SV for leg 1";
+       edm::LogInfo("SVMethod") << "Finding initial conditions for leg 1";
        // Get initial guesses for each leg
-       std::pair<GlobalPoint, GlobalError> leg1Init = leg1Likelihood_->findInitialSecondaryVertex(pv_.position());
-       GlobalPoint leg1pos = leg1Init.first;
-       GlobalError leg1err = leg1Init.second;
-       minuit.DefineParameter(3, "sv1_x", leg1pos.x(), leg1err.cxx(), -1*xyLimit, xyLimit);
-       minuit.DefineParameter(4, "sv1_y", leg1pos.y(), leg1err.cyy(), -1*xyLimit, xyLimit);
-       minuit.DefineParameter(5, "sv1_z", leg1pos.z(), leg1err.czz(), -1*zLimit, zLimit);
-       minuit.DefineParameter(6, "mNuScale1", 
-			      (!leg1Likelihood_->nuSystemIsMassless()) ? 0.7 : 0.0, 
-			      0.1, 0., 0.); 
-       
+       double thetaGuess, thetaError, 
+              phiGuess, phiError,
+              radiusGuess, radiusError,
+              m12Guess, m12Error;
+
+       // Find initial values for this leg
+       leg1Likelihood_->findIntialValues(pv_.position(),
+             thetaGuess, thetaError, 
+             phiGuess, phiError,
+             radiusGuess, radiusError,
+             m12Guess, m12Error);
+
+       minuit.DefineParameter(3, "sv1_thetaRest", thetaGuess, thetaError, 0, TMath::Pi());
+       minuit.DefineParameter(4, "sv1_phiLab", phiGuess, phiError, 0, 0);
+       minuit.DefineParameter(5, "sv1_radiusLab", radiusGuess, radiusError, 0, 0); //limits?
+       minuit.DefineParameter(6, "sv1_m12", m12Guess, m12Error, 0, leg1Likelihood_->maxM12()); 
+
        edm::LogInfo("SVMethod") << "Finding initial SV for leg 2";
-       std::pair<GlobalPoint, GlobalError> leg2Init = leg2Likelihood_->findInitialSecondaryVertex(pv_.position());
-       GlobalPoint leg2pos = leg2Init.first;
-       GlobalError leg2err = leg2Init.second;
-       minuit.DefineParameter(7, "sv2_x", leg2pos.x(), leg2err.cxx(), -1*xyLimit, xyLimit);
-       minuit.DefineParameter(8, "sv2_y", leg2pos.y(), leg2err.cyy(), -1*xyLimit, xyLimit);
-       minuit.DefineParameter(9, "sv2_z", leg2pos.z(), leg2err.czz(), -1*zLimit, zLimit);
-       minuit.DefineParameter(10, "mNuScale2", 
-			      (!leg2Likelihood_->nuSystemIsMassless()) ? 0.7 : 0.0, 
-			      0.1, 0., 0.);
+       leg2Likelihood_->findIntialValues(pv_.position(),
+             thetaGuess, thetaError, 
+             phiGuess, phiError,
+             radiusGuess, radiusError,
+             m12Guess, m12Error);
+
+       minuit.DefineParameter(7, "sv2_thetaRest", thetaGuess, thetaError, 0, TMath::Pi());
+       minuit.DefineParameter(8, "sv2_phiLab", phiGuess, phiError, 0, 0);
+       minuit.DefineParameter(9, "sv2_radiusLab", radiusGuess, radiusError, 0, 0); //limits?
+       minuit.DefineParameter(10, "sv2_m12", m12Guess, m12Error, 0, leg2Likelihood_->maxM12()); 
 
        // Determine whether or not m12 is a free parameter and needs to be scaled.
        // For hadronic taus, there is only 1 nu, so it's mass is always zero and we 
        // can ignore m12
        if ( leg1Likelihood_->nuSystemIsMassless() ) minuit.FixParameter(6);
        if ( leg2Likelihood_->nuSystemIsMassless() ) minuit.FixParameter(10);
-     }
-
-     /// Copy the parameters from another minuit fit instance
-     void setupParametersFromPrevious(const TMinuit& from, TMinuit& to, 
-				      bool useM12Limits, bool useGeoLimits)
-     {
-       double xyLimit = 0.;
-       double zLimit = 0.;
-       double m12Limits = 0.;
-       if ( useGeoLimits ) {
-            xyLimit = 3.0; //cm
-            zLimit = 30.0; //cm
-       }
-       if ( useM12Limits ) {
-	 m12Limits = 1.0;
-       }
-
-       Double_t par, parError;
-       // ParNo, Name, InitValue, InitError, Limits
-       from.GetParameter(0, par, parError);
-       to.DefineParameter(0, "pv_x", par, parError, -1*xyLimit, xyLimit);
-       from.GetParameter(1, par, parError);
-       to.DefineParameter(1, "pv_y", par, parError, -1*xyLimit, xyLimit);
-       from.GetParameter(2, par, parError);
-       to.DefineParameter(2, "pv_z", par, parError, -1*zLimit, zLimit);
-       
-       from.GetParameter(3, par, parError);
-       to.DefineParameter(3, "sv1_x", par, parError, -1*xyLimit, xyLimit);
-       from.GetParameter(4, par, parError);
-       to.DefineParameter(4, "sv1_y", par, parError, -1*xyLimit, xyLimit);
-       from.GetParameter(5, par, parError);
-       to.DefineParameter(5, "sv1_z", par, parError, -1*zLimit, zLimit);
-       from.GetParameter(6, par, parError);
-       to.DefineParameter(6, "mNuScale1", 
-			  (!leg1Likelihood_->nuSystemIsMassless()) ? par : 0.0, 
-			  parError, -1., 1.); 
-       
-       from.GetParameter(7, par, parError);
-       to.DefineParameter(7, "sv2_x", par, parError, -1*xyLimit, xyLimit);
-       from.GetParameter(8, par, parError);
-       to.DefineParameter(8, "sv2_y", par, parError, -1*xyLimit, xyLimit);
-       from.GetParameter(9, par, parError);
-       to.DefineParameter(9, "sv2_z", par, parError, -1*zLimit, zLimit);
-       from.GetParameter(10, par, parError);
-       to.DefineParameter(10, "mNuScale2", 
-			  (!leg2Likelihood_->nuSystemIsMassless()) ? par : 0.0, 
-			  parError, -1., 1.);
-
-       // Determine whether or not m12 is a free parameter and needs to be scaled.
-       // For hadronic taus, there is only 1 nu, so it's mass is always zero and we 
-       // can ignore m12
-       if ( leg1Likelihood_->nuSystemIsMassless() ) to.FixParameter(6);
-       if ( leg2Likelihood_->nuSystemIsMassless() ) to.FixParameter(10);
      }
 
      /// Lock the PV variables in the fit
@@ -265,15 +212,16 @@ namespace svMassReco
     const SVmassRecoSingleLegLikelihood* leg1Likelihood() const { return leg1Likelihood_.get(); };
     const SVmassRecoSingleLegLikelihood* leg2Likelihood() const { return leg2Likelihood_.get(); };
 
-    friend std::ostream& operator<< (std::ostream &out, SVmassRecoDiTauLikelihood& fit) 
+    friend std::ostream& operator<< (std::ostream &out, const SVmassRecoDiTauLikelihood& fit) 
     { 
       fit.printTo(out); 
       return out; 
     };
 
-    virtual void printTo(std::ostream &out) const
+    void printTo(std::ostream &out) const
     {
        using namespace std;
+       FourVector total = leg1Likelihood_->fittedP4() + leg2Likelihood_->fittedP4();
        out << "=========== SVmassRecoDiTauLikelihood =========== " << endl;
        out << setw(10) <<"Total NLL:" << setw(10) << lastNLL_ << setw(10) << "Status:" << setw(10) << lastStatus_ << endl;
        out << setw(10) <<"PV" << setw(10) << pvNLL_ << setw(10) << "Fit:" << setw(10) << fitPV_ << "Meas:" << setw(10) << pv_.position() << endl;
@@ -281,6 +229,7 @@ namespace svMassReco
           out << setw(10) <<"MET" << setw(10) << metNLL_ << setw(10) << "Fit:" << setw(30) << nus_ << setw(10) << "Meas:" << setw(30) << met_->p4() << endl;
        else
           out << "MET disabled." << endl;
+       out << "Total mass: " << total.mass() << endl;
        out << " *** Leg 1 *** " << endl;
        leg1Likelihood_->printTo(out);
        out << " *** Leg 2 *** " << endl;

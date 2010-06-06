@@ -48,6 +48,7 @@
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorT.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/SVmassRecoSolution.h"
 
+
 using namespace reco;
 using namespace std;
 
@@ -63,9 +64,12 @@ namespace svMassReco {
       edm::LogError("objectiveFcn") << "Call of gMinuit::GetObjectFit returned NULL pointer !!";
       return;
     }
+    
 
     Int_t error = 0;
+    //for(int i = 0; i < npars; i++) { cout << "  " << pars[i]; } cout << endl;
     fcn = fit->nll(pars, error);
+    //std::cout << "FCN: " << fcn << endl;
     if ( error != 0 ) {
       //std::cout << "UNPHYSICAL FIT" << std::endl;
     }
@@ -114,13 +118,126 @@ namespace svMassReco {
       
       TransientVertex cleanPV;
       // Get the clean PV and trans tracks.
+      edm::LogInfo("SVRecoFitter") << "Cleaning primary vertex";
       cleanupPV(pv, bs, trackBuilder, leg1Tracks, leg2Tracks, leg1TransTracks, leg2TransTracks, cleanPV);
       
       // There are four fits, for all comibination of forward/backward ansatzs.
       // We fit all four, then take the best as the solution
       std::vector<SVmassRecoSolution> solutions;
+
+      gMinuit = &minuit_;
+      minuit_.SetFCN(objectiveFcn<T1,T2>);
+
+      // build fitter
+      edm::LogInfo("SVRecoFitter") << "Building di tau likelihood";
+      //boost::shared_ptr<SVmassRecoDiTauLikelihood> fitter(new SVmassRecoDiTauLikelihood(
+      //         leg1extractor_, leg1TransTracks, leg2extractor_, leg2TransTracks, cleanPV, met));
+      SVmassRecoDiTauLikelihood fitter(leg1extractor_, leg1TransTracks, leg2extractor_, leg2TransTracks, cleanPV, met);
+
+      // Set as active fit
+      minuit_.SetObjectFit(&fitter);
+      fitter.setupParametersFromScratch(minuit_);
+      fitter.enableMET(true);
+
+      // Set precision
+      //Double_t precision[1];
+      //precision[0] = 1e-6;
+      //Int_t precErrFlag;
+      //minuit_.mnexcm("SET EPS", precision, 1, precErrFlag);
+      //edm::LogInfo("SVRecoFitter") << "Set precision to " << precision[0] << " got status" << precErrFlag;
+
+      // First find the Hessian error matrix
+      //Int_t hesseStatus;
+      //minuit_.mncomd("HES", hesseStatus);
+      //edm::LogInfo("SVRecoFitter") << "Built initial error matrix using HESSE.  Status: " << hesseStatus;
+
+      fitter.lockPV(minuit_);
+      int migradStatus = minuit_.Command("MIN");
+      edm::LogInfo("SVRecoFitter") << "First fit result: " << migradStatus << "\n" << fitter;
+      fitter.releasePV(minuit_);
+      migradStatus = minuit_.Command("MIN");
+      edm::LogInfo("SVRecoFitter") << "Final fit result: " << migradStatus << "\n" << fitter;
+
+      // Retrive the information
+      
+      Double_t pv_x, pv_y, pv_z, dummyError;
+      minuit_.GetParameter(0, pv_x, dummyError);
+      minuit_.GetParameter(1, pv_y, dummyError);
+      minuit_.GetParameter(2, pv_z, dummyError);
+
+      Double_t sv1_theta, 
+               sv1_phiLab,
+               sv1_radiusLab,
+               sv1_m12;
+
+      minuit_.GetParameter(3, sv1_theta, dummyError);
+      minuit_.GetParameter(4, sv1_phiLab, dummyError);
+      minuit_.GetParameter(5, sv1_radiusLab, dummyError);
+      minuit_.GetParameter(6, sv1_m12, dummyError);
+
+      Double_t sv2_theta, 
+               sv2_phiLab,
+               sv2_radiusLab,
+               sv2_m12;
+
+      minuit_.GetParameter(7, sv2_theta, dummyError);
+      minuit_.GetParameter(8, sv2_phiLab, dummyError);
+      minuit_.GetParameter(9, sv2_radiusLab, dummyError);
+      minuit_.GetParameter(10, sv2_m12, dummyError);
+
+      // must be an easier way...
+      Double_t pars[11];
+      pars[0] = pv_x;
+      pars[1] = pv_y;
+      pars[2] = pv_z;
+      pars[3] = sv1_theta;
+      pars[4] = sv1_phiLab;
+      pars[5] = sv1_radiusLab;
+      pars[6] = sv1_m12;
+      pars[7] = sv2_theta;
+      pars[8] = sv2_phiLab;
+      pars[9] = sv2_radiusLab;
+      pars[10] = sv2_m12;
+
+      Int_t dummy_status;
+      // Make sure our working point is fresh
+      fitter.nll(pars, dummy_status);
+
+      SVmassRecoSolution solution(true, -1);
+      solution.setP4VisLeg1(fitter.leg1Likelihood()->visP4());
+      solution.setP4VisLeg2(fitter.leg2Likelihood()->visP4());
+      solution.setP4Leg1(fitter.leg1Likelihood()->fittedP4());
+      solution.setP4Leg2(fitter.leg2Likelihood()->fittedP4());
+      solution.setP4(fitter.p4());
+      solution.setSVrefittedPrimaryVertexPos(fitter.fittedPV());
+      solution.setDecayVertexPosLeg1(fitter.leg1Likelihood()->sv());
+      solution.setDecayVertexPosLeg2(fitter.leg2Likelihood()->sv());
+      solution.setMscale1(fitter.leg1Likelihood()->m12());
+      solution.setMscale2(fitter.leg2Likelihood()->m12());
+      solution.setLogLikelihood(fitter.getNLL());
+      solution.setLogLikelihoodMEt(fitter.metNLL());
+      solution.setMigradStatus(migradStatus);
+
+
+      // compute X1 and X2
+      FourVector p4Leg1 = fitter.leg1Likelihood()->fittedP4();
+      double x1 = ( p4Leg1.P() > 0. ) ? (fitter.leg1Likelihood()->visP4().P()/p4Leg1.P()) : -1.;
+      solution.setX1(x1);
+      FourVector p4Leg2 = fitter.leg2Likelihood()->fittedP4();
+      double x2 = ( p4Leg2.P() > 0. ) ? (fitter.leg2Likelihood()->visP4().P()/p4Leg2.P()) : -1.;
+      solution.setX2(x2);
+
+      solution.setRestFrameVisThetaLeg1(fitter.leg1Likelihood()->thetaRest());
+      solution.setRestFrameVisThetaLeg2(fitter.leg2Likelihood()->thetaRest());
+
+      edm::LogInfo("SVRecoFitter") << "Final solution: " << solution;
+
+      // ek dub
+      for(size_t i = 0; i < 4; i++)
+         solutions.push_back(solution);
       
       // Do each fit
+      /*
       for ( size_t iSolution = 0; iSolution < 4; ++iSolution ) {
 	gMinuit = &minuit_;
 	minuit_.SetFCN(objectiveFcn<T1,T2>);
@@ -138,21 +255,23 @@ namespace svMassReco {
 	fitter->setupParametersFromScratch(minuit_, true);
 	fitter->enableMET(true);
 
-	edm::LogInfo("SVMethod") << "Locking Nu Mass Scales";
-	fitter->lockNuMassScalers(minuit_);
+	//edm::LogInfo("SVMethod") << "Locking Nu Mass Scales";
+	//fitter->lockNuMassScalers(minuit_);
 
 	// Minimize!
+        fitter->lockPV(minuit_);
 	edm::LogInfo("SVMethod") << "Beginning minimization";
-	minuit_.Migrad();
-	//int migradStatus = minuit_.Migrad();
+	//minuit_.Migrad();
+	int migradStatus = minuit_.Migrad();
+	migradStatus = minuit_.Migrad();
 
 	// Hopefully we are near the minimum now. Release the mass scalers
-	edm::LogInfo("SVMethod") << "Release Nu Mass Scales";
-	fitter->releaseNuMassScalers(minuit_);
+	//edm::LogInfo("SVMethod") << "Release Nu Mass Scales";
+	//fitter->releaseNuMassScalers(minuit_);
 	
 	// Now allow MET in the fit
-	edm::LogInfo("SVMethod") << "Reminimize";
-	int migradStatus = minuit_.Migrad();
+	//edm::LogInfo("SVMethod") << "Reminimize";
+	//int migradStatus = minuit_.Migrad();
 
 	// Get results
 	Double_t pv_x, pv_y, pv_z, dummyError;
@@ -218,6 +337,7 @@ namespace svMassReco {
 	solutions[iSolution].setRank(iSolution);
 	edm::LogInfo("fitResults") << solutions[iSolution];
       }
+      */
 
       return solutions;
     }

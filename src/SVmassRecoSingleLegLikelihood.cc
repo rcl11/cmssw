@@ -1,205 +1,269 @@
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegLikelihood.h"
-
 #include "TauAnalysis/CandidateTools/interface/svMassRecoLikelihoodAuxFunctions.h"
-
 #include "RecoVertex/KalmanVertexFit/interface/KalmanVertexFitter.h"
+#include "DataFormats/GeometrySurface/interface/Line.h"
 
-using namespace svMassReco;
+namespace svMassReco { 
 
-double compLandauValue(double rapidity, double mean, double sigma)
+SVmassRecoSingleLegLikelihood::SVmassRecoSingleLegLikelihood(const SVmassRecoSingleLegExtractorBase& extractor, 
+      const std::vector<reco::TransientTrack>& tracks)
+   : extractor_(extractor),
+   tracks_(tracks),
+   propagator_(tracks[0].field()),
+   visP4_(extractor.p4()),
+   visP3_(extractor.p4().Vect()),
+   visP3GlobalVector_(extractor.p4().px(), extractor.p4().py(), extractor.p4().pz()),
+   visPDirection_(TVector3(extractor.p4().px(), extractor.p4().py(), extractor.p4().pz()).Unit()),
+   visibleMass_(extractor.p4().mass())
 {
-  double landau = TMath::Landau(rapidity, mean, sigma, true);
-  if ( landau < 1.0e-10 ) landau = 1.0e-10; // sanity check
-  return -1.*TMath::Log(landau);
+   edm::LogInfo("SingleLegLikelihood") << "Initializing...";
+
+   // Check if we have enough tracks to fit a vertex
+   if(tracks_.size() > 2) {
+      KalmanVertexFitter vertexFitter(true);
+      edm::LogInfo("SingleLegLikelihood") << "Fitting multi-track leg vertex";
+      // fit the vertex
+      vertex_ = vertexFitter.vertex(tracks_);
+   }
+
+   // Now select the best track to use for finding the initial point
+   double bestNormedChi2 = -1;
+   for(size_t iTrack = 0; iTrack < tracks_.size(); ++iTrack)
+   {
+      double chi2 = tracks_[iTrack].track().normalizedChi2();
+      double pt = tracks_[iTrack].track().pt();
+      edm::LogInfo("SingleLegLikelihood") << "Track " << iTrack << " has chi2 " << chi2 << " and pt " << pt;
+      if(bestNormedChi2 < 0 || chi2 < bestNormedChi2)
+      {
+         bestTrack_ = tracks_[iTrack];
+         bestNormedChi2 = chi2;
+      }
+   }
+   edm::LogInfo("SingleLegLikelihood") << "Found best track with chi2 " << bestNormedChi2;
 }
 
-double SVmassRecoSingleLegLikelihood::nllVisRapidityGivenMomentumElectronCase(double rapidity, double momentum) const
+double SVmassRecoSingleLegLikelihood::findPGivenM12(double M12) const
 {
-//--- pat::Electron specific customization
-
-  double mean = 2.238*TMath::Power(momentum, 0.2036);
-  double sigma = 0.0901 + 0.0006182*momentum;
-  return compLandauValue(rapidity, mean, sigma);
-}
-  
-double SVmassRecoSingleLegLikelihood::nllVisRapidityGivenMomentumMuonCase(double rapidity, double momentum) const
-{
-//--- pat::Muon specific customization  
-
-  double mean = 2.251*TMath::Power(momentum, 0.2013);
-  double sigma = 0.09365 + 0.0005191*momentum;
-  return compLandauValue(rapidity, mean, sigma);
-}
-  
-double SVmassRecoSingleLegLikelihood::nllVisRapidityGivenMomentumTauJetCase(int legTypeLabel, double rapidity, double momentum) const
-{
-//--- pat::Tau specific customization
-//
-//    NOTE: special case as distribution for tau-jet case depends on decay mode  
-//
-
-  int decayMode = legTypeLabel;
-
-  double mean = 0;
-  double sigma = 0;
-  switch ( decayMode ) {
-  case 0: // 1 prong 0 pi0
-    mean = 1.987*TMath::Power(momentum, 0.2215);
-    sigma = 0.2215 + 0.0007142*momentum;
-    break;
-  case 1: // 1 prong 1 pi0
-    mean = 2.03*TMath::Power(momentum, 0.2073);
-    sigma = 0.1162 + 0.0001587*momentum;
-    break;
-  case 2: // 1 prong 2 pi0
-    mean = 1.864*TMath::Power(momentum, 0.2149);
-    sigma = 0.0962 + 0.0001395*momentum;
-    break;
-  case 10: // 3 prong 0 pi0
-    mean = 1.996*TMath::Power(momentum, 0.1987);
-    sigma = 0.1429 + 4.695e-5*momentum;
-    break;
-  case 11: // 3 prong 1 pi0
-    mean = 1.868*TMath::Power(momentum, 0.214);
-    sigma = 0.1037 + 4.702e-5*momentum;
-    break;
-  default: // all others
-    mean = 1.996*TMath::Power(momentum, 0.1987);
-    sigma = 0.1429 + 4.695e-5*momentum;
-    break;
-  }
-  // Single prong no pi0 case is landau distributed
-  if ( decayMode == 0 ) {
-    return compLandauValue(rapidity, mean, sigma);
-  } else { // otherwise gaussian
-    return (square(rapidity-mean)/(2*square(sigma)) + nlGaussianNorm(sigma));
-  }
+   const double tauMassSq = tauMass*tauMass;
+   return TMath::Sqrt(
+         (tauMassSq - square(M12 + visibleMass_))*
+         (tauMassSq - square(M12 - visibleMass_)))/(2*tauMass);
 }
 
-std::pair<GlobalPoint, GlobalError> SVmassRecoSingleLegLikelihood::findInitialSecondaryVertex(const GlobalPoint& pv)
+double SVmassRecoSingleLegLikelihood::maxM12() const 
 {
-  // Function that provides an initial, reasonable guess of the location the
-  // secondary vertex for a leg in a ditau candidate system, given an initial
-  // condition for the primary vertex.  If the leg is a three prong tau, the
-  // function will attempt to fit the vertex and return that is the initial SV.
-  // Failing that, the method scans along the lead track of the object and finds
-  // the point along the lead track that has the lowest negative log likelihood,
-  // subject to the constraint that the secondary vertex selection results in a
-  // physical solution.  The error returned is the spatial error of the track at
-  // that point which may or may not be useful.
-  
-  edm::LogInfo("findInitialSecondaryVertex") 
-    << "Finding a valid SV with PV @ " << "(" << pv.x() << ", " << pv.y() << ", " << pv.z() << ")";
-  
-  // Get the fourvector of the object
-  FourVector visP4 = this->uncorrectedP4();
-  edm::LogInfo("findInitialSecondaryVertex") 
-    << "Uncorrected vis p4 info: mass = " << visP4.M() << " P = " << visP4.P() 
-    << " eta = " << visP4.eta() << " phi = " << visP4.phi();
-  
-  // Start growing from PV
-  GlobalVector basePoint = GlobalVector(pv.x(), pv.y(), pv.z());
-  ThreeVector visDir = this->uncorrectedP4().Vect().Unit();
-  // Grow the candidate point along visible momentum
-  GlobalVector svGrowthDireciton = GlobalVector(visDir.x(), visDir.y(), visDir.z());
-  
-  // Find lead track
-  edm::LogInfo("findInitialSecondaryVertex") << "Finding lead track out of " << tracks_.size() << " tracks";
-  size_t highestIndex = 0;
-  double highestPt = -1;
-  for ( size_t itrk = 0; itrk < tracks_.size(); ++itrk ) {
-    TrajectoryStateClosestToPoint tcsp = 
-      tracks_[itrk].trajectoryStateClosestToPoint(pv);
-    double pt = tcsp.momentum().perp();
-    if ( pt > highestPt ) {
-      highestIndex = itrk;
-      highestPt = pt;
-    }
-  }
-  reco::TransientTrack leadTrack = tracks_[highestIndex];
-  edm::LogInfo("SVMethod") << "Found lead track with pt " << highestPt;
-  assert(highestPt > 0);
-  
-  // If we have enough tracks, do a vertex fit to find starting place (or starting R)
-  if ( tracks_.size() > 2 ) {
-    KalmanVertexFitter fitter(false);
-    TransientVertex myVertex = fitter.vertex(tracks_); 
-    if ( myVertex.isValid() ) {
-      GlobalPoint pos = myVertex.position();
-      // Check if this is a valid point for the fitter
-      int status = 0;
-      this->setPoints(pv, pos.x(), pos.y(), pos.z(), 0.5, status);
-      
-      edm::LogInfo("findInitialSecondaryVertex") 
-	<< "Found a vetex-type starting position at " << "(" << pos.x() << ", " << pos.y() << ", " << pos.z() << ")";
-      
-      // If vertex is physical return that
-      if( status == 0 ) {
-	edm::LogInfo("SVMethod") << " the vertex is valid, using it!";
-	return std::make_pair(pos, myVertex.positionError());
-      } 
-      
-      // Otherwise set start point as the fitted SV
-      basePoint = GlobalVector(pos.x(), pos.y(), pos.z());
-    }
-  } 
-  
-  double stepsize = 5e-4; // 5 micron
-  double currentScale = 0;
-  double radius = 0;
-  GlobalPoint correctedCandSV;
-  
-  // Walk out along the lead track until we are in a physical region
-  int error = 1; 
-  while ( error == 1 && radius < 3.0 ) {
-    currentScale += stepsize;
-    GlobalVector candSV = basePoint + svGrowthDireciton*currentScale;
-    GlobalPoint candSVPoint(candSV.x(), candSV.y(), candSV.z()); // BS
-    // Find the closest point on the lead track
-    TrajectoryStateClosestToPoint tcsp = leadTrack.trajectoryStateClosestToPoint(candSVPoint);
-    correctedCandSV = tcsp.position();
-    // See if this point works (error will go to zero)
-    this->setPoints(pv, correctedCandSV.x(), correctedCandSV.y(), correctedCandSV.z(), 0.7, error);
-    radius = correctedCandSV.perp();
-  }
-  
-  // Now we shoudl be physical, check if we actually found a point or 
-  // just reached the highest radius permitted (3cm)
-  if ( error == 1 ) 
-    edm::LogWarning("SVMethod") <<  "No valid starting point found!" << std::endl;
-  
-  // Now naively find the minimum NLL along the lead track
-  double lowestNLL = this->nllOfLeg();
-  GlobalPoint bestCandSV = correctedCandSV;
-  
-  while ( error == 0 && radius < 3.0 ) {
-    // Check if the nll of the last point is better than the current best
-    double lastRoundNLL = this->nllOfLeg();
-    if ( lastRoundNLL < lowestNLL ) {
-      bestCandSV = correctedCandSV;
-      lowestNLL = lastRoundNLL;
-    }
-    
-    currentScale += stepsize;
-    GlobalVector candSV = basePoint + svGrowthDireciton*currentScale;
-    GlobalPoint candSVPoint(candSV.x(), candSV.y(), candSV.z()); // BS
-    // Find the closest point on the lead track
-    TrajectoryStateClosestToPoint tcsp = leadTrack.trajectoryStateClosestToPoint(candSVPoint);
-    // FIXME
-    correctedCandSV = tcsp.position();
-    // See if this point works (error will go to zero
-    this->setPoints(pv, correctedCandSV.x(), correctedCandSV.y(), correctedCandSV.z(), 0.7, error);
-    radius = correctedCandSV.perp();
-  }
-  
-  // Get the track error at our best point
-  GlobalError errorAtBestPoint = 
-    leadTrack.trajectoryStateClosestToPoint(bestCandSV).theState().cartesianError().position();
-  
-  edm::LogInfo("SVMethod") 
-    << "Returning track-type starting position at " 
-    << "(" << bestCandSV.x() << ", " << bestCandSV.y() << ", " 
-    << bestCandSV.z() << ") NLL = " << lowestNLL;
-  
-  return std::make_pair(bestCandSV, errorAtBestPoint);
+   return (tauMass - visibleMass_);
+}
+
+void SVmassRecoSingleLegLikelihood::findIntialValues(const GlobalPoint& pv,
+      double &thetaGuess, double &thetaError, 
+      double &phiGuess, double &phiError,
+      double &radiusGuess, double &radiusError,
+      double &m12Guess, double &m12Error)
+{
+   size_t thetaSteps = 10;
+   size_t phiSteps = 10;
+
+   // only need to step m12 if it is non zero
+   size_t m12Steps = (nuSystemIsMassless()) ? 1 : 5;
+
+   // get the valid range (away from corners)
+   const double thetaMin = 1e-5;
+   const double thetaMax = TMath::Pi() - 1e-5;
+   const double phiMin = -TMath::Pi();
+   const double phiMax = TMath::Pi();
+   const double m12Min = 1e-5;
+   const double m12Max = maxM12() - 1e-5;
+
+   // Set errors for the parameters we are optimizing
+   thetaError = fabs(thetaMax - thetaMin)/thetaSteps;
+   phiError = fabs(phiMax - phiMin)/phiSteps;
+   m12Error = (m12Max-m12Min)/m12Steps;
+
+   double bestLikelihood = 1e30;
+   double bestTheta = 0;
+   double bestPhi = 0;
+   double bestRadius = 0;
+   double bestRadiusError = 0;
+   double bestM12 = 0;
+     
+   // loop over theta steps
+   for(size_t iTheta = 0; iTheta < thetaSteps; ++iTheta)
+   {
+      double theta = thetaMin + iTheta*(thetaMax - thetaMin)*1.0/(thetaSteps-1);
+      for(size_t iPhi = 0; iPhi < phiSteps; ++iPhi)
+      {
+         // don't need full (steps - 1) range as it's periodic on this interval
+         double phi = phiMin + iPhi*(phiMax-phiMin)*1.0/(phiSteps);
+         // loop over m12 steps (trivial in massless case)
+         for(size_t iM12 = 0; iM12 < m12Steps; ++iM12)
+         {
+            // keep away from corners
+            double m12 = (nuSystemIsMassless()) ? 0.0 : m12Min + (m12Max-m12Min)*iM12*1.0/(m12Steps-1);
+            // Now we need to figure out what the radius of our test point
+            // is.  We're looping over the directions, but let's find the radius
+            // that gets us closest to the best track
+            // find theta in lab frame
+            GlobalVector direction = buildTauDirection(theta, phi, m12);
+            GlobalPoint nonConstOrigin = pv; // wtf
+            Line line(nonConstOrigin, direction);
+            GlobalPoint pca = 
+               propagator_.extrapolate(bestTrack_.initialFreeState(), line).globalPosition();
+            //double err_radius = pca.mag(); // not quite right..
+            double err_radius = 0.1;
+            GlobalPoint displacement(pca.x()-pv.x(), pca.y()-pv.y(), pca.z()-pv.z());
+            double radius = displacement.mag();
+            // Setup our guess
+            setPoints(pv, theta, phi, radius, m12);
+            // See if it is the best so far
+            if(nllOfLeg() < bestLikelihood)
+            {
+               bestTheta = theta;
+               bestPhi = phi;
+               bestRadius = radius;
+               bestRadiusError = err_radius;
+               bestM12 = m12;
+               bestLikelihood = nllOfLeg();
+            }
+         }
+      }
+   }
+
+   // return output
+   thetaGuess = bestTheta;
+   m12Guess = bestM12;
+   radiusGuess = bestRadius;
+   phiGuess = bestPhi;
+   radiusError = bestRadiusError;
+   setPoints(pv, thetaGuess, phiGuess, radiusGuess, m12Guess);
+   edm::LogInfo("SingleLegLikelihoodInitial") << "Found initial condition @" << *this;
+}
+
+GlobalVector SVmassRecoSingleLegLikelihood::buildTauDirection(double thetaRest,
+      double phiLab, double m12)
+{
+   // Determine lab frame opening angle between tau direction
+   // and vis. momentum
+   //
+   // pl_perp = pr(m12)*sin(theta_r) ==>
+   // pl*sin(thetal) = pr(m12)*sin(theta_r)
+   // thetal = asin(pr(m12)*sin(theta_r)/pl)
+
+   double thetaLab = 
+         TMath::ASin(findPGivenM12(m12)*TMath::Sin(thetaRest)/visP4_.P());
+
+   // Build our displacement vector assuming visP parallel to Z axis
+   TVector3 secondaryVertex(
+         TMath::Sin(thetaLab)*TMath::Cos(phiLab),
+         TMath::Sin(thetaLab)*TMath::Sin(phiLab),
+         TMath::Cos(thetaLab));
+   // Rotate such that Z is along visible momentum
+   secondaryVertex.RotateUz(visPDirection_);
+   return GlobalVector(secondaryVertex.x(), secondaryVertex.y(), secondaryVertex.z());
+}
+
+void SVmassRecoSingleLegLikelihood::setPoints(const GlobalPoint& pv, double thetaRest, 
+      double phiLab, double radiusLab, double m12)
+{
+   pv_ = pv;
+   thetaRest_ = thetaRest;
+   phiLab_ = phiLab;
+   radiusLab_ = radiusLab;
+   M12_ = m12;
+
+   // Find the tau direction, given the fit parameters
+   GlobalVector secondaryVertex = buildTauDirection(thetaRest, phiLab, m12);
+
+   // Scale 
+   secondaryVertex *= radiusLab;
+
+   // Set SV point
+   sv_ = pv;
+   sv_ += secondaryVertex;
+
+   // Set tau direction
+   legDir_ = ThreeVector(secondaryVertex.x(), secondaryVertex.y(), secondaryVertex.z());
+   // Compute tau momentum
+   p4_ =  computeTauMomentum(legDir_, visP4_, thetaRest);
+   // By defintion, nu p4 is tauP4 - visP4
+   nuP4_ = p4_ - visP4_;
+}
+
+double SVmassRecoSingleLegLikelihood::nllOfLeg() const
+{ 
+   return nllTopological() + nllDecayLength() + nllRestFrameKinematics(); 
+}
+
+double SVmassRecoSingleLegLikelihood::nllRestFrameKinematics() const 
+{
+   // in all cases we get a constraint from the solid angle differential term
+   double output = -1.0*log(TMath::Sin(thetaRest_));
+   if(!nuSystemIsMassless())
+   {
+      // In a three body system, there is an additional constraint on
+      // the mass of the two neutrino sysemts
+      // see PDG kinematics summary, equations 38.20(a,b) 
+      double logOfM12Terms = 
+         log(M12_) - log(2) + // p1 term
+         0.5*(log(square(tauMass) - square(M12_ + visibleMass_)) +   //p3 term numerator
+               log(square(tauMass) - square(M12_ - visibleMass_))) +  //p3 term numerator
+         -1*(log(tauMass) + log(2));
+
+      // return sum of m12 terms and sine log term
+      output -= logOfM12Terms;
+   }
+
+   if(isnan(output) || isinf(output)) {
+      edm::LogWarning("SVSingleLeg") << " Got nan/inf for nllRestFrame!  nuSystemIsMassless: " 
+         << nuSystemIsMassless() << " thetaRest: " << thetaRest_ << " M12: " << M12_ <<
+         " Returning 30 instead.";
+      return 30;
+   }
+
+   return output;
+}
+
+double SVmassRecoSingleLegLikelihood::nllDecayLength() const {
+   return nllTauDecayLengthGivenMomentum(legDir_.r(), p4_.P());
+}
+
+double SVmassRecoSingleLegLikelihood::nllTopological() const
+{
+   // If we fit a SV, see how compatabile our fitted SV is with it
+   if(vertex_.isValid()) {
+      return nllPointGivenVertex(sv_, vertex_);
+   } else 
+   {
+      TrajectoryStateClosestToPoint tcsp = bestTrack_.trajectoryStateClosestToPoint(sv_);
+      if(!tcsp.isValid())
+      {
+         edm::LogWarning("SVSingleLeg") << "Can't find DCA for point " << sv_ << " returning 30."; 
+         return 30;
+      }
+      // we only have one track, see how compatable our point is to the track
+      return nllPointGivenTrack(tcsp);
+   }
+
+}
+
+void SVmassRecoSingleLegLikelihood::printTo(std::ostream &out) const
+{
+   using namespace std;
+   out << "Type: " << legType() << endl;
+   out << "NLL" << setw(10) << nllOfLeg() << endl;
+   out << "- NLLTopo" << setw(10) << nllTopological() << endl;
+   out << "- NLLDecay" << setw(10) << nllDecayLength() << setw(10) << endl;
+   out << "- NLLRestFrame" << setw(10) << nllRestFrameKinematics()  << endl;
+   out << "-- SV" << setw(30) << sv_ << endl;
+   out << "-- PV" << setw(30) << pv_ << endl;
+   out << "-- ThetaRest" << setw(30) << thetaRest_ << endl;
+   out << "-- PhiLab" << setw(30) << phiLab_ << endl;
+   out << "-- RadiusLab" << setw(30) << radiusLab_ << endl;
+   out << "-- M12 " << setw(30) << M12_ << endl;
+   out << "-- Dir" << setw(10) << legDir_ << endl;
+   out << "-- TauP4" << setw(30) << p4_ << " Mass: " << p4_.mass() << endl;
+   out << "-- VisP4" << setw(30) << visP4_ << " Mass: " << visP4_.mass() << endl;
+   out << "-- NuP4" << setw(30) << nuP4_ << endl;
+}
+
 }

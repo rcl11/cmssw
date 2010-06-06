@@ -12,7 +12,7 @@
  *
  * \version $Revision: 1.1 $
  *
- * $Id: SVmassRecoSingleLegExtractorBase.h,v 1.1 2009/06/11 07:23:28 veelken Exp $
+ * $Id: SVmassRecoSingleLegExtractorBase.h,v 1.1 2010/03/29 17:07:14 veelken Exp $
  *
  */
 
@@ -27,7 +27,7 @@ class SVmassRecoSingleLegExtractorBase
   // destructor
   virtual ~SVmassRecoSingleLegExtractorBase() {}
 
-  virtual const reco::Candidate::LorentzVector& p4() const = 0;
+  virtual reco::Candidate::LorentzVector p4() const = 0;
   virtual bool typeIsSupportedBySVFitter() const = 0;
   virtual reco::Candidate::LorentzVector getNeutralP4() const = 0;
   virtual double chargedMass2() const = 0;
