@@ -9,7 +9,7 @@ SVmassRecoSingleLegLikelihood::SVmassRecoSingleLegLikelihood(const SVmassRecoSin
       const std::vector<reco::TransientTrack>& tracks)
    : extractor_(extractor),
    tracks_(tracks),
-   propagator_(tracks[0].field()),
+   propagator_(tracks[0].isValid() ? tracks[0].field() : NULL),
    visP4_(extractor.p4()),
    visP3_(extractor.p4().Vect()),
    visP3GlobalVector_(extractor.p4().px(), extractor.p4().py(), extractor.p4().pz()),
@@ -30,6 +30,10 @@ SVmassRecoSingleLegLikelihood::SVmassRecoSingleLegLikelihood(const SVmassRecoSin
    double bestNormedChi2 = -1;
    for(size_t iTrack = 0; iTrack < tracks_.size(); ++iTrack)
    {
+      if(!tracks_[iTrack].isValid())
+      {
+         edm::LogError("SVSingleLegLikelihood") << "The " << iTrack << " track is invalid";
+      }
       double chi2 = tracks_[iTrack].track().normalizedChi2();
       double pt = tracks_[iTrack].track().pt();
       edm::LogInfo("SingleLegLikelihood") << "Track " << iTrack << " has chi2 " << chi2 << " and pt " << pt;
@@ -40,6 +44,10 @@ SVmassRecoSingleLegLikelihood::SVmassRecoSingleLegLikelihood(const SVmassRecoSin
       }
    }
    edm::LogInfo("SingleLegLikelihood") << "Found best track with chi2 " << bestNormedChi2;
+   if(!bestTrack_.isValid()) 
+   {
+      edm::LogError("SVSingleLegLikelihood") << "No valid track found";
+   }
 }
 
 double SVmassRecoSingleLegLikelihood::findPGivenM12(double M12) const
@@ -107,12 +115,18 @@ void SVmassRecoSingleLegLikelihood::findIntialValues(const GlobalPoint& pv,
             GlobalVector direction = buildTauDirection(theta, phi, m12);
             GlobalPoint nonConstOrigin = pv; // wtf
             Line line(nonConstOrigin, direction);
-            GlobalPoint pca = 
-               propagator_.extrapolate(bestTrack_.initialFreeState(), line).globalPosition();
+            TrajectoryStateOnSurface tsos = propagator_.extrapolate(bestTrack_.initialFreeState(), line);
+            double radius = 1;
+            if(!tsos.isValid()) {
+               edm::LogWarning("SVSingleLegLikelihood") << "Can't find a valid tsos for intial point";
+            } else 
+            {
+               GlobalPoint pca = tsos.globalPosition();
+               GlobalPoint displacement(pca.x()-pv.x(), pca.y()-pv.y(), pca.z()-pv.z());
+               radius = displacement.mag();
+            }
             //double err_radius = pca.mag(); // not quite right..
             double err_radius = 0.1;
-            GlobalPoint displacement(pca.x()-pv.x(), pca.y()-pv.y(), pca.z()-pv.z());
-            double radius = displacement.mag();
             // Setup our guess
             setPoints(pv, theta, phi, radius, m12);
             // See if it is the best so far
@@ -214,9 +228,7 @@ double SVmassRecoSingleLegLikelihood::nllRestFrameKinematics() const
    }
 
    if(isnan(output) || isinf(output)) {
-      edm::LogWarning("SVSingleLeg") << " Got nan/inf for nllRestFrame!  nuSystemIsMassless: " 
-         << nuSystemIsMassless() << " thetaRest: " << thetaRest_ << " M12: " << M12_ <<
-         " Returning 30 instead.";
+      //edm::LogWarning("SVSingleLeg") << " Got nan/inf for nllRestFrame!  nuSystemIsMassless: " << nuSystemIsMassless() << " thetaRest: " << thetaRest_ << " M12: " << M12_ << " Returning 30 instead.";
       return 30;
    }
 

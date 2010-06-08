@@ -68,12 +68,16 @@ namespace svMassReco
        : pv_(pv),
          met_(met)
      {
-       // build each leg fitter
-       leg1Likelihood_ = 
-	 std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg1extractor, leg1Tracks));
-       leg2Likelihood_ = 
-	 std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg2extractor, leg2Tracks));
-       enableMET_ = true;
+        if(!pv_.isValid())
+        {
+           edm::LogError("SVDiTauLikelihood") << " PV is invalid!";
+        }
+        // build each leg fitter
+        leg1Likelihood_ = 
+           std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg1extractor, leg1Tracks));
+        leg2Likelihood_ = 
+           std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg2extractor, leg2Tracks));
+        enableMET_ = true;
      }
      virtual ~SVmassRecoDiTauLikelihood(){};
 
