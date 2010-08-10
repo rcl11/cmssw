@@ -156,12 +156,16 @@ namespace svMassReco {
 
    double nllNuSystemGivenMET(const FourVector& nus, const FourVector& direction, const reco::MET* met)
    {
-      // MET likelihood split into perp/par components *along* the fitted nu
-      // system direction
+      // MET likelihood split into perp/par components along the leptonic leg1.
       //double parSigma =  1.14770e+00 + 3.62242e-02*met->sumEt();
       //double perpSigma = 2.75926e-01 + 3.70582e-02*met->sumEt();
-      double parSigma =  8.068;
-      double perpSigma = 6.905;
+      //double parSigma =  8.068;
+      //double perpSigma = 6.905;
+      double parSigma = 2.6 + 0.02285*met->sumEt();
+      double perpSigma = 2.12 + 0.02456*met->sumEt();
+
+      double parBias = 1.0; // RECO is overestimated
+      double perpBias = 0.0;
 
       double output = 0.0;
 
@@ -171,8 +175,8 @@ namespace svMassReco {
       double fitMETparToDir = (nus.px()*direction.px() + nus.py()*direction.py())/direction.pt();
       double fitMETperpToDir = (nus.px()*direction.py() - nus.py()*direction.px())/direction.pt();
 
-      double parResidual = recoMETparToDir - fitMETparToDir;
-      double perpResidual = recoMETperpToDir - fitMETperpToDir;
+      double parResidual = recoMETparToDir - fitMETparToDir - parBias;
+      double perpResidual = recoMETperpToDir - fitMETperpToDir - perpBias;
 
       output += 0.5*square(parResidual/parSigma);
       output += nlGaussianNorm(parSigma);
