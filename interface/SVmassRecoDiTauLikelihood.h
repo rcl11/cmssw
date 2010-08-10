@@ -41,6 +41,7 @@
 */
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
@@ -56,28 +57,51 @@
 
 namespace svMassReco 
 {
-  /// Pure abstract class to interface with Minuit
   class SVmassRecoDiTauLikelihood : public TObject
   {
    public:
-     SVmassRecoDiTauLikelihood(const SVmassRecoSingleLegExtractorBase& leg1extractor, 
-			       const std::vector<reco::TransientTrack>& leg1Tracks,
-			       const SVmassRecoSingleLegExtractorBase& leg2extractor, 
-			       const std::vector<reco::TransientTrack>& leg2Tracks, 
-			       const TransientVertex& pv, const reco::MET* met)
+     SVmassRecoDiTauLikelihood(const edm::ParameterSet &cfg,
+           const SVmassRecoSingleLegExtractorBase& leg1extractor, 
+           const std::vector<reco::TransientTrack>& leg1Tracks,
+           const SVmassRecoSingleLegExtractorBase& leg2extractor, 
+           const std::vector<reco::TransientTrack>& leg2Tracks, 
+           const TransientVertex& pv, const reco::MET* met)
        : pv_(pv),
          met_(met)
      {
-        if(!pv_.isValid())
-        {
+        if(!pv_.isValid()) {
            edm::LogError("SVDiTauLikelihood") << " PV is invalid!";
         }
-        // build each leg fitter
+
+        edm::LogWarning("SVDiTauLikelihood") << " Building fitter about PV: " << pv_.position();
+
+        // Build the likelihood manager for each leg
         leg1Likelihood_ = 
            std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg1extractor, leg1Tracks));
         leg2Likelihood_ = 
            std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg2extractor, leg2Tracks));
-        enableMET_ = true;
+
+        if(cfg.exists("SVOptions")){
+           edm::ParameterSet options = cfg.getParameter<edm::ParameterSet>("SVOptions");
+           useMEtInFit_ = options.getParameter<bool>("useMEtInFit");
+           useLeg1TrackingInFit_ = options.getParameter<bool>("useLeg1TrackingInFit");
+           useLeg2TrackingInFit_ = options.getParameter<bool>("useLeg2TrackingInFit");
+           correctPrimaryVertexInFit_= options.getParameter<bool>("correctPrimaryVertexInFit");
+        } else {
+           edm::LogWarning("SVDiTauLikelihood") << "No SV options found, enabling all options!";
+           useMEtInFit_ = true;
+           useLeg1TrackingInFit_ = true;
+           useLeg2TrackingInFit_ = true;
+           correctPrimaryVertexInFit_ = true;
+        }
+        /*
+        edm::LogWarning("SVOptions") << "SV Fit options:\n" 
+           << " MET " << useMEtInFit_ << "\n"
+           << " Leg1 Tracking " << useLeg1TrackingInFit_ << "\n" 
+           << " Leg2 Tracking " << useLeg2TrackingInFit_ << "\n"
+           << " PV " << correctPrimaryVertexInFit_;
+        */
+
      }
      virtual ~SVmassRecoDiTauLikelihood(){};
 
@@ -86,30 +110,46 @@ namespace svMassReco
      {
 
        double nllOutput = 0;
-       /* npars layout:  (PV dx,dy,dz), (Leg1 x,y,z,m12) (Leg2 x,y,z,m12) */
 
        // Fitted PV is original PV position plus a fitted correction factor
        fitPV_ = pv_.position() + GlobalVector(pars[0], pars[1], pars[2]);
+       // Sanity check
+       if(fabs(fitPV_.x()) > 5 || fabs(fitPV_.y()) > 5 || fabs(fitPV_.z()) > 15)
+       {
+          edm::LogWarning("SVDiTauLikelihood") << "Strange PV!! " << fitPV_ 
+             << " corrections: " << pars[0] << " " << pars[1] << " " << pars[2];
+       }
+       // Get the NLL of the PV given the vertex fit if desired
+       if(correctPrimaryVertexInFit_) {
+          pvNLL_ = nllPointGivenVertex(fitPV_, pv_);
+          nllOutput += pvNLL_;
+       }
 
-       // Get the NLL of the PV given the vertex fit
-       pvNLL_ = nllPointGivenVertex(fitPV_, pv_);
-       nllOutput += pvNLL_;
-	 
-       // Get the NLL for each leg
+       // Setup each leg with the current fit point
        leg1Likelihood_->setPoints(fitPV_, pars[3], pars[4], pars[5], pars[6]);
-
-       nllOutput += leg1Likelihood_->nllOfLeg();
-
        leg2Likelihood_->setPoints(fitPV_, pars[7], pars[8], pars[9], pars[10]);
 
-       nllOutput += leg2Likelihood_->nllOfLeg();
+       // At a minimum, we always use the rest frame kinematics in the fit
+       nllOutput += leg1Likelihood_->nllRestFrameKinematics(p4().mass());
+       nllOutput += leg2Likelihood_->nllRestFrameKinematics(p4().mass());
 
-       // Constrain by MET, if desired.
-       // Compute the four vector sum of invisible objects
+       // Add the tracker information if desired
+       if(useLeg1TrackingInFit_){
+          nllOutput += leg1Likelihood_->nllTopological();
+          nllOutput += leg1Likelihood_->nllDecayLength();
+       }
+       if(useLeg2TrackingInFit_){
+          nllOutput += leg2Likelihood_->nllTopological();
+          nllOutput += leg2Likelihood_->nllDecayLength();
+       }
+
+       // Compute information about MET compatibility and add it
+       // into the fit if desired
+       // NB MET is parameterized w.r.t muon direction
        nus_ = leg2Likelihood_->nuP4() + leg1Likelihood_->nuP4();
-       // MET is parameterized w.r.t muon direction
        metNLL_ = nllNuSystemGivenMET(nus_, leg1Likelihood_->visP4(), met_);
-       if ( enableMET_ ) nllOutput += metNLL_;
+       if(useMEtInFit_)
+          nllOutput += metNLL_;
 
        // Cache NLL result
        lastNLL_ = nllOutput;
@@ -128,19 +168,18 @@ namespace svMassReco
      /// Get MET NLL for the last points fitted
      double metNLL() const { return metNLL_; };
 
-     /// Get eotal NLL for the last points fitted
+     /// Get total NLL for the last points fitted
      double getNLL() const { return lastNLL_; };
 
      /// Setup the parameters in Minuit and find reasonable physical initial
      /// values
      void setupParametersFromScratch(TMinuit& minuit)
      {
-
        edm::LogInfo("SVMethod") << "Setting up initial PV";
        // ParNo, Name, InitValue, InitError, Limits
-       minuit.DefineParameter(0, "pv_x", 0, pv_.positionError().cxx(), 0, 0);
-       minuit.DefineParameter(1, "pv_y", 0, pv_.positionError().cyy(), 0, 0);
-       minuit.DefineParameter(2, "pv_z", 0, pv_.positionError().czz(), 0, 0);
+       minuit.DefineParameter(0, "pv_x", 0, pv_.positionError().cxx(), -5, 5);
+       minuit.DefineParameter(1, "pv_y", 0, pv_.positionError().cyy(), -5, 5);
+       minuit.DefineParameter(2, "pv_z", 0, pv_.positionError().czz(), -5, 5);
        
        edm::LogInfo("SVMethod") << "Finding initial conditions for leg 1";
        // Get initial guesses for each leg
@@ -158,7 +197,7 @@ namespace svMassReco
 
        minuit.DefineParameter(3, "sv1_thetaRest", thetaGuess, thetaError, 0, TMath::Pi());
        minuit.DefineParameter(4, "sv1_phiLab", phiGuess, phiError, 0, 0);
-       minuit.DefineParameter(5, "sv1_radiusLab", radiusGuess, radiusError, 0, 0); //limits?
+       minuit.DefineParameter(5, "sv1_radiusLab", radiusGuess, radiusError, 0, 5); //limits?
        minuit.DefineParameter(6, "sv1_m12", m12Guess, m12Error, 0, leg1Likelihood_->maxM12()); 
 
        edm::LogInfo("SVMethod") << "Finding initial SV for leg 2";
@@ -170,7 +209,7 @@ namespace svMassReco
 
        minuit.DefineParameter(7, "sv2_thetaRest", thetaGuess, thetaError, 0, TMath::Pi());
        minuit.DefineParameter(8, "sv2_phiLab", phiGuess, phiError, 0, 0);
-       minuit.DefineParameter(9, "sv2_radiusLab", radiusGuess, radiusError, 0, 0); //limits?
+       minuit.DefineParameter(9, "sv2_radiusLab", radiusGuess, radiusError, 0, 5); //limits?
        minuit.DefineParameter(10, "sv2_m12", m12Guess, m12Error, 0, leg2Likelihood_->maxM12()); 
 
        // Determine whether or not m12 is a free parameter and needs to be scaled.
@@ -178,6 +217,22 @@ namespace svMassReco
        // can ignore m12
        if ( leg1Likelihood_->nuSystemIsMassless() ) minuit.FixParameter(6);
        if ( leg2Likelihood_->nuSystemIsMassless() ) minuit.FixParameter(10);
+
+       // Check if the phiLab variables are relevant to this fit
+       if(!useLeg1TrackingInFit_ && !useMEtInFit_)
+          minuit.FixParameter(4);
+       if(!useLeg2TrackingInFit_ && !useMEtInFit_)
+          minuit.FixParameter(8);
+
+       // Check if the radius is relevant in the fit
+       if(!useLeg1TrackingInFit_)
+          minuit.FixParameter(5);
+       if(!useLeg2TrackingInFit_)
+          minuit.FixParameter(9);
+
+       // Check if we want to correct the PV
+       if(!correctPrimaryVertexInFit_)
+          lockPV(minuit);
      }
 
      /// Lock the PV variables in the fit
@@ -206,12 +261,6 @@ namespace svMassReco
        if ( !leg1Likelihood_->nuSystemIsMassless() ) minuit.Release(6);
        if ( !leg2Likelihood_->nuSystemIsMassless() ) minuit.Release(10);
      }
-
-     /// Enable/disable MET in the fit
-     void enableMET(bool enable) {
-        enableMET_ = enable;
-     }
-
     /// Access to the legs
     const SVmassRecoSingleLegLikelihood* leg1Likelihood() const { return leg1Likelihood_.get(); };
     const SVmassRecoSingleLegLikelihood* leg2Likelihood() const { return leg2Likelihood_.get(); };
@@ -229,10 +278,7 @@ namespace svMassReco
        out << "=========== SVmassRecoDiTauLikelihood =========== " << endl;
        out << setw(10) <<"Total NLL:" << setw(10) << lastNLL_ << setw(10) << "Status:" << setw(10) << lastStatus_ << endl;
        out << setw(10) <<"PV" << setw(10) << pvNLL_ << setw(10) << "Fit:" << setw(10) << fitPV_ << "Meas:" << setw(10) << pv_.position() << endl;
-       if ( enableMET_ )
-          out << setw(10) <<"MET" << setw(10) << metNLL_ << setw(10) << "Fit:" << setw(30) << nus_ << setw(10) << "Meas:" << setw(30) << met_->p4() << endl;
-       else
-          out << "MET disabled." << endl;
+       out << setw(10) <<"MET" << setw(10) << metNLL_ << setw(10) << "Fit:" << setw(30) << nus_ << setw(10) << "Meas:" << setw(30) << met_->p4() << endl;
        out << "Total mass: " << total.mass() << endl;
        out << " *** Leg 1 *** " << endl;
        leg1Likelihood_->printTo(out);
@@ -244,7 +290,12 @@ namespace svMassReco
      const TransientVertex& pv_;
      const reco::MET* met_;
      
-     // Logging stuff
+     bool useMEtInFit_;
+     bool useLeg1TrackingInFit_;
+     bool useLeg2TrackingInFit_;
+     bool correctPrimaryVertexInFit_;
+
+     // Persist relevant variables of the current fit
      GlobalPoint fitPV_;
      double pvNLL_;
      double metNLL_;
@@ -252,10 +303,10 @@ namespace svMassReco
      
      double lastNLL_;
      int lastStatus_;
+
+     // Pointers to the individual legs
      std::auto_ptr<SVmassRecoSingleLegLikelihood> leg1Likelihood_;
      std::auto_ptr<SVmassRecoSingleLegLikelihood> leg2Likelihood_;
-     
-     bool enableMET_;
   };
 }
 

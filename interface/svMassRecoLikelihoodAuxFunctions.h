@@ -27,6 +27,7 @@ namespace svMassReco {
   /// inline definitions of auxiliary functions
   inline double square(double x) { return x*x; }
   inline double cube(double x) { return x*x*x; }
+  inline double fourth(double x) { return x*x*x*x; }
 
   inline double nlGaussianNorm(double sigma, int dimension=1) { 
     // Norm of Gaussian = 

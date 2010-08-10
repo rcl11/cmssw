@@ -10,9 +10,9 @@
  * 
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVmassRecoSingleLegExtractorBase.h,v 1.1 2010/03/29 17:07:14 veelken Exp $
+ * $Id: SVmassRecoSingleLegExtractorBase.h,v 1.2 2010/06/06 21:55:20 friis Exp $
  *
  */
 
@@ -28,6 +28,7 @@ class SVmassRecoSingleLegExtractorBase
   virtual ~SVmassRecoSingleLegExtractorBase() {}
 
   virtual reco::Candidate::LorentzVector p4() const = 0;
+  virtual int charge() const = 0;
   virtual bool typeIsSupportedBySVFitter() const = 0;
   virtual reco::Candidate::LorentzVector getNeutralP4() const = 0;
   virtual double chargedMass2() const = 0;

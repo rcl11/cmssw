@@ -8,9 +8,9 @@
  * 
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVmassRecoSingleLegExtractorT.h,v 1.1 2010/03/29 17:07:14 veelken Exp $
+ * $Id: SVmassRecoSingleLegExtractorT.h,v 1.2 2010/06/06 21:55:20 friis Exp $
  *
  */
 
@@ -44,6 +44,9 @@ class SVmassRecoSingleLegExtractorT : public SVmassRecoSingleLegExtractorBase
      return output;
   }
 
+  int charge() const {
+     return leg_->charge();
+  }
 
   // Get the expected mass for this tau type 
   double nominalMass() const {

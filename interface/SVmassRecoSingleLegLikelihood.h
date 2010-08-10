@@ -42,7 +42,7 @@ namespace svMassReco
     void setPoints(const GlobalPoint& pv, double thetaRest, 
           double phiLab, double radiusLab, double m12); 
 
-    /// Do a naive opimization
+    /// Do a naive optimization
     void findIntialValues(const GlobalPoint& pv, 
           double &thetaGuess, double &thetaError, 
           double &phiGuess, double &phiError,
@@ -69,7 +69,7 @@ namespace svMassReco
     double nllOfLeg() const; 
 
     /// NLL of the kinematics in the rest frame of the tau
-    double nllRestFrameKinematics() const; 
+    double nllRestFrameKinematics(double diTauMass=90) const; 
 
     /// NLL for this leg from the decay length constraint.
     double nllDecayLength() const;
@@ -80,7 +80,7 @@ namespace svMassReco
     /// Secondary vertex associated with this leg
     const GlobalPoint& sv() const { return sv_; };
 
-    /// Inferred tau diretion and decay length
+    /// Inferred tau direction and decay length
     const ThreeVector& dir() const { return legDir_; };
 
     /// P4 of this visible part of this leg
