@@ -10,13 +10,14 @@
  * 
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVmassRecoSingleLegExtractorBase.h,v 1.2 2010/06/06 21:55:20 friis Exp $
+ * $Id: SVmassRecoSingleLegExtractorBase.h,v 1.3 2010/08/10 13:43:25 friis Exp $
  *
  */
 
-#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 
 class SVmassRecoSingleLegExtractorBase
 {
@@ -30,8 +31,6 @@ class SVmassRecoSingleLegExtractorBase
   virtual reco::Candidate::LorentzVector p4() const = 0;
   virtual int charge() const = 0;
   virtual bool typeIsSupportedBySVFitter() const = 0;
-  virtual reco::Candidate::LorentzVector getNeutralP4() const = 0;
-  virtual double chargedMass2() const = 0;
   virtual bool nuSystemIsMassless() const = 0;
   virtual std::vector<reco::TrackBaseRef> getTracks() const = 0;
 
