@@ -153,8 +153,7 @@ void SVmassRecoSingleLegLikelihood::findIntialValues(const GlobalPoint& pv,
    edm::LogInfo("SingleLegLikelihoodInitial") << "Found initial condition @" << *this;
 }
 
-GlobalVector SVmassRecoSingleLegLikelihood::buildTauDirection(double thetaRest,
-      double phiLab, double m12)
+GlobalVector SVmassRecoSingleLegLikelihood::buildTauDirection(double thetaRest, double phiLab, double m12)
 {
    // Determine lab frame opening angle between tau direction
    // and vis. momentum
