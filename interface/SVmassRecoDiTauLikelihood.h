@@ -73,8 +73,6 @@ namespace svMassReco
            edm::LogError("SVDiTauLikelihood") << " PV is invalid!";
         }
 
-        edm::LogWarning("SVDiTauLikelihood") << " Building fitter about PV: " << pv_.position();
-
         // Build the likelihood manager for each leg
         leg1Likelihood_ = 
            std::auto_ptr<SVmassRecoSingleLegLikelihood>(new SVmassRecoSingleLegLikelihood(leg1extractor, leg1Tracks));
@@ -94,14 +92,6 @@ namespace svMassReco
            useLeg2TrackingInFit_ = true;
            correctPrimaryVertexInFit_ = true;
         }
-        /*
-        edm::LogWarning("SVOptions") << "SV Fit options:\n" 
-           << " MET " << useMEtInFit_ << "\n"
-           << " Leg1 Tracking " << useLeg1TrackingInFit_ << "\n" 
-           << " Leg2 Tracking " << useLeg2TrackingInFit_ << "\n"
-           << " PV " << correctPrimaryVertexInFit_;
-        */
-
      }
      virtual ~SVmassRecoDiTauLikelihood(){};
 
