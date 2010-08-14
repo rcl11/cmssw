@@ -90,3 +90,8 @@ namespace svMassRecoSingleLegExtractorTImpl {
 
 } // end namespace
 
+// Declare our objects to the linker
+template class SVmassRecoSingleLegExtractorT<pat::Muon>;
+template class SVmassRecoSingleLegExtractorT<pat::Electron>;
+template class SVmassRecoSingleLegExtractorT<pat::Tau>;
+
