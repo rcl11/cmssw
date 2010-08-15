@@ -88,10 +88,21 @@ namespace svMassRecoSingleLegExtractorTImpl {
       return leg->decayMode(); 
    }
 
-} // end namespace
 
 // Declare our objects to the linker
-template class SVmassRecoSingleLegExtractorT<pat::Muon>;
-template class SVmassRecoSingleLegExtractorT<pat::Electron>;
-template class SVmassRecoSingleLegExtractorT<pat::Tau>;
+template bool typeIsSupportedBySVFitter<pat::Muon>();
+template bool nuSystemIsMassless<pat::Muon>();
+template std::vector<reco::TrackBaseRef> getTracks<pat::Muon>(const pat::Muon* leg);
+template int legTypeLabel<pat::Muon>(const pat::Muon* leg);
 
+template bool typeIsSupportedBySVFitter<pat::Electron>();
+template bool nuSystemIsMassless<pat::Electron>();
+template std::vector<reco::TrackBaseRef> getTracks<pat::Electron>(const pat::Electron* leg);
+template int legTypeLabel<pat::Electron>(const pat::Electron* leg);
+
+template bool typeIsSupportedBySVFitter<pat::Tau>();
+template bool nuSystemIsMassless<pat::Tau>();
+template std::vector<reco::TrackBaseRef> getTracks<pat::Tau>(const pat::Tau* leg);
+template int legTypeLabel<pat::Tau>(const pat::Tau* leg);
+
+} // end namespace
