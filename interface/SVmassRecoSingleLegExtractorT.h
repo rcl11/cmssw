@@ -15,15 +15,30 @@
  */
 
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorBase.h"
+#include <assert.h>
 
 // Type specific template specializatiosn found in corresponding .cc file
+/*
 namespace svMassRecoSingleLegExtractorTImpl {
-   template<typename T> bool typeIsSupportedBySVFitter() { return false; }
+   template<typename T> bool typeIsSupportedBySVFitter() { 
+      assert(false); 
+      std::cout << "What the hell" << std::endl;
+      return false; 
+   }
    template<typename T> bool nuSystemIsMassless() { return false; }
    template<typename T> std::vector<reco::TrackBaseRef> getTracks(const T* leg) { 
+      assert(false);
       return std::vector<reco::TrackBaseRef>(); 
    }
    template<typename T> int legTypeLabel(const T* leg) { return -30; }
+}
+*/
+
+namespace svMassRecoSingleLegExtractorTImpl {
+   template<typename T> bool typeIsSupportedBySVFitter();
+   template<typename T> bool nuSystemIsMassless();
+   template<typename T> std::vector<reco::TrackBaseRef> getTracks(const T* leg);
+   template<typename T> int legTypeLabel(const T* leg);
 }
 
 template<typename T>

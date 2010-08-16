@@ -7,6 +7,30 @@
 namespace svMassRecoSingleLegExtractorTImpl {
 
    //-------------------------------------------------------------------------------
+   // Unsupported Candidate customization
+   //-------------------------------------------------------------------------------
+
+   template<> bool typeIsSupportedBySVFitter<reco::Candidate>()  
+   { 
+      return false; 
+   }
+
+   template<> bool nuSystemIsMassless<reco::Candidate>() 
+   {
+      return false;
+   }
+
+   template<> std::vector<reco::TrackBaseRef> getTracks<reco::Candidate>(const reco::Candidate* leg) 
+   {
+      return std::vector<reco::TrackBaseRef>();
+   }
+
+   template<> int legTypeLabel<reco::Candidate>(const reco::Candidate* leg) 
+   {
+      return -30; 
+   }
+
+   //-------------------------------------------------------------------------------
    // pat::Electron specific customization 
    //-------------------------------------------------------------------------------
 
@@ -89,20 +113,20 @@ namespace svMassRecoSingleLegExtractorTImpl {
    }
 
 
-// Declare our objects to the linker
-template bool typeIsSupportedBySVFitter<pat::Muon>();
-template bool nuSystemIsMassless<pat::Muon>();
-template std::vector<reco::TrackBaseRef> getTracks<pat::Muon>(const pat::Muon* leg);
-template int legTypeLabel<pat::Muon>(const pat::Muon* leg);
+   // Declare our objects to the linker
+   template bool typeIsSupportedBySVFitter<pat::Muon>();
+   template bool nuSystemIsMassless<pat::Muon>();
+   template std::vector<reco::TrackBaseRef> getTracks<pat::Muon>(const pat::Muon*);
+   template int legTypeLabel<pat::Muon>(const pat::Muon*);
 
-template bool typeIsSupportedBySVFitter<pat::Electron>();
-template bool nuSystemIsMassless<pat::Electron>();
-template std::vector<reco::TrackBaseRef> getTracks<pat::Electron>(const pat::Electron* leg);
-template int legTypeLabel<pat::Electron>(const pat::Electron* leg);
+   template bool typeIsSupportedBySVFitter<pat::Electron>();
+   template bool nuSystemIsMassless<pat::Electron>();
+   template std::vector<reco::TrackBaseRef> getTracks<pat::Electron>(const pat::Electron*);
+   template int legTypeLabel<pat::Electron>(const pat::Electron*);
 
-template bool typeIsSupportedBySVFitter<pat::Tau>();
-template bool nuSystemIsMassless<pat::Tau>();
-template std::vector<reco::TrackBaseRef> getTracks<pat::Tau>(const pat::Tau* leg);
-template int legTypeLabel<pat::Tau>(const pat::Tau* leg);
+   template bool typeIsSupportedBySVFitter<pat::Tau>();
+   template bool nuSystemIsMassless<pat::Tau>();
+   template std::vector<reco::TrackBaseRef> getTracks<pat::Tau>(const pat::Tau*);
+   template int legTypeLabel<pat::Tau>(const pat::Tau*);
 
 } // end namespace
