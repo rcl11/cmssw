@@ -1,5 +1,6 @@
 <export></export>
 <library name=TauAnalysisCandidateTools_plugins file=*.cc>
+  <use name=DQMServices/Core>
   <use name=FWCore/Framework>
   <use name=FWCore/MessageLogger>
   <use name=FWCore/ParameterSet>
