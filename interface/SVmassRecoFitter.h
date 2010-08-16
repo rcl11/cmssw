@@ -98,6 +98,8 @@ namespace svMassReco {
        // Ensure both legs are supported by the fitter
       if ( !(leg1extractor_.typeIsSupportedBySVFitter() && leg2extractor_.typeIsSupportedBySVFitter()) ) 
       {
+         edm::LogWarning("SVmassRecoFitter") << " One or both of the input collection types are unsupported," 
+            << " SV fit will not be run!";
 	return std::vector<SVmassRecoSolution>();
       }
 
