@@ -25,6 +25,10 @@ namespace svMassReco {
    double nllPointGiven2DError(const GlobalPoint& point, const GlobalPoint& central, const GlobalError& error)
    {
       AlgebraicVector3 displacement(point.x()-central.x(), point.y()-central.y(), point.z()-central.z());
+      //TVector3 displacement2(point.x()-central.x(), point.y()-central.y(), point.z()-central.z());
+
+      //std::cout << "Displacement @ DCA: " << displacement << std::endl;
+
       AlgebraicSymMatrix33 errorMatrix(error.matrix_new());
       // Load into TMatrix
       TMatrixDSym matrix(3);
@@ -44,9 +48,8 @@ namespace svMassReco {
       // Get Eigenstuff
       TVectorD eigenvalues(3);
 
-      //std::cout << "Eigenvalues " << eigenvalues[0] << ", " << eigenvalues[1] << ", " << eigenvalues[2] << std::endl;
-
       TMatrixD eigenvectors = matrix.EigenVectors(eigenvalues);
+      //td::cout << "Eigenvalues (" << eigenvalues[0] << ", " << eigenvalues[1] << ", " << eigenvalues[2] << ") " << std::endl;
 
       //std::cout << "Eigenvectors " << std::endl;
       //eigenvectors.Print();
@@ -54,8 +57,34 @@ namespace svMassReco {
       // Get the lowest eigenvector
       TVector3 lowestEigenvector(eigenvectors[0][2], eigenvectors[1][2], eigenvectors[2][2]);
 
-      //std::cout << "Lowest eigenvector " << std::endl;
-      //lowestEigenvector.Print();
+      /*
+      TVector3 middleEigenvector(eigenvectors[0][1], eigenvectors[1][1], eigenvectors[2][1]);
+      TVector3 highestEigenvector(eigenvectors[0][0], eigenvectors[1][0], eigenvectors[2][0]);
+
+      TVectorD lowestEigenvectorD(3);
+      TVectorD middleEigenvectorD(3);
+      TVectorD highestEigenvectorD(3);
+      lowestEigenvectorD[0] = lowestEigenvector[0];
+      middleEigenvectorD[0] = middleEigenvector[0];
+      highestEigenvectorD[0] = highestEigenvector[0];
+      lowestEigenvectorD[1] = lowestEigenvector[1];
+      middleEigenvectorD[1] = middleEigenvector[1];
+      highestEigenvectorD[1] = highestEigenvector[1];
+      lowestEigenvectorD[2] = lowestEigenvector[2];
+      middleEigenvectorD[2] = middleEigenvector[2];
+      highestEigenvectorD[2] = highestEigenvector[2];
+
+      lowestEigenvectorD *= matrix;
+      middleEigenvectorD *= matrix;
+      highestEigenvectorD *= matrix;
+      std::cout << "x M.lowest " << (lowestEigenvectorD)[0] << std::endl;
+      std::cout << "x M.middle " << (middleEigenvectorD)[0] << std::endl;
+      std::cout << "x M.highest " << (highestEigenvectorD)[0] << std::endl;
+
+      std::cout << "Lowest eigenvector dot displacement " << lowestEigenvector.Dot(displacement2) <<  std::endl;
+      std::cout << "Middle eigenvector dot displacement " << middleEigenvector.Dot(displacement2) << std::endl;
+      std::cout << "Highest eigenvector dot displacement " << highestEigenvector.Dot(displacement2) << std::endl;
+      */
 
       // Make a rotation such that this eigenvector is aligned along Z
       TRotation rot;
@@ -76,13 +105,8 @@ namespace svMassReco {
       // Transform our displacement vector
       AlgebraicVector3 rotDisp = rotSMatrix*displacement;
 
-      //std::cout << "New disp. vector " << rotDisp(0) << ", " << rotDisp(1) << ", " << rotDisp(2) << std::endl;
-
       // Transform our error matrix
       AlgebraicMatrix33 rotError = ROOT::Math::Transpose(rotSMatrix)*errorMatrix*rotSMatrix;
-      //AlgebraicMatrix33 rotError = rotSMatrix*errorMatrix*ROOT::Math::Transpose(rotSMatrix);
-
-      //std::cout << "New error matrix " << rotError << std::endl;
 
       // Now throw away the Z components
       AlgebraicMatrix22 rotError2;
@@ -106,8 +130,10 @@ namespace svMassReco {
       }
 
       double expResult = ROOT::Math::Dot(rotDisp2, rotError2*rotDisp2)/2.0;
-      double normResult = nlGaussianNorm(sqrt(determinant), 2);
-      return expResult + normResult;
+      // double normResult = nlGaussianNorm(sqrt(determinant), 2);
+      //std::cout << " Chi2: " << expResult << " log(Norm): " << normResult << std::endl;
+      //return expResult + normResult;
+      return expResult;
    }
 
    double nllPointGiven3DError(const GlobalPoint& point, const GlobalPoint& central, const GlobalError& error)
@@ -149,8 +175,6 @@ namespace svMassReco {
       //return tauMass*(length / 100.0)/(tauLifetime*momentum);
       double ctau = 8.711e-3; //centimeters
       double factor = tauMass/(ctau*momentum);
-      // NLL = (length/100)*factor + (-1)*(log(ctau*momentum) - log(tauMass))
-      //return length*factor + log(tauMass) - log(ctau) - log(momentum);
       return length*factor - log(tauMass) + log(ctau) + log(momentum);
    }
 
@@ -179,10 +203,10 @@ namespace svMassReco {
       double perpResidual = recoMETperpToDir - fitMETperpToDir - perpBias;
 
       output += 0.5*square(parResidual/parSigma);
-      output += nlGaussianNorm(parSigma);
+      //output += nlGaussianNorm(parSigma);
 
       output += 0.5*square(perpResidual/perpSigma);
-      output += nlGaussianNorm(perpSigma);
+      //output += nlGaussianNorm(perpSigma);
       return output;
    }
 
