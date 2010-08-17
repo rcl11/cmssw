@@ -130,10 +130,9 @@ namespace svMassReco {
       }
 
       double expResult = ROOT::Math::Dot(rotDisp2, rotError2*rotDisp2)/2.0;
-      // double normResult = nlGaussianNorm(sqrt(determinant), 2);
+      double normResult = nlGaussianNorm(sqrt(determinant), 2);
       //std::cout << " Chi2: " << expResult << " log(Norm): " << normResult << std::endl;
-      //return expResult + normResult;
-      return expResult;
+      return expResult + normResult;
    }
 
    double nllPointGiven3DError(const GlobalPoint& point, const GlobalPoint& central, const GlobalError& error)
@@ -203,10 +202,10 @@ namespace svMassReco {
       double perpResidual = recoMETperpToDir - fitMETperpToDir - perpBias;
 
       output += 0.5*square(parResidual/parSigma);
-      //output += nlGaussianNorm(parSigma);
+      output += nlGaussianNorm(parSigma);
 
       output += 0.5*square(perpResidual/perpSigma);
-      //output += nlGaussianNorm(perpSigma);
+      output += nlGaussianNorm(perpSigma);
       return output;
    }
 
