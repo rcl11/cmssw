@@ -171,7 +171,7 @@ namespace svMassReco {
       //  = mass*x*width/momentum = mass*x/momentum*lifetime
       //  tauMass = 1.77684, mean lifetime = 290.6e-15
       //  Length must be passed in centimeters!
-      //return tauMass*(length / 100.0)/(tauLifetime*momentum);
+      // return tauMass*(length / 100.0)/(tauLifetime*momentum);
       double ctau = 8.711e-3; //centimeters
       double factor = tauMass/(ctau*momentum);
       return length*factor - log(tauMass) + log(ctau) + log(momentum);
