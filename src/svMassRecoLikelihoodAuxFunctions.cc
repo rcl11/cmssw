@@ -184,10 +184,10 @@ namespace svMassReco {
       //double perpSigma = 2.75926e-01 + 3.70582e-02*met->sumEt();
       //double parSigma =  8.068;
       //double perpSigma = 6.905;
-      double parSigma = 2.6 + 0.02285*met->sumEt();
-      double perpSigma = 2.12 + 0.02456*met->sumEt();
+      double parSigma = 2.85 + 0.02072*met->sumEt();
+      double perpSigma = 2.3 + 0.02284*met->sumEt();
 
-      double parBias = 1.0; // RECO is overestimated
+      double parBias = 1.183; // RECO is overestimated
       double perpBias = 0.0;
 
       double output = 0.0;
