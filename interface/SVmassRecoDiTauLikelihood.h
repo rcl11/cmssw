@@ -104,8 +104,7 @@ namespace svMassReco
        // Fitted PV is original PV position plus a fitted correction factor
        fitPV_ = pv_.position() + GlobalVector(pars[0], pars[1], pars[2]);
        // Sanity check
-       if(fabs(fitPV_.x()) > 5 || fabs(fitPV_.y()) > 5 || fabs(fitPV_.z()) > 15)
-       {
+       if(fabs(fitPV_.x()) > 5 || fabs(fitPV_.y()) > 5 || fabs(fitPV_.z()) > 15) {
           edm::LogWarning("SVDiTauLikelihood") << "Strange PV!! " << fitPV_ 
              << " corrections: " << pars[0] << " " << pars[1] << " " << pars[2];
        }

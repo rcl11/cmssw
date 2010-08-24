@@ -69,88 +69,36 @@ void SVmassRecoSingleLegLikelihood::findIntialValues(const GlobalPoint& pv,
       double &radiusGuess, double &radiusError,
       double &m12Guess, double &m12Error)
 {
-   size_t thetaSteps = 10;
-   size_t phiSteps = 10;
+   // All values computed assuming isotropic decay
+   thetaGuess = TMath::PiOver2();
+   thetaError = 0.25*(TMath::Pi()*TMath::Pi() - 8);
+   phiGuess = TMath::Pi();
+   phiError = square(TMath::Pi())/3.0;
 
-   // only need to step m12 if it is non zero
-   size_t m12Steps = (nuSystemIsMassless()) ? 1 : 5;
+   m12Guess = 0;
+   m12Error = 0;
 
-   // get the valid range (away from corners)
-   const double thetaMin = 1e-5;
-   const double thetaMax = TMath::Pi() - 1e-5;
-   const double phiMin = -TMath::Pi();
-   const double phiMax = TMath::Pi();
-   const double m12Min = 1e-5;
-   const double m12Max = maxM12() - 1e-5;
-
-   // Set errors for the parameters we are optimizing
-   thetaError = fabs(thetaMax - thetaMin)/thetaSteps;
-   phiError = fabs(phiMax - phiMin)/phiSteps;
-   m12Error = (m12Max-m12Min)/m12Steps;
-
-   double bestLikelihood = 1e30;
-   double bestTheta = 0;
-   double bestPhi = 0;
-   double bestRadius = 0;
-   double bestRadiusError = 0;
-   double bestM12 = 0;
-     
-   // loop over theta steps
-   for(size_t iTheta = 0; iTheta < thetaSteps; ++iTheta)
+   // Check if we need to guess for M12
+   if(legType() == -1) // muon
    {
-      double theta = thetaMin + iTheta*(thetaMax - thetaMin)*1.0/(thetaSteps-1);
-      for(size_t iPhi = 0; iPhi < phiSteps; ++iPhi)
-      {
-         // don't need full (steps - 1) range as it's periodic on this interval
-         double phi = phiMin + iPhi*(phiMax-phiMin)*1.0/(phiSteps);
-         // loop over m12 steps (trivial in massless case)
-         for(size_t iM12 = 0; iM12 < m12Steps; ++iM12)
-         {
-            // keep away from corners
-            double m12 = (nuSystemIsMassless()) ? 0.0 : m12Min + (m12Max-m12Min)*iM12*1.0/(m12Steps-1);
-            // Now we need to figure out what the radius of our test point
-            // is.  We're looping over the directions, but let's find the radius
-            // that gets us closest to the best track
-            // find theta in lab frame
-            GlobalVector direction = buildTauDirection(theta, phi, m12);
-            GlobalPoint nonConstOrigin = pv; // wtf
-            Line line(nonConstOrigin, direction);
-            TrajectoryStateOnSurface tsos = propagator_.extrapolate(bestTrack_.initialFreeState(), line);
-            double radius = 1;
-            if(!tsos.isValid()) {
-               edm::LogWarning("SVSingleLegLikelihood") << "Can't find a valid tsos for intial point";
-            } else 
-            {
-               GlobalPoint pca = tsos.globalPosition();
-               GlobalPoint displacement(pca.x()-pv.x(), pca.y()-pv.y(), pca.z()-pv.z());
-               radius = displacement.mag();
-            }
-            //double err_radius = pca.mag(); // not quite right..
-            double err_radius = 0.1;
-            // Setup our guess
-            setPoints(pv, theta, phi, radius, m12);
-            // See if it is the best so far
-            if(nllOfLeg() < bestLikelihood)
-            {
-               bestTheta = theta;
-               bestPhi = phi;
-               bestRadius = radius;
-               bestRadiusError = err_radius;
-               bestM12 = m12;
-               bestLikelihood = nllOfLeg();
-            }
-         }
-      }
+      m12Guess = 0.921254;
+      m12Error = 0.142983;
+   }
+   if(legType() == -2) // electron
+   {
+      m12Guess = 0.943999;
+      m12Error = 0.15368;
    }
 
-   // return output
-   thetaGuess = bestTheta;
-   m12Guess = bestM12;
-   radiusGuess = bestRadius;
-   phiGuess = bestPhi;
-   radiusError = bestRadiusError;
-   setPoints(pv, thetaGuess, phiGuess, radiusGuess, m12Guess);
-   edm::LogInfo("SingleLegLikelihoodInitial") << "Found initial condition @" << *this;
+   // Figure what the average decay length is given our guess.  Note that
+   // the reconstructed tau energy does not depend on the radius
+   
+   setPoints(pv, thetaGuess, phiGuess, 1.0, m12Guess);
+
+   double tauMomentum = fittedP4().P();
+   const double ctau = 8.711e-3; //centimeters
+   radiusGuess = (ctau*tauMomentum)/tauMass;
+   radiusError = square(radiusGuess);
 }
 
 GlobalVector SVmassRecoSingleLegLikelihood::buildTauDirection(double thetaRest, double phiLab, double m12)
