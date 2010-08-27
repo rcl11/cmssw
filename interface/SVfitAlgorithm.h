@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVfitAlgorithm.h,v 1.1 2010/08/27 07:00:09 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.2 2010/08/27 07:39:47 veelken Exp $
  *
  */
 
@@ -60,6 +60,8 @@ class SVfitAlgorithm : public TObject
       currentDiTauSolution_(0),
       minuit_(11)
   {
+    likelihoodsSupportPolarization_ = false;
+
     typedef std::vector<edm::ParameterSet> vParameterSet;
     vParameterSet cfgLogLikelihoodFunctions = cfg.getParameter<vParameterSet>("logLikelihoodFunctions");
     for ( vParameterSet::const_iterator cfgLogLikelihoodFunction = cfgLogLikelihoodFunctions.begin();
@@ -68,6 +70,7 @@ class SVfitAlgorithm : public TObject
       typedef edmplugin::PluginFactory<SVfitDiTauLikelihoodBase<T1,T2>* (const edm::ParameterSet&)> SVfitDiTauLikelihoodPluginFactory;
       SVfitDiTauLikelihoodBase<T1,T2>* logLikelihoodFunction 
 	= SVfitDiTauLikelihoodPluginFactory::get()->create(pluginType, *cfgLogLikelihoodFunction);
+      likelihoodsSupportPolarization_ |= logLikelihoodFunction->supportsPolarization();
       logLikelihoodFunctions_.push_back(logLikelihoodFunction);
     }
     
@@ -101,24 +104,27 @@ class SVfitAlgorithm : public TObject
     minuit_.SetMaxIterations(1000);
     gMinuit = &minuit_;
     
-    for ( int leg1PolarizationHypothesis = SVfitLegSolution::kLeftHanded; 
-	  leg1PolarizationHypothesis <= SVfitLegSolution::kRightHanded; ++leg1PolarizationHypothesis ) {
-      for ( int leg2PolarizationHypothesis = SVfitLegSolution::kLeftHanded; 
-	    leg2PolarizationHypothesis <= SVfitLegSolution::kRightHanded; ++leg2PolarizationHypothesis ) {
-	currentDiTauSolution_ = SVfitDiTauSolution(leg1PolarizationHypothesis, leg2PolarizationHypothesis);
-	
-	int minuitStatus = minuit_.Command("MIN"); 
-	edm::LogInfo("SVfitAlgorithm::fit") 
-	  << " Minuit fit Status = " << minuitStatus << std::endl;
-	
-	readMinuitParameters();
-	applyMinuitParameters(currentDiTauSolution_);
-	currentDiTauSolution_.minuitStatus_ = minuitStatus;
-	
-	solutions.push_back(currentDiTauSolution_);
+//--- check if at least one likelihood function supports polarization 
+//    (i.e. returns a polarization depent likelihood value);
+//    in case none of the likelihood functions support polarization,
+//    run the fit only once (for "unknown" polarization), 
+//    in order to save computing time
+    if ( likelihoodsSupportPolarization_ ) {
+      for ( int leg1PolarizationHypothesis = SVfitLegSolution::kLeftHanded; 
+	    leg1PolarizationHypothesis <= SVfitLegSolution::kRightHanded; ++leg1PolarizationHypothesis ) {
+	for ( int leg2PolarizationHypothesis = SVfitLegSolution::kLeftHanded; 
+	      leg2PolarizationHypothesis <= SVfitLegSolution::kRightHanded; ++leg2PolarizationHypothesis ) {
+	  currentDiTauSolution_ = SVfitDiTauSolution(leg1PolarizationHypothesis, leg2PolarizationHypothesis);
+	  fitPolarizationHypothesis(currentDiTauSolution_);
+	  solutions.push_back(currentDiTauSolution_);
+	} 
       }
+    } else {
+      currentDiTauSolution_ = SVfitDiTauSolution(SVfitLegSolution::kUnknown, SVfitLegSolution::kUnknown);
+      fitPolarizationHypothesis(currentDiTauSolution_);
+      solutions.push_back(currentDiTauSolution_);
     }
-
+  
     return solutions;
   }
   
@@ -144,6 +150,18 @@ class SVfitAlgorithm : public TObject
   
  private:
   enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ };
+
+  void fitPolarizationHypothesis(SVfitDiTauSolution& solution)
+  {
+    int minuitStatus = minuit_.Command("MIN"); 
+    edm::LogInfo("SVfitAlgorithm::fit") 
+      << " Minuit fit Status = " << minuitStatus << std::endl;
+	
+    readMinuitParameters();
+    applyMinuitParameters(currentDiTauSolution_);
+
+    currentDiTauSolution_.minuitStatus_ = minuitStatus;
+  }
 
   void readMinuitParameters()
   {
@@ -224,7 +242,8 @@ class SVfitAlgorithm : public TObject
   }
   
   std::vector<SVfitDiTauLikelihoodBase<T1,T2>*> logLikelihoodFunctions_;
-  
+  bool likelihoodsSupportPolarization_;
+
   const CompositePtrCandidateT1T2MEt<T1,T2>* currentDiTau_;
   SVfitDiTauSolution currentDiTauSolution_;
   

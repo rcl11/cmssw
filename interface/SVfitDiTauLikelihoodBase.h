@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.1 2010/08/26 12:25:44 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.2 2010/08/27 06:59:19 veelken Exp $
  *
  */
 
@@ -23,10 +23,18 @@ template <typename T1, typename T2>
 class SVfitDiTauLikelihoodBase
 {
  public:
-  SVfitDiTauLikelihoodBase(const edm::ParameterSet&);
-  virtual ~SVfitDiTauLikelihoodBase();
+  SVfitDiTauLikelihoodBase(const edm::ParameterSet&) {}
+  virtual ~SVfitDiTauLikelihoodBase() {}
 
-  virtual bool isFittedParameter(unsigned);
+  virtual bool isFittedParameter(unsigned) const
+  {
+    return false;
+  }
+
+  virtual bool supportsPolarization() const
+  {
+    return false;
+  }
 
   virtual double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const = 0;
 };

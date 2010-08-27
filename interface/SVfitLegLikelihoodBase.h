@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.1 2010/08/26 12:25:44 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.2 2010/08/27 06:59:19 veelken Exp $
  *
  */
 
@@ -22,10 +22,18 @@ template <typename T>
 class SVfitLegLikelihoodBase
 {
  public:
-  SVfitLegLikelihoodBase(const edm::ParameterSet&);
-  virtual ~SVfitLegLikelihoodBase();
+  SVfitLegLikelihoodBase(const edm::ParameterSet&) {}
+  virtual ~SVfitLegLikelihoodBase() {}
 
-  virtual bool isFittedParameter(unsigned);
+  virtual bool isFittedParameter(unsigned) const
+  {
+    return false;
+  }
+
+  virtual bool supportsPolarization() const
+  {
+    return false;
+  }
 
   virtual double operator()(const T&, const SVfitLegSolution&) const = 0;
 };
