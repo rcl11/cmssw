@@ -1,0 +1,26 @@
+#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
+
+const double tauLeptonMass = 1.77685; // GeV
+const double tauLeptonMass2 = tauLeptonMass*tauLeptonMass;
+
+#include <TMath.h>
+
+inline double square(double x)
+{
+  return x*x;	
+}
+
+double pVisRestFrame(double tauVisMass, double tauNuMass) 
+{
+   double numerator = (tauLeptonMass2 - square(tauVisMass + tauNuMass))*(tauLeptonMass2 - square(tauVisMass - tauNuMass));
+   return TMath::Sqrt(numerator)/(2*tauLeptonMass);
+}
+
+//
+//-------------------------------------------------------------------------------
+//
+
+reco::Candidate::Point operator+(const reco::Candidate::Point& p1, const reco::Candidate::Point& p2)
+{
+  return reco::Candidate::Point(p1.x() + p2.x(), p1.y() + p2.y(), p1.z() + p2.z());
+}
