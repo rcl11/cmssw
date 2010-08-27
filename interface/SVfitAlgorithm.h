@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitAlgorithm.h,v 1.2 2009/05/26 12:36:29 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.1 2010/08/27 07:00:09 veelken Exp $
  *
  */
 
@@ -143,6 +143,8 @@ class SVfitAlgorithm : public TObject
   }
   
  private:
+  enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ };
+
   void readMinuitParameters()
   {
     Double_t dummy;
@@ -153,7 +155,72 @@ class SVfitAlgorithm : public TObject
   
   void applyMinuitParameters(SVfitDiTauSolution& diTauSolution)
   {
-    std::cout << "blah" << std::endl;
+//--- set primary event vertex position (tau lepton production vertex)
+    diTauSolution.eventVertexPositionCorr_.SetX(minuitParameterValues_[kPrimaryVertexX]);
+    diTauSolution.eventVertexPositionCorr_.SetY(minuitParameterValues_[kPrimaryVertexY]);
+    diTauSolution.eventVertexPositionCorr_.SetZ(minuitParameterValues_[kPrimaryVertexZ]);
+
+//--- set secondary vertex position (tau lepton decay vertex)
+/*
+   // Determine lab frame opening angle between tau direction
+   // and vis. momentum
+   //
+   // pl_perp = pr(m12)*sin(theta_r) ==>
+   // pl*sin(thetal) = pr(m12)*sin(theta_r)
+   // thetal = asin(pr(m12)*sin(theta_r)/pl)
+
+   double thetaLab = TMath::ASin(restFrameVisMomentum()*
+               TMath::Sin(thetaRest_)/visible->p4().P());
+
+   // Build our displacement vector assuming visP parallel to Z axis
+   reco::Candidate::Vector secondaryVertexDirection(
+         TMath::Sin(thetaLab)*TMath::Cos(phiLab_),
+         TMath::Sin(thetaLab)*TMath::Sin(phiLab_),
+         TMath::Cos(thetaLab));
+
+   // Rotate such that Z is along visible momentum
+   reco::Candidate::Vector flight = 
+      rotateUz(secondaryVertexDirection, visible->p4().P().Unit()) *
+      flightDistance_;
+
+   // Set the decay vertices of the two objects
+   visible()->setVertex(this->vertex() + flight);
+   invisible()->setVertex(this->vertex() + flight);
+
+   // Determine tau direction
+   reco::Particle::Vector tauFlight = visible()->vertex() - this->vertex();
+   reco::Particle::Vector tauDir = tauFlight.Unit();
+
+   // Visible lab frame momentum par/perp to tau
+   double labFramePPerp = visible()->p4().Vect().Cross(tauDir).R();
+   double labFramePParallel = visible()->p4().Vect().Dot(tauDir);
+
+   // Find the rest frame momentum of the visible stuff
+   // pLabPerp = pRestPerp = pRest*sin(theta) ==> pRest = pLabPerp/sin(theta)
+   double restFrameP = labFramePPerp/TMath::Sin(thetaRest_);
+   // The parallel component
+   double restFramePParallel = restFrameP*TMath::Cos(thetaRest_);
+   double restFrameE = energy(visible()->mass(), restFrameP);
+
+   double gamma = (
+         restFrameE * TMath::Sqrt(square(restFrameE) + square(labFramePParallel) - square(restFramePParallel)) -
+         restFramePParallel*labFramePParallel ) /
+         (square(restFrameE) - square(restFramePParallel));
+
+   double tauEnergy = gamma*tauMass;
+   double tauMomentum = momentum(tauMass, tauEnergy);
+
+   reco::Candidate::LorentzVector fourVector(
+         tauDir.X()*tauMomentum,
+         tauDir.Y()*tauMomentum,
+         tauDir.Z()*tauMomentum,
+         tauEnergy);
+
+   // Set the total p4 
+   setP4(fourVector);
+   // Set the neutrino p4.  Difference between tau and visible.
+   invisible()->setP4(fourVector - this->visible()->p4());
+ */
   }
   
   std::vector<SVfitDiTauLikelihoodBase<T1,T2>*> logLikelihoodFunctions_;
