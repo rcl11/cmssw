@@ -5,6 +5,8 @@ const double tauLeptonMass2 = tauLeptonMass*tauLeptonMass;
 
 #include <TMath.h>
 
+using namespace SVfit_namespace;
+
 inline double square(double x)
 {
   return x*x;	
