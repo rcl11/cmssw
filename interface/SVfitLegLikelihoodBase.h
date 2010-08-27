@@ -8,13 +8,15 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.2 2009/05/26 12:36:29 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.1 2010/08/26 12:25:44 veelken Exp $
  *
  */
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+#include "AnalysisDataFormats/TauAnalysis/interface/SVfitLegSolution.h"
 
 template <typename T>
 class SVfitLegLikelihoodBase
@@ -25,7 +27,7 @@ class SVfitLegLikelihoodBase
 
   virtual bool isFittedParameter(unsigned);
 
-  virtual double operator()(const T&) const = 0;
+  virtual double operator()(const T&, const SVfitLegSolution&) const = 0;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"

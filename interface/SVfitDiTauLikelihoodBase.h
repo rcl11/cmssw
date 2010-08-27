@@ -8,15 +8,16 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.2 2009/05/26 12:36:29 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.1 2010/08/26 12:25:44 veelken Exp $
  *
  */
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEt.h"
+#include "AnalysisDataFormats/TauAnalysis/interface/SVfitDiTauSolution.h"
 
 template <typename T1, typename T2>
 class SVfitDiTauLikelihoodBase
@@ -27,7 +28,7 @@ class SVfitDiTauLikelihoodBase
 
   virtual bool isFittedParameter(unsigned);
 
-  virtual double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&) const = 0;
+  virtual double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const = 0;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
