@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitAlgorithm.h,v 1.2 2010/08/27 07:39:47 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.3 2010/08/27 12:07:30 veelken Exp $
  *
  */
 
@@ -30,11 +30,11 @@
 
 #include <vector>
 
+// forward declaration of SVfitAlgorithm class
+template<typename T1, typename T2> class SVfitAlgorithm;
+
 namespace SVfitAlgorithm_namespace 
 {
-  // forward declaration of SVfitAlgorithm class
-  template<typename T1, typename T2> class SVfitAlgorithm;
-
   // define function to be minimized by Minuit
   template <typename T1, typename T2>
   void objectiveFcn(Int_t& nParameter, Double_t*, Double_t& fcn, Double_t* parameters, Int_t errorFlag)
@@ -114,7 +114,8 @@ class SVfitAlgorithm : public TObject
 	    leg1PolarizationHypothesis <= SVfitLegSolution::kRightHanded; ++leg1PolarizationHypothesis ) {
 	for ( int leg2PolarizationHypothesis = SVfitLegSolution::kLeftHanded; 
 	      leg2PolarizationHypothesis <= SVfitLegSolution::kRightHanded; ++leg2PolarizationHypothesis ) {
-	  currentDiTauSolution_ = SVfitDiTauSolution(leg1PolarizationHypothesis, leg2PolarizationHypothesis);
+	  currentDiTauSolution_ = SVfitDiTauSolution((SVfitLegSolution::polarizationHypothesisType)leg1PolarizationHypothesis, 
+						     (SVfitLegSolution::polarizationHypothesisType)leg2PolarizationHypothesis);
 	  fitPolarizationHypothesis(currentDiTauSolution_);
 	  solutions.push_back(currentDiTauSolution_);
 	} 
@@ -128,7 +129,7 @@ class SVfitAlgorithm : public TObject
     return solutions;
   }
   
-  double logLikelihood(Int_t nParameter, Double_t* parameters) const 
+  double logLikelihood(Int_t nParameter, Double_t* parameters) const
   {
     if ( !currentDiTau_ ) {
       edm::LogError("SVfitAlgorithm::logLikelihood") 
@@ -163,7 +164,7 @@ class SVfitAlgorithm : public TObject
     currentDiTauSolution_.minuitStatus_ = minuitStatus;
   }
 
-  void readMinuitParameters()
+  void readMinuitParameters() const
   {
     Double_t dummy;
     for ( Int_t iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
@@ -171,7 +172,7 @@ class SVfitAlgorithm : public TObject
     }
   }
   
-  void applyMinuitParameters(SVfitDiTauSolution& diTauSolution)
+  void applyMinuitParameters(SVfitDiTauSolution& diTauSolution) const
   {
 //--- set primary event vertex position (tau lepton production vertex)
     diTauSolution.eventVertexPositionCorr_.SetX(minuitParameterValues_[kPrimaryVertexX]);
@@ -244,12 +245,12 @@ class SVfitAlgorithm : public TObject
   std::vector<SVfitDiTauLikelihoodBase<T1,T2>*> logLikelihoodFunctions_;
   bool likelihoodsSupportPolarization_;
 
-  const CompositePtrCandidateT1T2MEt<T1,T2>* currentDiTau_;
-  SVfitDiTauSolution currentDiTauSolution_;
+  mutable const CompositePtrCandidateT1T2MEt<T1,T2>* currentDiTau_;
+  mutable SVfitDiTauSolution currentDiTauSolution_;
   
-  TMinuit minuit_;
+  mutable TMinuit minuit_;
   Int_t minuitNumParameters_;
-  Double_t* minuitParameterValues_;
+  mutable Double_t* minuitParameterValues_;
 };
 
 #endif
