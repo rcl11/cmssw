@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.2 2010/08/27 06:59:19 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.3 2010/08/27 12:08:04 veelken Exp $
  *
  */
 
@@ -19,14 +19,26 @@
 #include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEt.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitDiTauSolution.h"
 
+#include <string>
+#include <iostream>
+
 template <typename T1, typename T2>
 class SVfitDiTauLikelihoodBase
 {
  public:
-  SVfitDiTauLikelihoodBase(const edm::ParameterSet&) {}
+  SVfitDiTauLikelihoodBase(const edm::ParameterSet& cfg)
+  {
+    pluginType_ = cfg.getParameter<std::string>("pluginType");
+  }
   virtual ~SVfitDiTauLikelihoodBase() {}
 
-  virtual bool isFittedParameter(unsigned) const
+  virtual void print(std::ostream& stream) const
+  {
+    stream << "<SVfitDiTauLikelihoodBase::print>:" << std::endl;
+    stream << " pluginType = " << pluginType_ << std::endl;
+  }
+
+  virtual bool isFittedParameter(int) const
   {
     return false;
   }
@@ -37,6 +49,8 @@ class SVfitDiTauLikelihoodBase
   }
 
   virtual double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const = 0;
+ protected:
+  std::string pluginType_;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"

@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.2 2010/08/27 06:59:19 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.3 2010/08/27 12:08:04 veelken Exp $
  *
  */
 
@@ -18,14 +18,26 @@
 
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitLegSolution.h"
 
+#include <string>
+#include <iostream>
+
 template <typename T>
 class SVfitLegLikelihoodBase
 {
  public:
-  SVfitLegLikelihoodBase(const edm::ParameterSet&) {}
+  SVfitLegLikelihoodBase(const edm::ParameterSet& cfg) 
+  {
+    pluginType_ = cfg.getParameter<std::string>("pluginType");
+  }
   virtual ~SVfitLegLikelihoodBase() {}
 
-  virtual bool isFittedParameter(unsigned) const
+  virtual void print(std::ostream& stream) const
+  {
+    stream << "<SVfitLegLikelihoodBase::print>:" << std::endl;
+    stream << " pluginType = " << pluginType_ << std::endl;
+  }
+
+  virtual bool isFittedParameter(int) const
   {
     return false;
   }
@@ -36,6 +48,8 @@ class SVfitLegLikelihoodBase
   }
 
   virtual double operator()(const T&, const SVfitLegSolution&) const = 0;
+ protected:
+  std::string pluginType_;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
