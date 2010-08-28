@@ -78,9 +78,10 @@ double SVfitLikelihoodDiTauPtBalance<T1,T2>::operator()(const CompositePtrCandid
 //         with a Taylor series approximating a Jacobian peak smeared by a Gaussian
 //         plus a gamma distribution
 //
-  reco::Candidate::LorentzVector leg1P4 = solution.leg1().p4Vis() + solution.leg1().p4Invis();
-  reco::Candidate::LorentzVector leg2P4 = solution.leg2().p4Vis() + solution.leg2().p4Invis();
-  
+
+  reco::Candidate::LorentzVector leg1P4 = solution.leg1().p4();
+  reco::Candidate::LorentzVector leg2P4 = solution.leg2().p4();
+
   double diTauMass = (leg1P4 + leg2P4).mass();
 
   return -(TMath::Log(movingTauLeptonPtPDF(diTauMass, leg1P4.pt())) + TMath::Log(movingTauLeptonPtPDF(diTauMass, leg2P4.pt())));

@@ -30,10 +30,7 @@ double SVfitLikelihoodDiTauBreitWigner<T1,T2>::operator()(const CompositePtrCand
 //--- compute negative log-likelihood for invariant mass of tau lepton pair
 //    to be compatible with Breit-Wigner resonance of mass M and width Gamma
 
-  reco::Candidate::LorentzVector leg1P4 = solution.leg1().p4Vis() + solution.leg1().p4Invis();
-  reco::Candidate::LorentzVector leg2P4 = solution.leg2().p4Vis() + solution.leg2().p4Invis();
-  
-  double diTauMass2 = square((leg1P4 + leg2P4).mass());
+  double diTauMass2 = square((solution.leg1().p4() + solution.leg2().p4()).mass());
 
   return -TMath::Log(Gamma2_/(square(diTauMass2 - M2_) + M2_*Gamma2_));
 }
