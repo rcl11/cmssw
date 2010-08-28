@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitAlgorithm.h,v 1.3 2010/08/27 12:07:30 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.4 2010/08/27 17:21:50 veelken Exp $
  *
  */
 
@@ -29,6 +29,7 @@
 #include <TObject.h>
 
 #include <vector>
+#include <iostream>
 
 // forward declaration of SVfitAlgorithm class
 template<typename T1, typename T2> class SVfitAlgorithm;
@@ -47,7 +48,7 @@ namespace SVfitAlgorithm_namespace
       return;
     }
 
-    fcn = algorithm->logLikelihood(nParameter, parameters);    
+    fcn = algorithm->negLogLikelihood(nParameter, parameters);    
   }
 }
 
@@ -55,23 +56,28 @@ template<typename T1, typename T2>
 class SVfitAlgorithm : public TObject
 {
  public:
+  enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ,
+                      kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass, 
+                      kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass };
+  
   SVfitAlgorithm(const edm::ParameterSet& cfg)
     : currentDiTau_(0),
-      currentDiTauSolution_(0),
       minuit_(11)
   {
+    name_ = cfg.getParameter<std::string>("name");
+
     likelihoodsSupportPolarization_ = false;
 
     typedef std::vector<edm::ParameterSet> vParameterSet;
-    vParameterSet cfgLogLikelihoodFunctions = cfg.getParameter<vParameterSet>("logLikelihoodFunctions");
-    for ( vParameterSet::const_iterator cfgLogLikelihoodFunction = cfgLogLikelihoodFunctions.begin();
-	  cfgLogLikelihoodFunction != cfgLogLikelihoodFunctions.end(); ++cfgLogLikelihoodFunction ) {
-      std::string pluginType = cfgLogLikelihoodFunction->getParameter<std::string>("pluginType");
+    vParameterSet cfgNegLogLikelihoodFunctions = cfg.getParameter<vParameterSet>("negLogLikelihoodFunctions");
+    for ( vParameterSet::const_iterator cfgNegLogLikelihoodFunction = cfgNegLogLikelihoodFunctions.begin();
+	  cfgNegLogLikelihoodFunction != cfgNegLogLikelihoodFunctions.end(); ++cfgNegLogLikelihoodFunction ) {
+      std::string pluginType = cfgNegLogLikelihoodFunction->getParameter<std::string>("pluginType");
       typedef edmplugin::PluginFactory<SVfitDiTauLikelihoodBase<T1,T2>* (const edm::ParameterSet&)> SVfitDiTauLikelihoodPluginFactory;
-      SVfitDiTauLikelihoodBase<T1,T2>* logLikelihoodFunction 
-	= SVfitDiTauLikelihoodPluginFactory::get()->create(pluginType, *cfgLogLikelihoodFunction);
-      likelihoodsSupportPolarization_ |= logLikelihoodFunction->supportsPolarization();
-      logLikelihoodFunctions_.push_back(logLikelihoodFunction);
+      SVfitDiTauLikelihoodBase<T1,T2>* negLogLikelihoodFunction 
+	= SVfitDiTauLikelihoodPluginFactory::get()->create(pluginType, *cfgNegLogLikelihoodFunction);
+      likelihoodsSupportPolarization_ |= negLogLikelihoodFunction->supportsPolarization();
+      negLogLikelihoodFunctions_.push_back(negLogLikelihoodFunction);
     }
     
     std::cout << "<SVfitAlgorithm::SVfitAlgorithm>:" << std::endl;
@@ -81,16 +87,51 @@ class SVfitAlgorithm : public TObject
     
     minuitNumParameters_ = minuit_.GetNumPars();
     minuitParameterValues_ = new Double_t[minuitNumParameters_];
+    minuitLockParameters_ = new bool[minuitNumParameters_];
+    
+//--- lock (i.e. set to fixed values) Minuit parameters
+//    which are not constrained by any likelihood function
+    for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+      minuitLockParameters_[iParameter] = true;
+      
+      for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator negLogLikelihoodFunction = negLogLikelihoodFunctions_.begin();
+	    negLogLikelihoodFunction != negLogLikelihoodFunctions_.end(); ++negLogLikelihoodFunction ) {
+	if ( (*negLogLikelihoodFunction)->isFittedParameter(iParameter) ) minuitLockParameters_[iParameter] = false;
+      }
+      
+      if ( minuitLockParameters_[iParameter] ) minuit_.FixParameter(iParameter);
+    }
+
+    print(std::cout);
   }
 
   ~SVfitAlgorithm()
   {
-    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::iterator it = logLikelihoodFunctions_.begin();
-	  it != logLikelihoodFunctions_.end(); ++it ) {
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::iterator it = negLogLikelihoodFunctions_.begin();
+	  it != negLogLikelihoodFunctions_.end(); ++it ) {
       delete (*it);
     }
 
     delete [] minuitParameterValues_;
+    delete [] minuitLockParameters_;
+  }
+
+  void print(std::ostream& stream) const
+  {
+    stream << "<SVfitAlgorithm::print>" << std::endl;    
+    stream << " name = " << name_ << std::endl;
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator negLogLikelihoodFunction = negLogLikelihoodFunctions_.begin();
+	  negLogLikelihoodFunction != negLogLikelihoodFunctions_.end(); ++negLogLikelihoodFunction ) {
+      (*negLogLikelihoodFunction)->print(stream);
+      stream << std::endl;
+    }
+    for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+      stream << " Parameter #" << iParameter << ": ";
+      if ( minuitLockParameters_[iParameter] ) stream << " LOCKED";
+      else stream << " FITTED";
+      stream << std::endl;
+    }
+    stream << std::endl;
   }
 
   std::vector<SVfitDiTauSolution> fit(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau)
@@ -125,11 +166,11 @@ class SVfitAlgorithm : public TObject
       fitPolarizationHypothesis(currentDiTauSolution_);
       solutions.push_back(currentDiTauSolution_);
     }
-  
+    
     return solutions;
   }
   
-  double logLikelihood(Int_t nParameter, Double_t* parameters) const
+  double negLogLikelihood(Int_t nParameter, Double_t* parameters) const
   {
     if ( !currentDiTau_ ) {
       edm::LogError("SVfitAlgorithm::logLikelihood") 
@@ -139,28 +180,26 @@ class SVfitAlgorithm : public TObject
     readMinuitParameters();
     applyMinuitParameters(currentDiTauSolution_);
     
-    double logLikelihood = 0.;
+    double negLogLikelihood = 0.;
     
-    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator logLikelihoodFunction = logLikelihoodFunctions_.begin();
-	  logLikelihoodFunction != logLikelihoodFunctions_.end(); ++logLikelihoodFunction ) {
-      logLikelihood += (**logLikelihoodFunction)(*currentDiTau_, currentDiTauSolution_);
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator negLogLikelihoodFunction = negLogLikelihoodFunctions_.begin();
+	  negLogLikelihoodFunction != negLogLikelihoodFunctions_.end(); ++negLogLikelihoodFunction ) {
+      negLogLikelihood += (**negLogLikelihoodFunction)(*currentDiTau_, currentDiTauSolution_);
     }
     
-    return logLikelihood;
+    return negLogLikelihood;
   }
   
  private:
-  enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ };
-
   void fitPolarizationHypothesis(SVfitDiTauSolution& solution)
   {
     int minuitStatus = minuit_.Command("MIN"); 
     edm::LogInfo("SVfitAlgorithm::fit") 
       << " Minuit fit Status = " << minuitStatus << std::endl;
-	
+    
     readMinuitParameters();
     applyMinuitParameters(currentDiTauSolution_);
-
+    
     currentDiTauSolution_.minuitStatus_ = minuitStatus;
   }
 
@@ -180,77 +219,23 @@ class SVfitAlgorithm : public TObject
     diTauSolution.eventVertexPositionCorr_.SetZ(minuitParameterValues_[kPrimaryVertexZ]);
 
 //--- set secondary vertex position (tau lepton decay vertex)
-/*
-   // Determine lab frame opening angle between tau direction
-   // and vis. momentum
-   //
-   // pl_perp = pr(m12)*sin(theta_r) ==>
-   // pl*sin(thetal) = pr(m12)*sin(theta_r)
-   // thetal = asin(pr(m12)*sin(theta_r)/pl)
 
-   double thetaLab = TMath::ASin(restFrameVisMomentum()*
-               TMath::Sin(thetaRest_)/visible->p4().P());
+//--- set momenta of visible and invisible tau decay products
 
-   // Build our displacement vector assuming visP parallel to Z axis
-   reco::Candidate::Vector secondaryVertexDirection(
-         TMath::Sin(thetaLab)*TMath::Cos(phiLab_),
-         TMath::Sin(thetaLab)*TMath::Sin(phiLab_),
-         TMath::Cos(thetaLab));
-
-   // Rotate such that Z is along visible momentum
-   reco::Candidate::Vector flight = 
-      rotateUz(secondaryVertexDirection, visible->p4().P().Unit()) *
-      flightDistance_;
-
-   // Set the decay vertices of the two objects
-   visible()->setVertex(this->vertex() + flight);
-   invisible()->setVertex(this->vertex() + flight);
-
-   // Determine tau direction
-   reco::Particle::Vector tauFlight = visible()->vertex() - this->vertex();
-   reco::Particle::Vector tauDir = tauFlight.Unit();
-
-   // Visible lab frame momentum par/perp to tau
-   double labFramePPerp = visible()->p4().Vect().Cross(tauDir).R();
-   double labFramePParallel = visible()->p4().Vect().Dot(tauDir);
-
-   // Find the rest frame momentum of the visible stuff
-   // pLabPerp = pRestPerp = pRest*sin(theta) ==> pRest = pLabPerp/sin(theta)
-   double restFrameP = labFramePPerp/TMath::Sin(thetaRest_);
-   // The parallel component
-   double restFramePParallel = restFrameP*TMath::Cos(thetaRest_);
-   double restFrameE = energy(visible()->mass(), restFrameP);
-
-   double gamma = (
-         restFrameE * TMath::Sqrt(square(restFrameE) + square(labFramePParallel) - square(restFramePParallel)) -
-         restFramePParallel*labFramePParallel ) /
-         (square(restFrameE) - square(restFramePParallel));
-
-   double tauEnergy = gamma*tauMass;
-   double tauMomentum = momentum(tauMass, tauEnergy);
-
-   reco::Candidate::LorentzVector fourVector(
-         tauDir.X()*tauMomentum,
-         tauDir.Y()*tauMomentum,
-         tauDir.Z()*tauMomentum,
-         tauEnergy);
-
-   // Set the total p4 
-   setP4(fourVector);
-   // Set the neutrino p4.  Difference between tau and visible.
-   invisible()->setP4(fourVector - this->visible()->p4());
- */
   }
-  
-  std::vector<SVfitDiTauLikelihoodBase<T1,T2>*> logLikelihoodFunctions_;
-  bool likelihoodsSupportPolarization_;
 
+  std::string name_;
+  
+  std::vector<SVfitDiTauLikelihoodBase<T1,T2>*> negLogLikelihoodFunctions_;
+  bool likelihoodsSupportPolarization_;
+  
   mutable const CompositePtrCandidateT1T2MEt<T1,T2>* currentDiTau_;
   mutable SVfitDiTauSolution currentDiTauSolution_;
   
   mutable TMinuit minuit_;
   Int_t minuitNumParameters_;
   mutable Double_t* minuitParameterValues_;
+  bool* minuitLockParameters_;
 };
 
 #endif
