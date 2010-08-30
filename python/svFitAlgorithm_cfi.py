@@ -1,5 +1,19 @@
 import FWCore.ParameterSet.Config as cms
 
+svFitLikelihoodDiTauKinematicsPhaseSpace = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodDiTauKinematicsPhaseSpace"),
+    pluginType = cms.string("SVfitLikelihoodMuTauPairKinematics"),
+    polarizationCoefficients = cms.PSet(
+        LL = cms.double(0.5),
+        LR = cms.double(0.5),
+        RL = cms.double(0.5),
+        RR = cms.double(0.5)
+    ),
+    leg = cms.PSet(
+        pluginType = cms.string("SVfitMuonLikelihoodPhaseSpace")
+    )
+)
+
 svFitLikelihoodMEt = cms.PSet(
     pluginName = cms.string("svFitLikelihoodMEt"),
     pluginType = cms.string("SVfitLikelihoodMEtMuTau"),
@@ -10,3 +24,11 @@ svFitLikelihoodMEt = cms.PSet(
         perpBias = cms.string("0.0"),
     )
 )
+
+svFitLikelihoodDiTauPtBalance = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodDiTauPtBalance"),
+    pluginType = cms.string("SVfitLikelihoodMuTauPairPtBalance")
+)
+
+
+
