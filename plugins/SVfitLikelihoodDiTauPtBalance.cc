@@ -79,12 +79,10 @@ double SVfitLikelihoodDiTauPtBalance<T1,T2>::operator()(const CompositePtrCandid
 //         plus a gamma distribution
 //
 
-  reco::Candidate::LorentzVector leg1P4 = solution.leg1().p4();
-  reco::Candidate::LorentzVector leg2P4 = solution.leg2().p4();
+  double diTauMass = solution.p4().mass();
 
-  double diTauMass = (leg1P4 + leg2P4).mass();
-
-  return -(TMath::Log(movingTauLeptonPtPDF(diTauMass, leg1P4.pt())) + TMath::Log(movingTauLeptonPtPDF(diTauMass, leg2P4.pt())));
+  return -(TMath::Log(movingTauLeptonPtPDF(diTauMass, solution.leg1().p4().pt())) + 
+           TMath::Log(movingTauLeptonPtPDF(diTauMass, solution.leg2().p4().pt())));
 }
 
 #include "DataFormats/PatCandidates/interface/Electron.h"

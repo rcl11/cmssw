@@ -14,19 +14,22 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.5 $
  *
- * $Id: SVfitAlgorithm.h,v 1.4 2010/08/27 17:21:50 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.5 2010/08/28 10:54:12 veelken Exp $
  *
  */
 
 #include "TauAnalysis/CandidateTools/interface/SVfitDiTauLikelihoodBase.h"
+#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitDiTauSolution.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitLegSolution.h"
 
 #include <TMinuit.h>
 #include <TObject.h>
+
+#include <Math/VectorUtil.h>
 
 #include <vector>
 #include <iostream>
@@ -191,12 +194,13 @@ class SVfitAlgorithm : public TObject
   }
   
  private:
+
   void fitPolarizationHypothesis(SVfitDiTauSolution& solution)
   {
     int minuitStatus = minuit_.Command("MIN"); 
     edm::LogInfo("SVfitAlgorithm::fit") 
       << " Minuit fit Status = " << minuitStatus << std::endl;
-    
+	
     readMinuitParameters();
     applyMinuitParameters(currentDiTauSolution_);
     
@@ -211,17 +215,49 @@ class SVfitAlgorithm : public TObject
     }
   }
   
-  void applyMinuitParameters(SVfitDiTauSolution& diTauSolution) const
+  void applyMinuitParameters(SVfitDiTauSolution& diTauSolution) const 
   {
 //--- set primary event vertex position (tau lepton production vertex)
     diTauSolution.eventVertexPositionCorr_.SetX(minuitParameterValues_[kPrimaryVertexX]);
     diTauSolution.eventVertexPositionCorr_.SetY(minuitParameterValues_[kPrimaryVertexY]);
     diTauSolution.eventVertexPositionCorr_.SetZ(minuitParameterValues_[kPrimaryVertexZ]);
 
-//--- set secondary vertex position (tau lepton decay vertex)
+    // Build leg 1
+    applyMinuitParametersToLeg(kLeg1thetaRest, diTauSolution.leg1_);
+    // Build leg 2
+    applyMinuitParametersToLeg(kLeg2thetaRest, diTauSolution.leg2_);
+  }
 
-//--- set momenta of visible and invisible tau decay products
+  void applyMinuitParametersToLeg(int parameterStart, SVfitLegSolution& legSolution) const
+  {
+    double gjAngle         = minuitParameterValues_[parameterStart + 0];
+    double phiLab          = minuitParameterValues_[parameterStart + 1];
+    double flightDistance_ = minuitParameterValues_[parameterStart + 2];
+    double massNuNu        = minuitParameterValues_[parameterStart + 3];
 
+    const reco::Candidate::LorentzVector& p4Vis = legSolution.p4Vis();
+
+    // Compute the tau momentum in the rest frame
+    double pVisRestFrame = SVfit_namespace::pVisRestFrame(p4Vis.mass(), massNuNu);
+    // Get the opening angle in the lab frame
+    double angleVisLabFrame = SVfit_namespace::gjAngleToLabFrame(pVisRestFrame, gjAngle, p4Vis.P());
+    // Compute the tau momentum in the lab frame
+    double momentumLabFrame = SVfit_namespace::tauMomentumLabFrame(p4Vis.mass(), pVisRestFrame, gjAngle, p4Vis.P());
+    // Determine the direction of the tau
+    reco::Candidate::Vector direction = SVfit_namespace::tauDirection(p4Vis.Vect().Unit(), angleVisLabFrame, phiLab);
+
+    reco::Candidate::LorentzVector tauP4 = SVfit_namespace::tauP4(direction, momentumLabFrame);
+
+    // Buid the tau four vector.  By construction, the neutrino is tauP4 - visP4
+    legSolution.p4Invis_ =  tauP4 - p4Vis;
+
+    // Build boost vector and compute the rest frame quanitites
+    reco::Candidate::Vector boost = tauP4.BoostToCM();
+    legSolution.p4VisRestFrame_ = ROOT::Math::VectorUtil::boost(legSolution.p4Vis_, boost);
+    legSolution.p4InvisRestFrame_ = ROOT::Math::VectorUtil::boost(legSolution.p4Invis_, boost);
+
+    // Set the flight path
+    legSolution.tauFlightPath_ = direction*flightDistance_;
   }
 
   std::string name_;

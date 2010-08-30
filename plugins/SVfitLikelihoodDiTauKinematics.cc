@@ -111,7 +111,7 @@ double SVfitLikelihoodDiTauKinematics<T1,T2>::logPolarizationCoefficient(
   SVfitLegSolution::polarizationHypothesisType leg2PolarizationHypothesis) const
 {
   const double* logPolarizationCoefficient_ptr 
-    = findMapElement<SVfitLegSolution::polarizationHypothesisType,SVfitLegSolution::polarizationHypothesisType,double>(
+    = TauAnalysis_namespace::findMapElement<SVfitLegSolution::polarizationHypothesisType,SVfitLegSolution::polarizationHypothesisType,double>(
 	logPolarizationCoefficients_, leg1PolarizationHypothesis, leg2PolarizationHypothesis);
   if ( logPolarizationCoefficient_ptr ) {
     return *logPolarizationCoefficient_ptr;
