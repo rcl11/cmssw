@@ -10,9 +10,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.2 2010/08/27 06:59:19 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.1 2010/08/28 10:48:39 veelken Exp $
  *
  */
 
@@ -33,6 +33,8 @@ template <typename T1, typename T2>
   SVfitLikelihoodDiTauKinematics(const edm::ParameterSet&);
   ~SVfitLikelihoodDiTauKinematics();
 
+  virtual void beginEvent(edm::Event&, const edm::EventSetup&);
+
   void print(std::ostream&) const;
 
   bool isFittedParameter(int) const;
@@ -47,8 +49,8 @@ template <typename T1, typename T2>
   leg12PolarizationLUTtype logPolarizationCoefficients_;
   bool polarizationCoefficientsEqual_;
 
-  const SVfitLegLikelihoodBase<T1>* leg1Likelihood_;
-  const SVfitLegLikelihoodBase<T2>* leg2Likelihood_;
+  SVfitLegLikelihoodBase<T1>* leg1Likelihood_;
+  SVfitLegLikelihoodBase<T2>* leg2Likelihood_;
 };
 
 #endif

@@ -1,5 +1,7 @@
 #include "TauAnalysis/CandidateTools/plugins/SVfitLikelihoodDiTauKinematics.h"
 
+#include "TauAnalysis/CandidateTools/interface/SVfitAlgorithm.h"
+#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/tauAnalysisAuxFunctions.h"
 
 //-------------------------------------------------------------------------------
@@ -24,6 +26,8 @@ const double defaultCoeffPolarizationLR = 0.5*(1. - polarization_Ztautau);
 const double defaultCoeffPolarizationRL = 0.5*(1. + polarization_Ztautau);
 const double defaultCoeffPolarizationRR = 0.5;
 //-------------------------------------------------------------------------------
+
+using namespace SVfit_namespace;
 
 template <typename T>
 SVfitLegLikelihoodBase<T>* createLikelihoodPlugin(const edm::ParameterSet& cfg)
@@ -86,6 +90,13 @@ SVfitLikelihoodDiTauKinematics<T1,T2>::~SVfitLikelihoodDiTauKinematics()
 }
 
 template <typename T1, typename T2>
+void SVfitLikelihoodDiTauKinematics<T1,T2>::beginEvent(edm::Event& evt, const edm::EventSetup& es)
+{
+  leg1Likelihood_->beginEvent(evt, es);
+  leg2Likelihood_->beginEvent(evt, es);
+}
+
+template <typename T1, typename T2>
 void SVfitLikelihoodDiTauKinematics<T1,T2>::print(std::ostream& stream) const
 {
   SVfitDiTauLikelihoodBase<T1,T2>::print(stream);
@@ -96,7 +107,13 @@ void SVfitLikelihoodDiTauKinematics<T1,T2>::print(std::ostream& stream) const
 template <typename T1, typename T2>
 bool SVfitLikelihoodDiTauKinematics<T1,T2>::isFittedParameter(int index) const
 {
-  return ( leg1Likelihood_->isFittedParameter(index) || leg2Likelihood_->isFittedParameter(index) );
+  if      ( index == SVfitAlgorithm<T1,T2>::kLeg1thetaRest ) return true;
+  else if ( index == SVfitAlgorithm<T1,T2>::kLeg1phiLab    ) return true;
+  else if ( index == SVfitAlgorithm<T1,T2>::kLeg1nuInvMass ) return !isMasslessNuSystem<T1>();
+  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2thetaRest ) return true;
+  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2phiLab    ) return true;
+  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2nuInvMass ) return !isMasslessNuSystem<T2>();
+  else return ( leg1Likelihood_->isFittedParameter(index) || leg2Likelihood_->isFittedParameter(index) );
 }
 
 template <typename T1, typename T2>
