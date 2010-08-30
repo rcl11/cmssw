@@ -8,12 +8,14 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.3 2010/08/27 12:08:04 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.4 2010/08/28 10:53:23 veelken Exp $
  *
  */
 
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEt.h"
@@ -31,6 +33,8 @@ class SVfitDiTauLikelihoodBase
     pluginType_ = cfg.getParameter<std::string>("pluginType");
   }
   virtual ~SVfitDiTauLikelihoodBase() {}
+
+  virtual void beginEvent(edm::Event&, const edm::EventSetup&) {}
 
   virtual void print(std::ostream& stream) const
   {

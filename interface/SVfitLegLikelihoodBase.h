@@ -8,12 +8,14 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.3 2010/08/27 12:08:04 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.4 2010/08/28 10:54:33 veelken Exp $
  *
  */
 
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitLegSolution.h"
@@ -30,6 +32,8 @@ class SVfitLegLikelihoodBase
     pluginType_ = cfg.getParameter<std::string>("pluginType");
   }
   virtual ~SVfitLegLikelihoodBase() {}
+
+  virtual void beginEvent(edm::Event&, const edm::EventSetup&) {}
 
   virtual void print(std::ostream& stream) const
   {
