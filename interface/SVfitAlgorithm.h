@@ -14,17 +14,24 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.5 $
+ * \version $Revision: 1.6 $
  *
- * $Id: SVfitAlgorithm.h,v 1.5 2010/08/28 10:54:12 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.6 2010/08/30 10:11:54 friis Exp $
  *
  */
 
 #include "TauAnalysis/CandidateTools/interface/SVfitDiTauLikelihoodBase.h"
+#include "TauAnalysis/CandidateTools/interface/SVfitEventVertexRefitter.h"
+#include "TauAnalysis/CandidateTools/interface/SVfitLegTrackExtractor.h"
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitDiTauSolution.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitLegSolution.h"
+
+#include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
+
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
 
 #include <TMinuit.h>
 #include <TObject.h>
@@ -55,7 +62,7 @@ namespace SVfitAlgorithm_namespace
   }
 }
 
-template<typename T1, typename T2>
+template<typename TT1, typename TT2>
 class SVfitAlgorithm : public TObject
 {
  public:
@@ -69,18 +76,20 @@ class SVfitAlgorithm : public TObject
   {
     name_ = cfg.getParameter<std::string>("name");
 
+    eventVertexRefitAlgorithm_ = new SVfitEventVertexRefitter(cfg);
+
     likelihoodsSupportPolarization_ = false;
 
     typedef std::vector<edm::ParameterSet> vParameterSet;
-    vParameterSet cfgNegLogLikelihoodFunctions = cfg.getParameter<vParameterSet>("negLogLikelihoodFunctions");
-    for ( vParameterSet::const_iterator cfgNegLogLikelihoodFunction = cfgNegLogLikelihoodFunctions.begin();
-	  cfgNegLogLikelihoodFunction != cfgNegLogLikelihoodFunctions.end(); ++cfgNegLogLikelihoodFunction ) {
-      std::string pluginType = cfgNegLogLikelihoodFunction->getParameter<std::string>("pluginType");
-      typedef edmplugin::PluginFactory<SVfitDiTauLikelihoodBase<T1,T2>* (const edm::ParameterSet&)> SVfitDiTauLikelihoodPluginFactory;
-      SVfitDiTauLikelihoodBase<T1,T2>* negLogLikelihoodFunction 
-	= SVfitDiTauLikelihoodPluginFactory::get()->create(pluginType, *cfgNegLogLikelihoodFunction);
-      likelihoodsSupportPolarization_ |= negLogLikelihoodFunction->supportsPolarization();
-      negLogLikelihoodFunctions_.push_back(negLogLikelihoodFunction);
+    vParameterSet cfgLikelihoodFunctions = cfg.getParameter<vParameterSet>("likelihoodFunctions");
+    for ( vParameterSet::const_iterator cfgLikelihoodFunction = cfgLikelihoodFunctions.begin();
+	  cfgLikelihoodFunction != cfgLikelihoodFunctions.end(); ++cfgLikelihoodFunction ) {
+      std::string pluginType = cfgLikelihoodFunction->getParameter<std::string>("pluginType");
+      typedef edmplugin::PluginFactory<SVfitDiTauLikelihoodBase<TT1,TT2>* (const edm::ParameterSet&)> SVfitDiTauLikelihoodPluginFactory;
+      SVfitDiTauLikelihoodBase<TT1,TT2>* likelihoodFunction 
+	= SVfitDiTauLikelihoodPluginFactory::get()->create(pluginType, *cfgLikelihoodFunction);
+      likelihoodsSupportPolarization_ |= likelihoodFunction->supportsPolarization();
+      likelihoodFunctions_.push_back(likelihoodFunction);
     }
     
     std::cout << "<SVfitAlgorithm::SVfitAlgorithm>:" << std::endl;
@@ -97,9 +106,9 @@ class SVfitAlgorithm : public TObject
     for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
       minuitLockParameters_[iParameter] = true;
       
-      for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator negLogLikelihoodFunction = negLogLikelihoodFunctions_.begin();
-	    negLogLikelihoodFunction != negLogLikelihoodFunctions_.end(); ++negLogLikelihoodFunction ) {
-	if ( (*negLogLikelihoodFunction)->isFittedParameter(iParameter) ) minuitLockParameters_[iParameter] = false;
+      for ( typename std::vector<SVfitDiTauLikelihoodBase<TT1,TT2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
+	    likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+	if ( (*likelihoodFunction)->isFittedParameter(iParameter) ) minuitLockParameters_[iParameter] = false;
       }
       
       if ( minuitLockParameters_[iParameter] ) minuit_.FixParameter(iParameter);
@@ -110,8 +119,10 @@ class SVfitAlgorithm : public TObject
 
   ~SVfitAlgorithm()
   {
-    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::iterator it = negLogLikelihoodFunctions_.begin();
-	  it != negLogLikelihoodFunctions_.end(); ++it ) {
+    delete eventVertexRefitAlgorithm_;
+
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<TT1,TT2>*>::iterator it = likelihoodFunctions_.begin();
+	  it != likelihoodFunctions_.end(); ++it ) {
       delete (*it);
     }
 
@@ -119,13 +130,21 @@ class SVfitAlgorithm : public TObject
     delete [] minuitLockParameters_;
   }
 
+  void beginEvent(edm::Event& evt, const edm::EventSetup& es)
+  {
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<TT1,TT2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
+	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+      (*likelihoodFunction)->beginEvent(evt, es);
+    }
+  }
+
   void print(std::ostream& stream) const
   {
     stream << "<SVfitAlgorithm::print>" << std::endl;    
     stream << " name = " << name_ << std::endl;
-    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator negLogLikelihoodFunction = negLogLikelihoodFunctions_.begin();
-	  negLogLikelihoodFunction != negLogLikelihoodFunctions_.end(); ++negLogLikelihoodFunction ) {
-      (*negLogLikelihoodFunction)->print(stream);
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<TT1,TT2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
+	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+      (*likelihoodFunction)->print(stream);
       stream << std::endl;
     }
     for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
@@ -137,13 +156,19 @@ class SVfitAlgorithm : public TObject
     stream << std::endl;
   }
 
-  std::vector<SVfitDiTauSolution> fit(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau)
+  std::vector<SVfitDiTauSolution> fit(const CompositePtrCandidateT1T2MEt<TT1,TT2>& diTauCandidate)
   {
     std::vector<SVfitDiTauSolution> solutions;
     
-    currentDiTau_ = &diTau;
+//--- refit primary event vertex
+//    excluding tracks associated to tau decay products
+    std::vector<reco::TrackBaseRef> leg1Tracks = leg1TrackExtractor_(*diTauCandidate.leg1());
+    std::vector<reco::TrackBaseRef> leg2Tracks = leg2TrackExtractor_(*diTauCandidate.leg2());
+    TransientVertex pv = eventVertexRefitAlgorithm_->refit(leg1Tracks, leg2Tracks);
     
-    minuit_.SetFCN(SVfitAlgorithm_namespace::objectiveFcn<T1,T2>);
+    currentDiTau_ = &diTauCandidate;
+    
+    minuit_.SetFCN(SVfitAlgorithm_namespace::objectiveFcn<TT1,TT2>);
     minuit_.SetObjectFit(this);
     minuit_.SetMaxIterations(1000);
     gMinuit = &minuit_;
@@ -160,12 +185,16 @@ class SVfitAlgorithm : public TObject
 	      leg2PolarizationHypothesis <= SVfitLegSolution::kRightHanded; ++leg2PolarizationHypothesis ) {
 	  currentDiTauSolution_ = SVfitDiTauSolution((SVfitLegSolution::polarizationHypothesisType)leg1PolarizationHypothesis, 
 						     (SVfitLegSolution::polarizationHypothesisType)leg2PolarizationHypothesis);
+	  currentDiTauSolution_.eventVertexPosition_.SetXYZ(pv.position().x(), pv.position().y(), pv.position().z());
+	  currentDiTauSolution_.eventVertexPositionErr_ = pv.positionError().matrix();
 	  fitPolarizationHypothesis(currentDiTauSolution_);
 	  solutions.push_back(currentDiTauSolution_);
 	} 
       }
     } else {
       currentDiTauSolution_ = SVfitDiTauSolution(SVfitLegSolution::kUnknown, SVfitLegSolution::kUnknown);
+      currentDiTauSolution_.eventVertexPosition_.SetXYZ(pv.position().x(), pv.position().y(), pv.position().z());
+      currentDiTauSolution_.eventVertexPositionErr_ = pv.positionError().matrix();
       fitPolarizationHypothesis(currentDiTauSolution_);
       solutions.push_back(currentDiTauSolution_);
     }
@@ -185,9 +214,9 @@ class SVfitAlgorithm : public TObject
     
     double negLogLikelihood = 0.;
     
-    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator negLogLikelihoodFunction = negLogLikelihoodFunctions_.begin();
-	  negLogLikelihoodFunction != negLogLikelihoodFunctions_.end(); ++negLogLikelihoodFunction ) {
-      negLogLikelihood += (**negLogLikelihoodFunction)(*currentDiTau_, currentDiTauSolution_);
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<TT1,TT2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
+	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+      negLogLikelihood += (**likelihoodFunction)(*currentDiTau_, currentDiTauSolution_);
     }
     
     return negLogLikelihood;
@@ -262,10 +291,14 @@ class SVfitAlgorithm : public TObject
 
   std::string name_;
   
-  std::vector<SVfitDiTauLikelihoodBase<T1,T2>*> negLogLikelihoodFunctions_;
+  SVfitEventVertexRefitter* eventVertexRefitAlgorithm_;
+  SVfitLegTrackExtractor<TT1> leg1TrackExtractor_;
+  SVfitLegTrackExtractor<TT2> leg2TrackExtractor_;
+
+  std::vector<SVfitDiTauLikelihoodBase<TT1,TT2>*> likelihoodFunctions_;
   bool likelihoodsSupportPolarization_;
   
-  mutable const CompositePtrCandidateT1T2MEt<T1,T2>* currentDiTau_;
+  mutable const CompositePtrCandidateT1T2MEt<TT1,TT2>* currentDiTau_;
   mutable SVfitDiTauSolution currentDiTauSolution_;
   
   mutable TMinuit minuit_;
