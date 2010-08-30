@@ -40,7 +40,7 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
   double visMass = solution.p4VisRestFrame().mass();
 
   double logLikelihood = TMath::Log(TMath::Sin(thetaRestFrame));
-  if ( nuMass > 0. ) {
+  if ( !isMasslessNuSystem<T>() ) {
     double logP1 = TMath::Log(nuMass) - TMath::Log(2.);
     double logP3 = 0.5*TMath::Log((tauLeptonMass2 - square(nuMass + visMass))*(tauLeptonMass2 - square(nuMass - visMass)))
                   - TMath::Log(2*tauLeptonMass);
