@@ -33,8 +33,26 @@ template <typename T>
 SVfitLegLikelihoodBase<T>* createLikelihoodPlugin(const edm::ParameterSet& cfg)
 {
   std::string pluginType = cfg.getParameter<std::string>("pluginType");
+
   typedef edmplugin::PluginFactory<SVfitLegLikelihoodBase<T>* (const edm::ParameterSet&)> SVfitLegLikelihoodPluginFactory;
-  return SVfitLegLikelihoodPluginFactory::get()->create(pluginType, cfg);
+  SVfitLegLikelihoodPluginFactory* pluginFactory = SVfitLegLikelihoodPluginFactory::get();
+  
+//--- print error message in case plugin of specified type cannot be created
+  if ( !pluginFactory->tryToCreate(pluginType, cfg) ) {
+    edm::LogError ("createLikelihoodPlugin") 
+      << "Failed to create plugin of type = " << pluginType << " !!";
+    std::cout << " category = " << pluginFactory->category() << std::endl;
+    std::cout << " available plugins = { ";
+    std::vector<edmplugin::PluginInfo> plugins = pluginFactory->available();
+    unsigned numPlugins = plugins.size();
+    for ( unsigned iPlugin = 0; iPlugin < numPlugins; ++iPlugin ) {
+      std::cout << plugins[iPlugin].name_;
+      if ( iPlugin < (numPlugins - 1) ) std::cout << ", ";
+    }
+    std::cout << " }" << std::endl;
+  }
+
+  return pluginFactory->create(pluginType, cfg);
 }
 
 template <typename T1, typename T2>
@@ -108,10 +126,8 @@ template <typename T1, typename T2>
 bool SVfitLikelihoodDiTauKinematics<T1,T2>::isFittedParameter(int index) const
 {
   if      ( index == SVfitAlgorithm<T1,T2>::kLeg1thetaRest ) return true;
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg1phiLab    ) return true;
   else if ( index == SVfitAlgorithm<T1,T2>::kLeg1nuInvMass ) return !isMasslessNuSystem<T1>();
   else if ( index == SVfitAlgorithm<T1,T2>::kLeg2thetaRest ) return true;
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2phiLab    ) return true;
   else if ( index == SVfitAlgorithm<T1,T2>::kLeg2nuInvMass ) return !isMasslessNuSystem<T2>();
   else return ( leg1Likelihood_->isFittedParameter(index) || leg2Likelihood_->isFittedParameter(index) );
 }
