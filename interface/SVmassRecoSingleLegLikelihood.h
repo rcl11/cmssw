@@ -64,12 +64,12 @@ namespace svMassReco
 
     /// Get the maximum possible neutrino system mass
     double maxM12() const;
-
+/*
     /// Total NLL for this leg
     double nllOfLeg() const; 
-
+ */
     /// NLL of the kinematics in the rest frame of the tau
-    double nllRestFrameKinematics(double diTauMass=90) const; 
+    double nllRestFrameKinematics(double diTauMass, bool usePtBalanceInFit) const; 
 
     /// NLL for this leg from the decay length constraint.
     double nllDecayLength() const;

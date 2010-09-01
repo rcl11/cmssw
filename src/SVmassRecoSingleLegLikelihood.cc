@@ -131,7 +131,7 @@ void SVmassRecoSingleLegLikelihood::setPoints(const GlobalPoint& pv, double thet
          << "Input    -- M12: " << m12 << " theta: " << thetaRest << " phi: " << phiLab << " radius: " << radiusLab 
          << "\n"
          << "Previous -- M12: " << M12_ << " theta: " << thetaRest_ << " phi: " << phiLab_ << " radius: " << radiusLab_
-         << " NLLkin: " << nllRestFrameKinematics()
+	 << " NLLkin: " << nllRestFrameKinematics(90, true)
          << " NLLdl: " << nllDecayLength() 
          << " NLLtopo: " << nllTopological();
    }
@@ -161,12 +161,12 @@ void SVmassRecoSingleLegLikelihood::setPoints(const GlobalPoint& pv, double thet
    // By defintion, nu p4 is tauP4 - visP4
    nuP4_ = p4_ - visP4_;
 }
-
+/*
 double SVmassRecoSingleLegLikelihood::nllOfLeg() const
 { 
    return nllTopological() + nllDecayLength() + nllRestFrameKinematics(); 
 }
-
+ */
 // Helper functions for the rest frame distributions
 namespace restFrameDistributions {
    /// Compute theta from pseudorapidity
@@ -282,7 +282,7 @@ namespace restFrameDistributions {
    }
 }
 
-double SVmassRecoSingleLegLikelihood::nllRestFrameKinematics(double diTauMass) const {
+double SVmassRecoSingleLegLikelihood::nllRestFrameKinematics(double diTauMass, bool usePtBalanceInFit) const {
    /*
     * The likelihood for a given rest frame decay angle and nu system mass
     * depends on lab frame PT of the visible objects AND the unknown PT spectrum
@@ -335,7 +335,8 @@ double SVmassRecoSingleLegLikelihood::nllRestFrameKinematics(double diTauMass) c
 
    //output += restFrameDistributions::negativeLogMovingVisiblePtPDF(
    //      visP4_.pt(), thetaRest_, M12_, visP4_.eta(), visibleMass_, diTauMass);
-   output += -log(restFrameDistributions::movingTauLeptonPtPDF(p4_.pt(), diTauMass));
+   if ( usePtBalanceInFit )
+     output += -log(restFrameDistributions::movingTauLeptonPtPDF(p4_.pt(), diTauMass));
 
    if(isnan(output) || isinf(output)) {
       //edm::LogWarning("SVSingleLeg") << " Got nan/inf for nllRestFrame!  nuSystemIsMassless: " << nuSystemIsMassless() << " thetaRest: " << thetaRest_ << " M12: " << M12_ << " Returning 30 instead.";
@@ -381,10 +382,11 @@ void SVmassRecoSingleLegLikelihood::printTo(std::ostream &out) const
 {
    using namespace std;
    out << "Type: " << legType() << endl;
-   out << "NLL" << setw(10) << nllOfLeg() << endl;
+   //out << "NLL" << setw(10) << nllOfLeg() << endl;
+   out << "NLL" << setw(10) << (nllTopological() + nllDecayLength() + nllRestFrameKinematics(90, true)) << endl;
    out << "- NLLTopo" << setw(10) << nllTopological() << endl;
    out << "- NLLDecay" << setw(10) << nllDecayLength() << setw(10) << endl;
-   out << "- NLLRestFrame" << setw(10) << nllRestFrameKinematics()  << endl;
+   out << "- NLLRestFrame" << setw(10) << nllRestFrameKinematics(90, true)  << endl;
    out << "-- SV" << setw(30) << sv_ << endl;
    out << "-- PV" << setw(30) << pv_ << endl;
    out << "-- ThetaRest" << setw(30) << thetaRest_ << endl;
