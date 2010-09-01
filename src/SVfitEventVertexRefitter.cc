@@ -15,8 +15,9 @@ SVfitEventVertexRefitter::SVfitEventVertexRefitter(const edm::ParameterSet& cfg)
   srcBeamSpot_ = cfg.getParameter<edm::InputTag>("srcBeamSpot"); 
 
   vertexFitAlgorithm_ = new KalmanVertexFitter(true);
-
-  minNumTracksRefit_ = cfg.getParameter<unsigned>("minNumTracksRefit");
+  
+  minNumTracksRefit_ = ( cfg.exists("minNumTracksRefit") ) ?
+    cfg.getParameter<unsigned>("minNumTracksRefit") : 2;
 }
 
 SVfitEventVertexRefitter::~SVfitEventVertexRefitter()
@@ -92,7 +93,7 @@ void removeTracks(TransientTrackMap& pvTracks_toRefit, const std::vector<reco::T
       for ( TransientTrackMap::iterator pvTrack = pvTracks_toRefit.begin(); 
 	    pvTrack != pvTracks_toRefit.end(); ++pvTrack ) {
 	if ( tracksMatchByDeltaR(pvTrack->first, *legTrack) ) {
-	  pvTracks_toRefit.erase(pvTrack_match);
+	  pvTracks_toRefit.erase(pvTrack);
 	  break;
 	}
       }
@@ -116,7 +117,7 @@ TransientVertex SVfitEventVertexRefitter::refit(const std::vector<reco::TrackBas
     pvTracks_original.push_back(pvTrack_transient);
     pvTrackMap_refit.insert(std::make_pair(*pvTrack, pvTrack_transient));
   }
-   
+
 //--- exclude tracks associated to any one of the two tau lepton decay "legs"
 //    from the primary event vertex refit
   removeTracks(pvTrackMap_refit, leg1Tracks);
@@ -127,7 +128,7 @@ TransientVertex SVfitEventVertexRefitter::refit(const std::vector<reco::TrackBas
 	pvTrack != pvTrackMap_refit.end(); ++pvTrack ) {
     pvTracks_refit.push_back(pvTrack->second);
   }
-      
+
 //--- refit primary event vertex with "cleaned" track collection;
 //    in case there are not "enough" tracks left to do the refit 
 //    after excluding the tracks associated to tau lepton decay "leg",
