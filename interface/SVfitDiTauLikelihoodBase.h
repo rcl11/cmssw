@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.5 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.4 2010/08/28 10:53:23 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.5 2010/08/30 13:30:01 veelken Exp $
  *
  */
 
@@ -31,8 +31,11 @@ class SVfitDiTauLikelihoodBase
   SVfitDiTauLikelihoodBase(const edm::ParameterSet& cfg)
   {
     pluginType_ = cfg.getParameter<std::string>("pluginType");
+    pluginName_ = cfg.getParameter<std::string>("pluginName");
   }
   virtual ~SVfitDiTauLikelihoodBase() {}
+
+  const std::string& name() const { return pluginName_; }
 
   virtual void beginEvent(edm::Event&, const edm::EventSetup&) {}
 
@@ -55,6 +58,7 @@ class SVfitDiTauLikelihoodBase
   virtual double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const = 0;
  protected:
   std::string pluginType_;
+  std::string pluginName_;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
