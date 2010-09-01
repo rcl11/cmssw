@@ -9,8 +9,11 @@ svFitLikelihoodDiTauKinematicsPhaseSpace = cms.PSet(
         RL = cms.double(0.5),
         RR = cms.double(0.5)
     ),
-    leg = cms.PSet(
+    leg1 = cms.PSet(
         pluginType = cms.string("SVfitMuonLikelihoodPhaseSpace")
+    ),
+    leg2 = cms.PSet(
+        pluginType = cms.string("SVfitTauLikelihoodPhaseSpace")
     )
 )
 
