@@ -6,6 +6,8 @@
 
 #include <TMath.h>
 
+#include <limits>
+
 using namespace SVfit_namespace;
 
 template <typename T>
@@ -41,11 +43,21 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
 
   double logLikelihood = TMath::Log(TMath::Sin(thetaRestFrame));
   if ( !isMasslessNuSystem<T>() ) {
-    double logP1 = TMath::Log(nuMass) - TMath::Log(2.);
-    double logP3 = 0.5*TMath::Log((tauLeptonMass2 - square(nuMass + visMass))*(tauLeptonMass2 - square(nuMass - visMass)))
-                  - TMath::Log(2*tauLeptonMass);
-    logLikelihood += (logP1 + logP3);
+    if ( nuMass > 0. && nuMass < (tauLeptonMass - visMass) ) {
+      double logP1 = TMath::Log(nuMass) - TMath::Log(2.);
+      double logP3 = 0.5*TMath::Log((tauLeptonMass2 - square(nuMass + visMass))*(tauLeptonMass2 - square(nuMass - visMass)))
+                    - TMath::Log(2*tauLeptonMass);
+      logLikelihood += (logP1 + logP3);
+    } else {
+      logLikelihood = std::numeric_limits<float>::min();
+    }
   }
+
+  //std::cout << "<SVfitLegLikelihoodPhaseSpace::operator()>:" << std::endl;
+  //std::cout << " thetaRestFrame = " << thetaRestFrame << std::endl;
+  //std::cout << " nuMass = " << nuMass << std::endl;
+  //std::cout << " visMass = " << visMass << std::endl;
+  //std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
 
   return -logLikelihood;
 }
