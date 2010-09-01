@@ -95,6 +95,8 @@ namespace svMassReco {
           const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, const Vertex& pv, const BeamSpot& bs, 
           const TransientTrackBuilder* trackBuilder)
     {
+      std::cout << "<SVmassRecoFitter::fitVertices>:" << std::endl;
+
        // Ensure both legs are supported by the fitter
       if ( !(leg1extractor_.typeIsSupportedBySVFitter() && leg2extractor_.typeIsSupportedBySVFitter()) ) 
       {
@@ -199,9 +201,13 @@ namespace svMassReco {
       pars[9] = sv2_radiusLab;
       pars[10] = sv2_m12;
 
+      for ( int iPar = 0; iPar < 11; ++iPar ) {
+	std::cout << " Parameter #" << iPar << " = " << pars[iPar] << std::endl;
+      }
+
       Int_t dummy_status;
       // Make sure our working point is fresh
-      fitter.nll(pars, dummy_status);
+      fitter.nll(pars, dummy_status, true);
 
       SVmassRecoSolution solution(true, -1);
       solution.setP4VisLeg1(fitter.leg1Likelihood()->visP4());
@@ -215,9 +221,9 @@ namespace svMassReco {
       solution.setMscale1(fitter.leg1Likelihood()->m12());
       solution.setMscale2(fitter.leg2Likelihood()->m12());
       solution.setLogLikelihood(fitter.getNLL());
+      std::cout << " fitter.getNLL() = " << fitter.getNLL() << std::endl;
       solution.setLogLikelihoodMEt(fitter.metNLL());
       solution.setMigradStatus(migradStatus);
-
 
       // compute X1 and X2
       FourVector p4Leg1 = fitter.leg1Likelihood()->fittedP4();

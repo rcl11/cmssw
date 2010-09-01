@@ -81,25 +81,33 @@ namespace svMassReco
 
         if(cfg.exists("SVOptions")){
            edm::ParameterSet options = cfg.getParameter<edm::ParameterSet>("SVOptions");
+	   usePtBalanceInFit_ = options.getParameter<bool>("usePtBalanceInFit");
            useMEtInFit_ = options.getParameter<bool>("useMEtInFit");
            useLeg1TrackingInFit_ = options.getParameter<bool>("useLeg1TrackingInFit");
            useLeg2TrackingInFit_ = options.getParameter<bool>("useLeg2TrackingInFit");
            correctPrimaryVertexInFit_= options.getParameter<bool>("correctPrimaryVertexInFit");
         } else {
            edm::LogWarning("SVDiTauLikelihood") << "No SV options found, enabling all options!";
-           useMEtInFit_ = true;
+	   usePtBalanceInFit_ = true;
+           useMEtInFit_ = true;	   
            useLeg1TrackingInFit_ = true;
            useLeg2TrackingInFit_ = true;
            correctPrimaryVertexInFit_ = true;
         }
+ 
+	std::cout << "<SVmassRecoDiTauLikelihood::SVmassRecoDiTauLikelihood>:" << std::endl;
+	std::cout << " usePtBalanceInFit = " << usePtBalanceInFit_ << std::endl;
+	std::cout << " useMEtInFit = " << useMEtInFit_ << std::endl;
+	std::cout << " useLeg1TrackingInFit = " << useLeg1TrackingInFit_ << std::endl;
+	std::cout << " useLeg2TrackingInFit = " << useLeg2TrackingInFit_ << std::endl;
+	std::cout << " correctPrimaryVertexInFit = " << correctPrimaryVertexInFit_ << std::endl;
      }
      virtual ~SVmassRecoDiTauLikelihood(){};
 
      /// Get NLL given parameters
      double nll(Double_t* pars, Int_t& status, bool verbose=false)
      {
-
-       double nllOutput = 0;
+       double nllOutput = 0.;
 
        // Fitted PV is original PV position plus a fitted correction factor
        fitPV_ = pv_.position() + GlobalVector(pars[0], pars[1], pars[2]);
@@ -119,8 +127,10 @@ namespace svMassReco
        leg2Likelihood_->setPoints(fitPV_, pars[7], pars[8], pars[9], pars[10]);
 
        // At a minimum, we always use the rest frame kinematics in the fit
-       nllOutput += leg1Likelihood_->nllRestFrameKinematics(p4().mass());
-       nllOutput += leg2Likelihood_->nllRestFrameKinematics(p4().mass());
+       double nllLeg1 = leg1Likelihood_->nllRestFrameKinematics(p4().mass(), usePtBalanceInFit_);
+       nllOutput += nllLeg1;
+       double nllLeg2 = leg2Likelihood_->nllRestFrameKinematics(p4().mass(), usePtBalanceInFit_);
+       nllOutput += nllLeg2;
 
        // Add the tracker information if desired
        if(useLeg1TrackingInFit_){
@@ -143,6 +153,14 @@ namespace svMassReco
        // Cache NLL result
        lastNLL_ = nllOutput;
        
+       if ( verbose ) {
+	 std::cout << "<SVmassRecoDiTauLikelihood>:" << std::endl;
+	 std::cout << " nllLeg1 = " << nllLeg1 << std::endl;
+	 std::cout << " nllLeg2 = " << nllLeg2 << std::endl;
+	 std::cout << " nllOutput = " << nllOutput << std::endl;
+	 std::cout << "--> setting lastNLL = " << lastNLL_ << std::endl;
+       }
+
        return nllOutput;
      }
 
@@ -279,6 +297,7 @@ namespace svMassReco
      const TransientVertex& pv_;
      const reco::MET* met_;
      
+     bool usePtBalanceInFit_;
      bool useMEtInFit_;
      bool useLeg1TrackingInFit_;
      bool useLeg2TrackingInFit_;
