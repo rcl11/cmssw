@@ -43,9 +43,9 @@ SVfitLikelihoodMEt<T1,T2>::~SVfitLikelihoodMEt()
 }
 
 template <typename T1, typename T2>
-void SVfitLikelihoodMEt<T1,T2>::beginEvent(edm::Event& evt, const edm::EventSetup& es)
+void SVfitLikelihoodMEt<T1,T2>::beginEvent(const edm::Event& evt, const edm::EventSetup& es)
 {
-  std::cout << "<SVfitLikelihoodMEt::beginEvent>:" << std::endl;
+  //std::cout << "<SVfitLikelihoodMEt::beginEvent>:" << std::endl;
   
   evt.getByLabel(srcPFCandidates_, pfCandidates_);
 }

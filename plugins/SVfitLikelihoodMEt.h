@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVfitLikelihoodMEt.h,v 1.1 2010/08/28 10:48:59 veelken Exp $
+ * $Id: SVfitLikelihoodMEt.h,v 1.2 2010/09/02 12:37:25 veelken Exp $
  *
  */
 
@@ -35,7 +35,7 @@ class SVfitLikelihoodMEt : public SVfitDiTauLikelihoodBase<T1,T2>
   SVfitLikelihoodMEt(const edm::ParameterSet&);
   ~SVfitLikelihoodMEt();
 
-  void beginEvent(edm::Event&, const edm::EventSetup&);
+  void beginEvent(const edm::Event&, const edm::EventSetup&);
 
   bool isFittedParameter(int) const;
 
