@@ -23,12 +23,21 @@ SVfitLikelihoodDiTauPtBalance<T1,T2>::~SVfitLikelihoodDiTauPtBalance()
 // nothing to be done yet...
 }
 
+//-------------------------------------------------------------------------------
+// Compute likelihood for tau leptons produced in decay of particle of mass M
+// to have transverse momenta leg1Pt, leg2Pt
+//
+// The form of the likelihood function has been determined numerically by:
+//  o making a Taylor expansion of Jacobian peak smeared by Gaussian distribution
+//  o fitting the first five terms of the Taylor expansion plus a gamma distribution
+//    to the tau lepton Pt distribution in simulated Z --> tau+ tau- and H/A --> tau+ tau- events
+//  o parametrizing the fit coefficients as function of tau+ tau- mass
+//    of the Z --> tau+ tau- and H/A --> tau+ tau- events
+//
+//-------------------------------------------------------------------------------
+
 double smearedKinematicDistribution(double x, double M, double s) 
 {
-//-- compute likelihood for tau lepton produced in decay of particle of mass M
-//   (smeared by Gaussian distribution of width s)
-//   to have transverse momentum x
-
   double num_first_term = TMath::Exp(-0.5*square(x)/square(s))
                          *8*s*(fourth(M) + 2*square(M)*(2*square(s) + square(x)) + 6*(square(s) + square(x))*(8*square(s) + square(x)));
 
@@ -61,8 +70,8 @@ double movingTauLeptonPtPDF(double tauPt, double diTauMass)
   double gammaScale = 6.74 + 0.020*diTauMass;
   double gammaShape = 2.2 + 0.0364*diTauMass;
   
-  return smearNorm*smearedKinematicDistribution(tauPt, M, smearWidth) +
-    (1 - smearNorm)*TMath::GammaDist(tauPt, gammaShape, 0, gammaScale);
+  return smearNorm*smearedKinematicDistribution(tauPt, M, smearWidth) 
+        + (1 - smearNorm)*TMath::GammaDist(tauPt, gammaShape, 0., gammaScale);
 }
 
 template <typename T1, typename T2>
@@ -70,19 +79,22 @@ double SVfitLikelihoodDiTauPtBalance<T1,T2>::operator()(const CompositePtrCandid
 					     const SVfitDiTauSolution& solution) const
 {
 //--- compute negative log-likelihood for two tau leptons 
-//    to balance each other in transverse momentum
-//
-//   NOTE: the form of the likelihood function has been determined numerically
-//         by fitting the tau lepton transverse momentum distribution in generated
-//         Z --> tau+ tau- and H/A --> tau+ tau- decays
-//         with a Taylor series approximating a Jacobian peak smeared by a Gaussian
-//         plus a gamma distribution
-//
+//    to have transverse momenta leg1Pt, leg2Pt
+
+  //std::cout << "<SVfitLikelihoodDiTauPtBalance::operator()>:" << std::endl;
 
   double diTauMass = solution.p4().mass();
+  //std::cout << " diTauMass = " << diTauMass << std::endl;
 
-  return -(TMath::Log(movingTauLeptonPtPDF(diTauMass, solution.leg1().p4().pt())) + 
-           TMath::Log(movingTauLeptonPtPDF(diTauMass, solution.leg2().p4().pt())));
+  double leg1Pt = solution.leg1().p4().pt();
+  //std::cout << " leg1Pt = " << leg1Pt << std::endl;
+  double leg2Pt = solution.leg2().p4().pt();
+  //std::cout << " leg2Pt = " << leg2Pt << std::endl;
+
+  double negLogLikelihood = -(TMath::Log(movingTauLeptonPtPDF(leg1Pt, diTauMass)*movingTauLeptonPtPDF(leg2Pt, diTauMass)));
+  //std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
+
+  return negLogLikelihood;
 }
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
