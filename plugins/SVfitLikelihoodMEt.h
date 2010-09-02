@@ -8,13 +8,17 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.2 2010/08/27 06:59:19 veelken Exp $
+ * $Id: SVfitLikelihoodMEt.h,v 1.1 2010/08/28 10:48:59 veelken Exp $
  *
  */
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
+#include "DataFormats/Common/interface/Handle.h"
 
 #include "TauAnalysis/CandidateTools/interface/SVfitDiTauLikelihoodBase.h"
 #include "TauAnalysis/CandidateTools/interface/SVfitLegLikelihoodBase.h"
@@ -31,6 +35,8 @@ class SVfitLikelihoodMEt : public SVfitDiTauLikelihoodBase<T1,T2>
   SVfitLikelihoodMEt(const edm::ParameterSet&);
   ~SVfitLikelihoodMEt();
 
+  void beginEvent(edm::Event&, const edm::EventSetup&);
+
   bool isFittedParameter(int) const;
 
   double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const;
@@ -40,6 +46,9 @@ class SVfitLikelihoodMEt : public SVfitDiTauLikelihoodBase<T1,T2>
 
   TFormula* perpSigma_;
   TFormula* perpBias_;
+
+  edm::InputTag srcPFCandidates_;
+  edm::Handle<reco::PFCandidateCollection> pfCandidates_;
 };
 
 #endif
