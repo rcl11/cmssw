@@ -257,11 +257,17 @@ namespace restFrameDistributions {
 
    double movingTauLeptonPtPDF(double tauPt, double diTauMass)
    {
+      //std::cout << "<movingTauLeptonPtPDF>:" << std::endl;
+
       double smearNorm = 0.52 + 0.000658*diTauMass;
       double smearWidth = 1.8 + 0.018*diTauMass;
       double Mfit = 2.3 + 1.04*diTauMass;
       double gammaScale = 6.74 + 0.020*diTauMass;
       double gammaShape = 2.2 + 0.0364*diTauMass;
+
+      //std::cout << "negativeLogLikelihood = " 
+      //	  << -TMath::Log(smearNorm*smearedKinematicDistribution(tauPt, Mfit, smearWidth)
+      //			+ (1 - smearNorm)*TMath::GammaDist(tauPt, gammaShape, 0, gammaScale)) << std::endl;
 
       return smearNorm*smearedKinematicDistribution(tauPt, Mfit, smearWidth) +
          (1 - smearNorm)*TMath::GammaDist(tauPt, gammaShape, 0, gammaScale);
