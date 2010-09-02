@@ -1,11 +1,13 @@
 #include "TauAnalysis/CandidateTools/plugins/SVfitLikelihoodMEt.h"
 
-#include "TauAnalysis/CandidateTools/interface/SVfitAlgorithm.h"
-#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
-
 #include "DataFormats/Candidate/interface/Candidate.h"
 
+#include "TauAnalysis/CandidateTools/interface/SVfitAlgorithm.h"
+#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
+#include "TauAnalysis/CandidateTools/interface/candidateAuxFunctions.h"
+
 #include <TMath.h>
+#include <TVector2.h>
 
 #include <string>
 
@@ -26,6 +28,8 @@ SVfitLikelihoodMEt<T1,T2>::SVfitLikelihoodMEt(const edm::ParameterSet& cfg)
   
   perpSigma_ = new TFormula("perpSigma", cfgResolution.getParameter<std::string>("perpSigma").data());
   perpBias_ = new TFormula("perpBias", cfgResolution.getParameter<std::string>("perpBias").data());  
+  
+  srcPFCandidates_ = cfg.getParameter<edm::InputTag>("srcPFCandidates");
 }
 
 template <typename T1, typename T2>
@@ -36,6 +40,14 @@ SVfitLikelihoodMEt<T1,T2>::~SVfitLikelihoodMEt()
 
   delete perpSigma_;
   delete perpBias_;
+}
+
+template <typename T1, typename T2>
+void SVfitLikelihoodMEt<T1,T2>::beginEvent(edm::Event& evt, const edm::EventSetup& es)
+{
+  std::cout << "<SVfitLikelihoodMEt::beginEvent>:" << std::endl;
+  
+  evt.getByLabel(srcPFCandidates_, pfCandidates_);
 }
 
 template <typename T1, typename T2>
@@ -59,29 +71,27 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 //
   //std::cout << "SVfitLikelihoodMEt::operator()>:" << std::endl;
   //std::cout << " sumEt = " << diTau.met()->sumEt() << std::endl;
-  //std::cout << " metPx = " << diTau.met()->px() << std::endl;
-  //std::cout << " metPy = " << diTau.met()->py() << std::endl;
 
-  double parX = diTau.met()->sumEt();
-  double perpX = diTau.met()->sumEt();
+//--- make unit vector bisecting tau lepton "legs"
+//    and project difference between "true" generated and reconstructed MET
+//    in direction parallel and perpendicular to that vector
+  TVector2 diTauDirection = getDiTauBisectorDirection(diTau.leg1()->p4(), diTau.leg2()->p4());
 
-  double parSigma = parSigma_->Eval(parX);
-  double parBias = parBias_->Eval(parX);
+  double dummy, metSumP_par, metSumP_perp;
+  computeMEtProjection(*pfCandidates_, diTauDirection, dummy, metSumP_par, metSumP_perp);
+  //std::cout << " metSumP_par = " << metSumP_par << std::endl;
+  //std::cout << " metSumP_perp = " << metSumP_perp << std::endl;
+  
+  double parSigma = parSigma_->Eval(metSumP_par);
+  double parBias = parBias_->Eval(metSumP_par);
   //std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
 
-  double perpSigma = perpSigma_->Eval(perpX);
-  double perpBias = perpBias_->Eval(perpX);
+  double perpSigma = perpSigma_->Eval(metSumP_perp);
+  double perpBias = perpBias_->Eval(metSumP_perp);
   //std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
-/*
-  double parSigma = 2.85 + 0.02072*diTau.met()->sumEt();  
-  double perpSigma = 2.3 + 0.02284*diTau.met()->sumEt();
 
-  double parBias = 1.183; // ET sum reconstructed in (leptonic) leg1 direction overestimated
-  double perpBias = 0.0;
-*/
-  reco::Candidate::LorentzVector projDirection = diTau.leg1()->p4();
-  double projCosPhi = TMath::Cos(projDirection.phi());
-  double projSinPhi = TMath::Sin(projDirection.phi());
+  double projCosPhi = diTauDirection.X();
+  double projSinPhi = diTauDirection.Y();
 
   double metPx = diTau.met()->px();
   double metPy = diTau.met()->py();
