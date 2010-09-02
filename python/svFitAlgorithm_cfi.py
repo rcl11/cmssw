@@ -21,11 +21,12 @@ svFitLikelihoodMEt = cms.PSet(
     pluginName = cms.string("svFitLikelihoodMEt"),
     pluginType = cms.string("SVfitLikelihoodMEtMuTau"),
     resolution = cms.PSet(
-        parSigma = cms.string("2.85 + 0.02072*x"),
-        parBias = cms.string("1.183"),
-        perpSigma = cms.string("2.3 + 0.02284*x"),
-        perpBias = cms.string("0.0"),
-    )
+        parSigma = cms.string("2.6 + 0.0383*x"),
+        parBias = cms.string("1.45"),
+        perpSigma = cms.string("2.1 + 0.0370*x"),
+        perpBias = cms.string("-0.16"),
+    ),
+    srcPFCandidates = cms.InputTag('particleFlow')
 )
 
 svFitLikelihoodDiTauPtBalance = cms.PSet(
