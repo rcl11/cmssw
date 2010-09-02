@@ -179,6 +179,11 @@ namespace svMassReco {
 
    double nllNuSystemGivenMET(const FourVector& nus, const FourVector& direction, const reco::MET* met)
    {
+      //std::cout << "<nllNuSystemGivenMET>:" << std::endl;
+      //std::cout << " sumEt = " << met->sumEt() << std::endl;
+      //std::cout << " metPx = " << met->px() << std::endl;
+      //std::cout << " metPy = " << met->py() << std::endl;
+
       // MET likelihood split into perp/par components along the leptonic leg1.
       //double parSigma =  1.14770e+00 + 3.62242e-02*met->sumEt();
       //double perpSigma = 2.75926e-01 + 3.70582e-02*met->sumEt();
@@ -190,22 +195,32 @@ namespace svMassReco {
       double parBias = 1.183; // RECO is overestimated
       double perpBias = 0.0;
 
+      //std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
+      //std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
+
       double output = 0.0;
 
       double recoMETparToDir = (met->px()*direction.px() + met->py()*direction.py())/direction.pt();
+      //std::cout << " recoMETparToDir = " << recoMETparToDir << std::endl;
       double recoMETperpToDir = (met->px()*direction.py() - met->py()*direction.px())/direction.pt();
+      //std::cout << " recoMETperpToDir = " << recoMETperpToDir << std::endl;
 
       double fitMETparToDir = (nus.px()*direction.px() + nus.py()*direction.py())/direction.pt();
+      //std::cout << " fitMETparToDir = " << fitMETparToDir << std::endl;
       double fitMETperpToDir = (nus.px()*direction.py() - nus.py()*direction.px())/direction.pt();
+      //std::cout << " fitMETperpToDir = " << fitMETperpToDir << std::endl;
 
       double parResidual = recoMETparToDir - fitMETparToDir - parBias;
+      //std::cout << " parResidual = " << parResidual << std::endl;
       double perpResidual = recoMETperpToDir - fitMETperpToDir - perpBias;
+      //std::cout << " perpResidual = " << perpResidual << std::endl;
 
       output += 0.5*square(parResidual/parSigma);
       output += nlGaussianNorm(parSigma);
 
       output += 0.5*square(perpResidual/perpSigma);
       output += nlGaussianNorm(perpSigma);
+      //std::cout << "--> output = " << output << std::endl;
       return output;
    }
 

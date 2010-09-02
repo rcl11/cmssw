@@ -95,12 +95,12 @@ namespace svMassReco
            correctPrimaryVertexInFit_ = true;
         }
  
-	std::cout << "<SVmassRecoDiTauLikelihood::SVmassRecoDiTauLikelihood>:" << std::endl;
-	std::cout << " usePtBalanceInFit = " << usePtBalanceInFit_ << std::endl;
-	std::cout << " useMEtInFit = " << useMEtInFit_ << std::endl;
-	std::cout << " useLeg1TrackingInFit = " << useLeg1TrackingInFit_ << std::endl;
-	std::cout << " useLeg2TrackingInFit = " << useLeg2TrackingInFit_ << std::endl;
-	std::cout << " correctPrimaryVertexInFit = " << correctPrimaryVertexInFit_ << std::endl;
+	//std::cout << "<SVmassRecoDiTauLikelihood::SVmassRecoDiTauLikelihood>:" << std::endl;
+	//std::cout << " usePtBalanceInFit = " << usePtBalanceInFit_ << std::endl;
+	//std::cout << " useMEtInFit = " << useMEtInFit_ << std::endl;
+	//std::cout << " useLeg1TrackingInFit = " << useLeg1TrackingInFit_ << std::endl;
+	//std::cout << " useLeg2TrackingInFit = " << useLeg2TrackingInFit_ << std::endl;
+	//std::cout << " correctPrimaryVertexInFit = " << correctPrimaryVertexInFit_ << std::endl;
      }
      virtual ~SVmassRecoDiTauLikelihood(){};
 

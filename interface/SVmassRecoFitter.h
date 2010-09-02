@@ -49,11 +49,12 @@
 #include "TauAnalysis/CandidateTools/interface/SVmassRecoSingleLegExtractorT.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/SVmassRecoSolution.h"
 
-
 using namespace reco;
 using namespace std;
 
 namespace svMassReco {
+
+  const int verbosity = 0;
 
   /// Function for Minuit to minimize
   template<typename T1, typename T2>
@@ -95,7 +96,8 @@ namespace svMassReco {
           const edm::Ptr<T2>& leg2Ptr, const CandidatePtr metCandPtr, const Vertex& pv, const BeamSpot& bs, 
           const TransientTrackBuilder* trackBuilder)
     {
-      std::cout << "<SVmassRecoFitter::fitVertices>:" << std::endl;
+
+      if ( verbosity ) std::cout << "<SVmassRecoFitter::fitVertices>:" << std::endl;
 
        // Ensure both legs are supported by the fitter
       if ( !(leg1extractor_.typeIsSupportedBySVFitter() && leg2extractor_.typeIsSupportedBySVFitter()) ) 
@@ -200,14 +202,16 @@ namespace svMassReco {
       pars[8] = sv2_phiLab;
       pars[9] = sv2_radiusLab;
       pars[10] = sv2_m12;
-
-      for ( int iPar = 0; iPar < 11; ++iPar ) {
-	std::cout << " Parameter #" << iPar << " = " << pars[iPar] << std::endl;
+      if ( verbosity ) {
+	for ( int iPar = 0; iPar < 11; ++iPar ) {
+	  std::cout << " Parameter #" << iPar << " = " << pars[iPar] << std::endl;
+	}
       }
 
       Int_t dummy_status;
       // Make sure our working point is fresh
-      fitter.nll(pars, dummy_status, true);
+      //fitter.nll(pars, dummy_status, true); // debug print-out enabled
+      fitter.nll(pars, dummy_status, false); // debug print-out disabled
 
       SVmassRecoSolution solution(true, -1);
       solution.setP4VisLeg1(fitter.leg1Likelihood()->visP4());
@@ -221,7 +225,7 @@ namespace svMassReco {
       solution.setMscale1(fitter.leg1Likelihood()->m12());
       solution.setMscale2(fitter.leg2Likelihood()->m12());
       solution.setLogLikelihood(fitter.getNLL());
-      std::cout << " fitter.getNLL() = " << fitter.getNLL() << std::endl;
+      //std::cout << " fitter.getNLL() = " << fitter.getNLL() << std::endl;
       solution.setLogLikelihoodMEt(fitter.metNLL());
       solution.setMigradStatus(migradStatus);
 

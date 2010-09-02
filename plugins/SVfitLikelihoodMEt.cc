@@ -57,14 +57,21 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 //
 //    NB: MET likelihood is split into perp/par components along (leptonic) leg1 of the diTau object  
 //
+  //std::cout << "SVfitLikelihoodMEt::operator()>:" << std::endl;
+  //std::cout << " sumEt = " << diTau.met()->sumEt() << std::endl;
+  //std::cout << " metPx = " << diTau.met()->px() << std::endl;
+  //std::cout << " metPy = " << diTau.met()->py() << std::endl;
+
   double parX = diTau.met()->sumEt();
   double perpX = diTau.met()->sumEt();
 
   double parSigma = parSigma_->Eval(parX);
   double parBias = parBias_->Eval(parX);
+  //std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
 
-  double perpSigma = parSigma_->Eval(perpX);
-  double perpBias = parBias_->Eval(perpX);
+  double perpSigma = perpSigma_->Eval(perpX);
+  double perpBias = perpBias_->Eval(perpX);
+  //std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
 /*
   double parSigma = 2.85 + 0.02072*diTau.met()->sumEt();  
   double perpSigma = 2.3 + 0.02284*diTau.met()->sumEt();
@@ -80,19 +87,28 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
   double metPy = diTau.met()->py();
 
   double recoMET_par = (metPx*projCosPhi + metPy*projSinPhi);
+  //std::cout << " recoMET_par = " << recoMET_par << std::endl;
   double recoMET_perp = (metPx*projSinPhi - metPy*projCosPhi);
+  //std::cout << " recoMET_perp = " << recoMET_perp << std::endl;
   
   reco::Candidate::LorentzVector nuP4 = solution.leg1().p4Invis() + solution.leg2().p4Invis();
   double nuPx = nuP4.px();
   double nuPy = nuP4.py();
 
   double fittedMET_par = (nuPx*projCosPhi + nuPy*projSinPhi);
+  //std::cout << " fittedMET_par = " << fittedMET_par << std::endl;
   double fittedMET_perp = (nuPx*projSinPhi - nuPy*projCosPhi);
+  //std::cout << " fittedMET_perp = " << fittedMET_perp << std::endl;
   
   double parResidual = recoMET_par - fittedMET_par - parBias;
+  //std::cout << " parResidual = " << parResidual << std::endl;
   double perpResidual = recoMET_perp - fittedMET_perp - perpBias;
+  //std::cout << " perpResidual = " << perpResidual << std::endl;
 
-  return -(logGaussian(parResidual, parSigma) + logGaussian(perpResidual, perpSigma));
+  double negLogLikelihood = -(logGaussian(parResidual, parSigma) + logGaussian(perpResidual, perpSigma));
+  //std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
+
+  return negLogLikelihood;
 }
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
