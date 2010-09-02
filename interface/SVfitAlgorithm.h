@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.7 $
+ * \version $Revision: 1.8 $
  *
- * $Id: SVfitAlgorithm.h,v 1.7 2010/08/30 13:29:45 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.8 2010/09/01 15:32:49 veelken Exp $
  *
  */
 
@@ -44,15 +44,6 @@
 
 // forward declaration of SVfitAlgorithm class
 template<typename T1, typename T2> class SVfitAlgorithm;
-
-//
-// WARNING: numbering of TMinuit parameters starts at 1 (Fortran convention);
-//          an offset of 1 needs hence to be added to all calls to the TMinuit functions
-//         o DefineParameter
-//         o FixParameter
-//         o GetParameter
-//
-const int minuitParameterOffset = 1;
 
 namespace SVfitAlgorithm_namespace 
 {
@@ -114,15 +105,12 @@ class SVfitAlgorithm : public TObject
 //    which are not constrained by any likelihood function
     for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
       minuitLockParameters_[iParameter] = true;
-      
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
 	    likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
 	if ( (*likelihoodFunction)->isFittedParameter(iParameter) ) minuitLockParameters_[iParameter] = false;
       }
-      
-      if ( minuitLockParameters_[iParameter] ) minuit_.FixParameter(iParameter + minuitParameterOffset);
     }
-
+    
     print(std::cout);
   }
 
@@ -224,12 +212,6 @@ class SVfitAlgorithm : public TObject
     }
     
     readMinuitParameters();
-/*
-    for ( Int_t iParameter = 0; iParameter <= numParameters; ++iParameter ) {
-      minuitParameterValues_[iParameter] = parameters[iParameter];
-      //std::cout << " Parameter #" << iParameter << " = " << minuitParameterValues_[iParameter] << std::endl;
-    }
- */
     applyMinuitParameters(currentDiTauSolution_);
     
     double negLogLikelihood = 0.;    
@@ -247,7 +229,7 @@ class SVfitAlgorithm : public TObject
 				 SVfitDiTauSolution& solution,
 				 const TransientVertex& pv)
   {
-    std::cout << "<SVfitAlgorithm::fitPolarizationHypothesis>:" << std::endl;
+    if ( verbosity_ ) std::cout << "<SVfitAlgorithm::fitPolarizationHypothesis>:" << std::endl;
     
 //--- initialize pointer to current diTau object
     currentDiTau_ = &diTauCandidate;
@@ -283,47 +265,50 @@ class SVfitAlgorithm : public TObject
       pvPositionZerr = 10.;
     }
 
-    minuit_.DefineParameter(0 + minuitParameterOffset, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
-    minuit_.DefineParameter(1 + minuitParameterOffset, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
-    minuit_.DefineParameter(2 + minuitParameterOffset, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
-    minuit_.DefineParameter(3 + minuitParameterOffset, "sv1_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_.DefineParameter(4 + minuitParameterOffset, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
-    double parameter4StartValue, parameter4Error;
-    minuit_.GetParameter(4 + minuitParameterOffset, parameter4StartValue, parameter4Error);
-    std::cout << " parameter4StartValue = " << parameter4StartValue << " +/- " << parameter4Error << std::endl;
+    minuit_.DefineParameter(0, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
+    minuit_.DefineParameter(1, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
+    minuit_.DefineParameter(2, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
+    minuit_.DefineParameter(3, "sv1_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_.DefineParameter(4, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg1Radius0 = diTauCandidate.leg1()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_.DefineParameter(5 + minuitParameterOffset, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
+    minuit_.DefineParameter(5, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
     double leg1NuMass0, leg1NuMassErr, leg1NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T1>() ) {
-      leg1NuMass0 = 0.5;
-      leg1NuMassErr = 0.5;
+      leg1NuMass0 = 0.8;
+      leg1NuMassErr = 0.4;
       leg1NuMassMax = SVfit_namespace::tauLeptonMass - diTauCandidate.leg1()->mass();
     } else {
       leg1NuMass0 = 0.;
-      leg1NuMassErr = 0.;
+      leg1NuMassErr = 1.;
       leg1NuMassMax = 0.;
     }
     //std::cout << " leg1NuMassMax = " << leg1NuMassMax << std::endl;
-    minuit_.DefineParameter(6 + minuitParameterOffset, "sv1_m12", leg1NuMass0, leg1NuMassErr, 0., leg1NuMassMax);
-    minuit_.DefineParameter(7 + minuitParameterOffset, "sv2_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_.DefineParameter(8 + minuitParameterOffset, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
+    minuit_.DefineParameter(6, "sv1_m12", leg1NuMass0, leg1NuMassErr, 0., leg1NuMassMax);
+    minuit_.DefineParameter(7, "sv2_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_.DefineParameter(8, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg2Radius0 = diTauCandidate.leg2()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_.DefineParameter(9 + minuitParameterOffset, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
+    minuit_.DefineParameter(9, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
     double leg2NuMass0, leg2NuMassErr, leg2NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T2>() ) {
-      leg2NuMass0 = 0.5;
-      leg2NuMassErr = 0.5;
+      leg2NuMass0 = 0.8;
+      leg2NuMassErr = 0.4;
       leg2NuMassMax = SVfit_namespace::tauLeptonMass - diTauCandidate.leg2()->mass();
     } else {
       leg2NuMass0 = 0.;
-      leg2NuMassErr = 0.;
+      leg2NuMassErr = 1.;
       leg2NuMassMax = 0.;
     }
     //std::cout << " leg2NuMassMax = " << leg2NuMassMax << std::endl;
-    minuit_.DefineParameter(10 + minuitParameterOffset, "sv2_m12", leg2NuMass0, leg2NuMassErr, 0., leg2NuMassMax);
+    minuit_.DefineParameter(10, "sv2_m12", leg2NuMass0, leg2NuMassErr, 0., leg2NuMassMax);
 
-    std::cout << " minuitNumParameters = " << minuit_.GetNumPars()
-	      << " (free = " << minuit_.GetNumFreePars() << ", fixed = " << minuit_.GetNumFixedPars() << ")" << std::endl;
+    for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+      if ( minuitLockParameters_[iParameter] ) minuit_.FixParameter(iParameter);
+    }
+
+    if ( verbosity_ ) {
+      std::cout << " minuitNumParameters = " << minuit_.GetNumPars()
+		<< " (free = " << minuit_.GetNumFreePars() << ", fixed = " << minuit_.GetNumFixedPars() << ")" << std::endl;
+    }
     assert(minuit_.GetNumPars() == minuitNumParameters_);
    
     int minuitStatus = minuit_.Command("MIN"); 
@@ -331,8 +316,10 @@ class SVfitAlgorithm : public TObject
       << " Minuit fit Status = " << minuitStatus << std::endl;
 	
     readMinuitParameters();
-    for ( Int_t iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-      std::cout << " Parameter #" << iParameter << " = " << minuitParameterValues_[iParameter] << std::endl;
+    if ( verbosity_ ) {
+      for ( Int_t iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+	std::cout << " Parameter #" << iParameter << " = " << minuitParameterValues_[iParameter] << std::endl;
+      }
     }
     applyMinuitParameters(currentDiTauSolution_);
     
@@ -347,18 +334,12 @@ class SVfitAlgorithm : public TObject
 
   void readMinuitParameters() const
   {
-    std::cout << "<readMinuitParameters>:" << std::endl;
+    //std::cout << "<readMinuitParameters>:" << std::endl;
 
     Double_t dummy;
     for ( Int_t iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-      minuit_.GetParameter(iParameter + minuitParameterOffset, minuitParameterValues_[iParameter], dummy);
+      minuit_.GetParameter(iParameter, minuitParameterValues_[iParameter], dummy);
       //std::cout << " Parameter #" << iParameter << " = " << minuitParameterValues_[iParameter] << std::endl;
-    }
-
-    if ( TMath::Abs(minuitParameterValues_[4]) > 0.01 ) {
-      double dummyValue, dummyError;
-      minuit_.GetParameter(4 + minuitParameterOffset, dummyValue, dummyError);
-      std::cout << " Parameter #4 = " << minuitParameterValues_[4] << " (" << dummyValue << ")" << std::endl;
     }
   }
   
@@ -425,6 +406,8 @@ class SVfitAlgorithm : public TObject
   const static Int_t minuitNumParameters_ = 11;
   mutable Double_t* minuitParameterValues_;
   bool* minuitLockParameters_;
+
+  static const int verbosity_ = 0;
 };
 
 #endif
