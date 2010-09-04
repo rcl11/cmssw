@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.8 $
+ * \version $Revision: 1.9 $
  *
- * $Id: SVfitAlgorithm.h,v 1.8 2010/09/01 15:32:49 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.9 2010/09/02 11:37:20 veelken Exp $
  *
  */
 
@@ -33,38 +33,45 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
-#include <TMinuit.h>
-#include <TObject.h>
+#include <TFitterMinuit.h>
+#include <Minuit2/FCNBase.h>
 #include <TMath.h>
+#include <TMatrixDSym.h>
+#include <TDecompChol.h>
+#include <TRandom3.h>
 
 #include <Math/VectorUtil.h>
 
 #include <vector>
+#include <algorithm>
 #include <iostream>
 
 // forward declaration of SVfitAlgorithm class
 template<typename T1, typename T2> class SVfitAlgorithm;
 
-namespace SVfitAlgorithm_namespace 
+template<typename T1, typename T2>
+class SVfitMinuitFCNadapter : public ROOT::Minuit2::FCNBase
 {
-  // define function to be minimized by Minuit
-  template <typename T1, typename T2>
-  void objectiveFcn(Int_t& numParameters, Double_t*, Double_t& fcn, Double_t* parameter, Int_t errorFlag)
-  {
-    // retrieve the fit object
-    SVfitAlgorithm<T1,T2>* algorithm = dynamic_cast<SVfitAlgorithm<T1,T2>*>(gMinuit->GetObjectFit());
-    if ( !algorithm ) {
-      edm::LogError("objectiveFcn") 
-	<< "Call to gMinuit::GetObjectFit returned NULL pointer !!";
-      return;
-    }
+ public:
+  SVfitMinuitFCNadapter()
+    : svFitAlgorithm_(0)
+  {}
+  ~SVfitMinuitFCNadapter() {}
 
-    fcn = algorithm->negLogLikelihood(numParameters, parameter);    
-  }
-}
+  void setSVfitAlgorithm(const SVfitAlgorithm<T1,T2>* svFitAlgorithm) { svFitAlgorithm_ = svFitAlgorithm; }
+
+  /// define "objective" function called by Minuit
+  double operator()(const std::vector<double>& x) const { return svFitAlgorithm_->negLogLikelihood(x); }
+
+  /// define increase in "objective" function used by Minuit to determine one-sigma error contours;
+  /// in case of (negative) log-likelihood functions, the value needs to be 0.5
+  double Up() const { return 0.5; }
+ private:
+  const SVfitAlgorithm<T1,T2>* svFitAlgorithm_;
+};
 
 template<typename T1, typename T2>
-class SVfitAlgorithm : public TObject
+class SVfitAlgorithm
 {
  public:
   enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ,
@@ -73,7 +80,7 @@ class SVfitAlgorithm : public TObject
   
   SVfitAlgorithm(const edm::ParameterSet& cfg)
     : currentDiTau_(0),
-      minuit_(minuitNumParameters_)
+      isFirstFit_(true)
   {
     name_ = cfg.getParameter<std::string>("name");
 
@@ -93,22 +100,44 @@ class SVfitAlgorithm : public TObject
       likelihoodFunctions_.push_back(likelihoodFunction);
     }
     
+//--- initialize Minuit    
+    minuitFCNadapter_.setSVfitAlgorithm(this);
+
+    minuit_ = new TFitterMinuit();
+    minuit_->SetMinuitFCN(&minuitFCNadapter_);
+//--- set Minuit strategy = 2,
+//    in order to enable reliable error estimates
+//    ( cf. http://www-cdf.fnal.gov/physics/statistics/recommendations/minuit.html )
+    minuit_->SetStrategy(2);
+    minuit_->SetMaxIterations(1000);
+
     std::cout << "<SVfitAlgorithm::SVfitAlgorithm>:" << std::endl;
     std::cout << " disabling MINUIT output..." << std::endl;
-    minuit_.SetPrintLevel(-1);
-    minuit_.SetErrorDef(0.5);
-    
-    minuitParameterValues_ = new Double_t[minuitNumParameters_];
-    minuitLockParameters_ = new bool[minuitNumParameters_];
+    minuit_->SetPrintLevel(-1);
+    minuit_->SetErrorDef(0.5);
+
+    minuit_->CreateMinimizer();
+        
+    minuitFittedParameterValues_.resize(minuitNumParameters_);
+    minuitLockParameters_.resize(minuitNumParameters_);
     
 //--- lock (i.e. set to fixed values) Minuit parameters
 //    which are not constrained by any likelihood function
-    for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+    for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
       minuitLockParameters_[iParameter] = true;
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
 	    likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
 	if ( (*likelihoodFunction)->isFittedParameter(iParameter) ) minuitLockParameters_[iParameter] = false;
       }
+    }
+
+    if ( cfg.exists("estUncertainties") ) {
+      edm::ParameterSet cfgEstUncertainties = cfg.getParameter<edm::ParameterSet>("estUncertainties");
+      numSamplings_ = cfgEstUncertainties.getParameter<int>("numSamplings");
+
+//--- make numSamplings parameter always an odd number,
+//    so that the median of numSamplings random values is well defined
+      if ( (numSamplings_ % 2) == 0 ) ++numSamplings_;
     }
     
     print(std::cout);
@@ -122,9 +151,6 @@ class SVfitAlgorithm : public TObject
 	  it != likelihoodFunctions_.end(); ++it ) {
       delete (*it);
     }
-
-    delete [] minuitParameterValues_;
-    delete [] minuitLockParameters_;
   }
 
   void beginEvent(edm::Event& evt, const edm::EventSetup& es)
@@ -146,12 +172,13 @@ class SVfitAlgorithm : public TObject
       (*likelihoodFunction)->print(stream);
     }
     stream << " minuitNumParameters = " << minuitNumParameters_ << std::endl;
-    for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+    for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
       stream << " Parameter #" << iParameter << ": ";
       if ( minuitLockParameters_[iParameter] ) stream << "LOCKED";
       else stream << "FITTED";
       stream << std::endl;
     }
+    stream << " numSamplings = " << numSamplings_ << std::endl;
     stream << std::endl;
   }
 
@@ -166,12 +193,6 @@ class SVfitAlgorithm : public TObject
     std::vector<reco::TrackBaseRef> leg1Tracks = leg1TrackExtractor_(*diTauCandidate.leg1());
     std::vector<reco::TrackBaseRef> leg2Tracks = leg2TrackExtractor_(*diTauCandidate.leg2());
     TransientVertex pv = eventVertexRefitAlgorithm_->refit(leg1Tracks, leg2Tracks);
-
-    minuit_.SetFCN(SVfitAlgorithm_namespace::objectiveFcn<T1,T2>);
-    minuit_.SetObjectFit(this);
-    minuit_.SetMaxIterations(1000);
-
-    gMinuit = &minuit_;
     
 //--- check if at least one likelihood function supports polarization 
 //    (i.e. returns a polarization depent likelihood value);
@@ -194,13 +215,11 @@ class SVfitAlgorithm : public TObject
       fitPolarizationHypothesis(diTauCandidate, currentDiTauSolution_, pv);
       solutions.push_back(currentDiTauSolution_);
     }
-
-    gMinuit = 0;
     
     return solutions;
   }
   
-  double negLogLikelihood(Int_t numParameters, Double_t* parameter) const
+  double negLogLikelihood(const std::vector<double>& x) const
   {
     //std::cout << "<SVfitAlgorithm::negLogLikelihood>:" << std::endl;
     //std::cout << " numParameters = " << numParameters << std::endl;
@@ -211,8 +230,7 @@ class SVfitAlgorithm : public TObject
       return 0.;
     }
     
-    readMinuitParameters();
-    applyMinuitParameters(currentDiTauSolution_);
+    applyParameters(currentDiTauSolution_, x);
     
     double negLogLikelihood = 0.;    
     for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
@@ -265,13 +283,13 @@ class SVfitAlgorithm : public TObject
       pvPositionZerr = 10.;
     }
 
-    minuit_.DefineParameter(0, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
-    minuit_.DefineParameter(1, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
-    minuit_.DefineParameter(2, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
-    minuit_.DefineParameter(3, "sv1_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_.DefineParameter(4, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
+    minuit_->SetParameter(0, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
+    minuit_->SetParameter(1, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
+    minuit_->SetParameter(2, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
+    minuit_->SetParameter(3, "sv1_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(4, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg1Radius0 = diTauCandidate.leg1()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_.DefineParameter(5, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
+    minuit_->SetParameter(5, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
     double leg1NuMass0, leg1NuMassErr, leg1NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T1>() ) {
       leg1NuMass0 = 0.8;
@@ -283,11 +301,11 @@ class SVfitAlgorithm : public TObject
       leg1NuMassMax = 0.;
     }
     //std::cout << " leg1NuMassMax = " << leg1NuMassMax << std::endl;
-    minuit_.DefineParameter(6, "sv1_m12", leg1NuMass0, leg1NuMassErr, 0., leg1NuMassMax);
-    minuit_.DefineParameter(7, "sv2_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_.DefineParameter(8, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
+    minuit_->SetParameter(6, "sv1_m12", leg1NuMass0, leg1NuMassErr, 0., leg1NuMassMax);
+    minuit_->SetParameter(7, "sv2_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(8, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg2Radius0 = diTauCandidate.leg2()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_.DefineParameter(9, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
+    minuit_->SetParameter(9, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
     double leg2NuMass0, leg2NuMassErr, leg2NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T2>() ) {
       leg2NuMass0 = 0.8;
@@ -299,29 +317,31 @@ class SVfitAlgorithm : public TObject
       leg2NuMassMax = 0.;
     }
     //std::cout << " leg2NuMassMax = " << leg2NuMassMax << std::endl;
-    minuit_.DefineParameter(10, "sv2_m12", leg2NuMass0, leg2NuMassErr, 0., leg2NuMassMax);
+    minuit_->SetParameter(10, "sv2_m12", leg2NuMass0, leg2NuMassErr, 0., leg2NuMassMax);
 
-    for ( int iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-      if ( minuitLockParameters_[iParameter] ) minuit_.FixParameter(iParameter);
+    if ( isFirstFit_ ) {
+      for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+	if ( minuitLockParameters_[iParameter] ) minuit_->FixParameter(iParameter);
+      }
+      
+      minuitNumFreeParameters_ = minuit_->GetNumberFreeParameters();
+      minuitNumFixedParameters_ = minuit_->GetNumberTotalParameters() - minuitNumFreeParameters_;
+      
+      std::cout << " minuitNumParameters = " << minuit_->GetNumberTotalParameters()
+		<< " (free = " << minuitNumFreeParameters_ << ", fixed = " << minuitNumFixedParameters_ << ")" << std::endl;
+      isFirstFit_ = false;
     }
+    assert((minuitNumFreeParameters_ + minuitNumFixedParameters_) == minuitNumParameters_);
 
-    if ( verbosity_ ) {
-      std::cout << " minuitNumParameters = " << minuit_.GetNumPars()
-		<< " (free = " << minuit_.GetNumFreePars() << ", fixed = " << minuit_.GetNumFixedPars() << ")" << std::endl;
-    }
-    assert(minuit_.GetNumPars() == minuitNumParameters_);
-   
-    int minuitStatus = minuit_.Command("MIN"); 
+    int minuitStatus = minuit_->Minimize();
     edm::LogInfo("SVfitAlgorithm::fit") 
       << " Minuit fit Status = " << minuitStatus << std::endl;
 	
-    readMinuitParameters();
-    if ( verbosity_ ) {
-      for ( Int_t iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-	std::cout << " Parameter #" << iParameter << " = " << minuitParameterValues_[iParameter] << std::endl;
-      }
+    for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+      minuitFittedParameterValues_[iParameter] = minuit_->GetParameter(iParameter);
+      if ( verbosity_ ) std::cout << " Parameter #" << iParameter << " = " << minuitFittedParameterValues_[iParameter] << std::endl;
     }
-    applyMinuitParameters(currentDiTauSolution_);
+    applyParameters(currentDiTauSolution_, minuitFittedParameterValues_);
     
     for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
 	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
@@ -330,40 +350,31 @@ class SVfitAlgorithm : public TObject
     }
 
     currentDiTauSolution_.minuitStatus_ = minuitStatus;
-  }
 
-  void readMinuitParameters() const
-  {
-    //std::cout << "<readMinuitParameters>:" << std::endl;
-
-    Double_t dummy;
-    for ( Int_t iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-      minuit_.GetParameter(iParameter, minuitParameterValues_[iParameter], dummy);
-      //std::cout << " Parameter #" << iParameter << " = " << minuitParameterValues_[iParameter] << std::endl;
-    }
+    if ( numSamplings_ > 0 ) compErrorEstimates();
   }
   
-  void applyMinuitParameters(SVfitDiTauSolution& diTauSolution) const 
+  void applyParameters(SVfitDiTauSolution& diTauSolution, const std::vector<double>& x) const 
   {
 //--- set primary event vertex position (tau lepton production vertex)
-    diTauSolution.eventVertexPositionCorr_.SetX(minuitParameterValues_[kPrimaryVertexX]);
-    diTauSolution.eventVertexPositionCorr_.SetY(minuitParameterValues_[kPrimaryVertexY]);
-    diTauSolution.eventVertexPositionCorr_.SetZ(minuitParameterValues_[kPrimaryVertexZ]);
+    diTauSolution.eventVertexPositionCorr_.SetX(x[kPrimaryVertexX]);
+    diTauSolution.eventVertexPositionCorr_.SetY(x[kPrimaryVertexY]);
+    diTauSolution.eventVertexPositionCorr_.SetZ(x[kPrimaryVertexZ]);
 
 //--- build first tau decay "leg"
-    applyMinuitParametersToLeg(kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass, diTauSolution.leg1_);
+    applyParametersToLeg(kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass, diTauSolution.leg1_, x);
 
 //--- build second tau decay "leg"
-    applyMinuitParametersToLeg(kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass, diTauSolution.leg2_);
+    applyParametersToLeg(kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass, diTauSolution.leg2_, x);
   }
 
-  void applyMinuitParametersToLeg(int gjAngleIndex, int phiLabIndex, int flightDistanceIndex, int massNuNuIndex,
-				  SVfitLegSolution& legSolution) const
+  void applyParametersToLeg(int gjAngleIndex, int phiLabIndex, int flightDistanceIndex, int massNuNuIndex,
+			    SVfitLegSolution& legSolution, const std::vector<double>& x) const 
   {
-    double gjAngle        = minuitParameterValues_[gjAngleIndex];
-    double phiLab         = minuitParameterValues_[phiLabIndex];
-    double flightDistance = minuitParameterValues_[flightDistanceIndex];
-    double massNuNu       = minuitParameterValues_[massNuNuIndex];
+    double gjAngle        = x[gjAngleIndex];
+    double phiLab         = x[phiLabIndex];
+    double flightDistance = x[flightDistanceIndex];
+    double massNuNu       = x[massNuNuIndex];
 
     const reco::Candidate::LorentzVector& p4Vis = legSolution.p4Vis();
 
@@ -390,6 +401,118 @@ class SVfitAlgorithm : public TObject
     legSolution.tauFlightPath_ = direction*flightDistance;
   }
 
+  void compErrorEstimates() const
+  {
+    //std::cout << "<SVfitAlgorithm::compErrorEstimates>:" << std::endl;
+
+//--- copy error matrix estimated by Minuit into TMatrixDSym object;
+//    only copy elements corresponding to "free" fit parameters,
+//    to avoid problems with Cholesky decomposition
+    std::vector<unsigned> lutFreeToMinuitParameters(minuitNumFreeParameters_);
+    std::vector<int> lutMinuitToFreeParameters(minuitNumParameters_);
+    unsigned freeParameter_index = 0;
+    for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+      if ( !minuit_->IsFixed(iParameter) ) {
+	lutMinuitToFreeParameters[iParameter] = freeParameter_index;
+	lutFreeToMinuitParameters[freeParameter_index] = iParameter;
+	++freeParameter_index;
+      } else {
+	lutMinuitToFreeParameters[iParameter] = -1;
+      }
+    }    
+
+    TMatrixDSym freeErrorMatrix(minuitNumFreeParameters_);
+    for ( unsigned iRow = 0; iRow < minuitNumFreeParameters_; ++iRow ) {
+      //unsigned minuitRow_index = lutFreeToMinuitParameters[iRow];
+      //std::cout << "iRow = " << iRow << ": minuitRow_index = " << minuitRow_index << std::endl;
+      for ( unsigned iColumn = 0; iColumn < minuitNumFreeParameters_; ++iColumn ) {
+	//unsigned minuitColumn_index = lutFreeToMinuitParameters[iColumn];
+	//std::cout << "iColumn = " << iColumn << ": minuitColumn_index = " << minuitColumn_index << std::endl;
+//--- CV: note that Minuit error matrix 
+//        contains "free" fit parameters only
+//       (i.e. is of dimension nF x nF, where nF is the number of "free" fit parameters)
+	//freeErrorMatrix(iRow, iColumn) = minuit_->GetCovarianceMatrixElement(minuitRow_index, minuitColumn_index);
+	freeErrorMatrix(iRow, iColumn) = minuit_->GetCovarianceMatrixElement(iRow, iColumn);
+      }
+    }
+    //freeErrorMatrix.Print();
+
+//--- decompose "physical" error matrix A
+//    into "square-root" matrix A, with U * U^T = A
+    TDecompChol choleskyDecompAlgorithm;
+    choleskyDecompAlgorithm.SetMatrix(freeErrorMatrix);
+    choleskyDecompAlgorithm.Decompose();
+    TMatrixD freeErrorMatrix_sqrt = choleskyDecompAlgorithm.GetU(); 
+    //freeErrorMatrix_sqrt.Print();
+
+//--- generate random variables distributed according to N-dimensional normal distribution 
+//    for mean vector m (vector of best fit paramaters determined by Minuit)
+//    and covariance V (error matrix estimated by Minuit)
+//
+//    NB: correlations in the N-dimensional normal distribution
+//        are generated by the affine transformation 
+//          rndCorrelated = mu + U * rndUncorrelated 
+//        described in section "Drawing values from the distribution" 
+//        of http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+//
+    std::vector<double> massValues(numSamplings_);
+    std::vector<double> x1Values(numSamplings_);
+    std::vector<double> x2Values(numSamplings_);
+    TVectorD rndFreeParameterValues(minuitNumFreeParameters_);
+    std::vector<double> rndParameterValues(minuitNumParameters_);
+    SVfitDiTauSolution rndDiTauSolution(currentDiTauSolution_);
+    int iSampling = 0;    
+    while ( iSampling < numSamplings_ ) {      
+      for ( unsigned iFreeParameter = 0; iFreeParameter < minuitNumFreeParameters_; ++iFreeParameter ) {
+	rndFreeParameterValues(iFreeParameter) = rnd_.Gaus(0., 1.);
+      }
+      
+      rndFreeParameterValues *= freeErrorMatrix_sqrt;
+      
+      for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+	int freeParameter_index = lutMinuitToFreeParameters[iParameter];
+	if ( freeParameter_index != -1 ) {
+	  rndParameterValues[iParameter] = minuitFittedParameterValues_[iParameter] + rndFreeParameterValues(freeParameter_index);
+	} else {
+          rndParameterValues[iParameter] = minuitFittedParameterValues_[iParameter];
+	}
+      }
+
+      applyParameters(rndDiTauSolution, rndParameterValues);
+
+      double mass = rndDiTauSolution.mass();
+      double x1 = rndDiTauSolution.leg1().x();
+      double x2 = rndDiTauSolution.leg2().x();
+
+      if ( !(TMath::IsNaN(mass) || TMath::IsNaN(x1) || TMath::IsNaN(x2)) ) {
+	massValues[iSampling] = mass;
+	x1Values[iSampling] = x1;
+	x2Values[iSampling] = x2;
+	++iSampling;
+      }
+    }
+
+    std::sort(massValues.begin(), massValues.end());
+    std::sort(x1Values.begin(), x1Values.end());
+    std::sort(x2Values.begin(), x2Values.end());
+
+    int median_index = TMath::Nint(0.50*numSamplings_);
+    int oneSigmaUp_index = TMath::Nint(0.84*numSamplings_);
+    int oneSigmaDown_index = TMath::Nint(0.16*numSamplings_);
+
+    currentDiTauSolution_.hasErrorEstimates_ = true;
+    currentDiTauSolution_.massErrUp_ = massValues[oneSigmaUp_index] - massValues[median_index];
+    currentDiTauSolution_.massErrDown_ = massValues[median_index] - massValues[oneSigmaDown_index];
+
+    currentDiTauSolution_.leg1_.hasErrorEstimates_ = true;
+    currentDiTauSolution_.leg1_.xErrUp_ = x1Values[oneSigmaUp_index] - x1Values[median_index];
+    currentDiTauSolution_.leg1_.xErrDown_ = x1Values[median_index] - x1Values[oneSigmaDown_index];
+
+    currentDiTauSolution_.leg2_.hasErrorEstimates_ = true;
+    currentDiTauSolution_.leg2_.xErrUp_ = x2Values[oneSigmaUp_index] - x2Values[median_index];
+    currentDiTauSolution_.leg2_.xErrDown_ = x2Values[median_index] - x2Values[oneSigmaDown_index];
+  }
+
   std::string name_;
   
   SVfitEventVertexRefitter* eventVertexRefitAlgorithm_;
@@ -402,10 +525,18 @@ class SVfitAlgorithm : public TObject
   mutable const CompositePtrCandidateT1T2MEt<T1,T2>* currentDiTau_;
   mutable SVfitDiTauSolution currentDiTauSolution_;
   
-  mutable TMinuit minuit_;
-  const static Int_t minuitNumParameters_ = 11;
-  mutable Double_t* minuitParameterValues_;
-  bool* minuitLockParameters_;
+  mutable TFitterMinuit* minuit_;
+  SVfitMinuitFCNadapter<T1,T2> minuitFCNadapter_;
+  const static unsigned minuitNumParameters_ = 11;
+  mutable unsigned minuitNumFreeParameters_;
+  mutable unsigned minuitNumFixedParameters_;
+  mutable std::vector<double> minuitFittedParameterValues_;
+  std::vector<bool> minuitLockParameters_;
+
+  mutable bool isFirstFit_;
+
+  int numSamplings_;
+  mutable TRandom3 rnd_;
 
   static const int verbosity_ = 0;
 };
