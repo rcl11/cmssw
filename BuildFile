@@ -18,6 +18,7 @@
 <use name=TrackingTools/TrajectoryState>
 <use name=root>
 <use name=rootminuit>
+<use name=rootminuit2>
 <export>
   <lib name=TauAnalysisCandidateTools>
   <use name=RecoVertex/VertexPrimitives>
@@ -38,5 +39,6 @@
   <use name=AnalysisDataFormats/TauAnalysis>
   <use name=root>
   <use name=rootminuit>
+  <use name=rootminuit2>
 </export>
 
