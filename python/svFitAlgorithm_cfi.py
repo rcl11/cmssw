@@ -34,5 +34,16 @@ svFitLikelihoodDiTauPtBalance = cms.PSet(
     pluginType = cms.string("SVfitLikelihoodMuTauPairPtBalance")
 )
 
+svFitLikelihoodDiTauPt = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodDiTauPt"),
+    pluginType = cms.string("SVfitLikelihoodMuTauPairPt"),
+    pdf = cms.string("[0]*[1]/[2]*TMath::Sqrt(0.5*TMath::Pi())*TMath::Exp([1]*[1]/(2*[2]*[2]) - (x - [3])/[2])"
+                    + "*(1. - TMath::Erf((([3] - x)/[1] + [1]/[2])/TMath::Sqrt(2.)))"),
+    par0 = cms.string("5.38553e-1"),
+    par1 = cms.string("1.39514e+0"),
+    par2 = cms.string("1.08756e+1"),
+    par3 = cms.string("8.85593e-1")
+)
+
 
 
