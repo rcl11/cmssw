@@ -48,8 +48,10 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
     double E = leg.energy();                                                         // electron/muon energy
     double p = leg.p();                                                              // electron/muon momentum
     double cosTheta = solution.cosThetaRest();
+    double theta = TMath::ACos(cosTheta);
     prob = p*E*(3*Emax - 2*E - emuMass2/E
-               + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + emuMass2/tauLeptonMass)); // formula (2.5)
+               + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + emuMass2/tauLeptonMass))
+          *TMath::Sin(theta);                                                        // formula (2.5)
   } else {
     double z = solution.x();                                                         // tau lepton visible momentum fraction
     double z2 = square(z);
