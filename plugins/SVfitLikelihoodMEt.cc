@@ -53,10 +53,10 @@ void SVfitLikelihoodMEt<T1,T2>::beginEvent(const edm::Event& evt, const edm::Eve
 template <typename T1, typename T2>
 bool SVfitLikelihoodMEt<T1,T2>::isFittedParameter(int index) const
 {
-  if      ( index == SVfitAlgorithm<T1,T2>::kLeg1thetaRest ) return true;
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg1phiLab    ) return true;
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2thetaRest ) return true;
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2phiLab    ) return true;
+  if      ( index == SVfit_namespace::kLeg1thetaRest ) return true;
+  else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
+  else if ( index == SVfit_namespace::kLeg2thetaRest ) return true;
+  else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
   else return false;
 }
 

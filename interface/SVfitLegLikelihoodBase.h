@@ -8,15 +8,18 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.5 $
+ * \version $Revision: 1.6 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.5 2010/08/30 13:30:21 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.6 2010/09/02 16:38:00 veelken Exp $
  *
  */
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+#include "TauAnalysis/CandidateTools/interface/SVfitAlgorithm.h"
+#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitLegSolution.h"
 
@@ -41,9 +44,16 @@ class SVfitLegLikelihoodBase
     stream << " pluginType = " << pluginType_ << std::endl;
   }
 
-  virtual bool isFittedParameter(int) const
+  virtual bool isFittedParameter(int legIndex, int parIndex) const
   {
-    return false;
+    if      ( (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1thetaRest) ||
+	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2thetaRest) ) 
+      return true;
+    else if ( (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1nuInvMass) ||
+	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2nuInvMass) ) 
+      return !SVfit_namespace::isMasslessNuSystem<T>();
+    else
+      return false;
   }
 
   virtual bool supportsPolarization() const

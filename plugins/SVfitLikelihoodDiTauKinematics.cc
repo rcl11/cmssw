@@ -125,11 +125,15 @@ void SVfitLikelihoodDiTauKinematics<T1,T2>::print(std::ostream& stream) const
 template <typename T1, typename T2>
 bool SVfitLikelihoodDiTauKinematics<T1,T2>::isFittedParameter(int index) const
 {
-  if      ( index == SVfitAlgorithm<T1,T2>::kLeg1thetaRest ) return true;
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg1nuInvMass ) return !isMasslessNuSystem<T1>();
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2thetaRest ) return true;
-  else if ( index == SVfitAlgorithm<T1,T2>::kLeg2nuInvMass ) return !isMasslessNuSystem<T2>();
-  else return ( leg1Likelihood_->isFittedParameter(index) || leg2Likelihood_->isFittedParameter(index) );
+  if      ( index == SVfit_namespace::kLeg1thetaRest     || 
+            index == SVfit_namespace::kLeg1phiLab        ||
+            index == SVfit_namespace::kLeg1flightPathLab ||
+            index == SVfit_namespace::kLeg1nuInvMass     ) return leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, index);
+  else if ( index == SVfit_namespace::kLeg2thetaRest     || 
+            index == SVfit_namespace::kLeg2phiLab        ||
+            index == SVfit_namespace::kLeg2flightPathLab ||
+            index == SVfit_namespace::kLeg2nuInvMass     ) return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
+  else return false;
 }
 
 template <typename T1, typename T2>
