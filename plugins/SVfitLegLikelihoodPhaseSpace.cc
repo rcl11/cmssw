@@ -49,6 +49,8 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
                     - TMath::Log(2*tauLeptonMass);
       logLikelihood += (logP1 + logP3);
     } else {
+      edm::LogWarning ("SVfitLegLikelihoodPhaseSpace::operator()") 
+	<< " Unphysical solution --> returning very large negative number !!";
       logLikelihood = std::numeric_limits<float>::min();
     }
   }
