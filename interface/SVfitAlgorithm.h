@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.10 $
+ * \version $Revision: 1.11 $
  *
- * $Id: SVfitAlgorithm.h,v 1.10 2010/09/04 13:24:16 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.11 2010/09/05 13:40:56 veelken Exp $
  *
  */
 
@@ -77,14 +77,18 @@ class SVfitMinuitFCNadapter : public ROOT::Minuit2::FCNBase
   const SVfitAlgorithm<T1,T2>* svFitAlgorithm_;
 };
 
+namespace SVfit_namespace 
+{
+  enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ,
+                      kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass, 
+                      kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass };
+  enum tauDecayProducts { kLeg1, kLeg2 };
+}
+
 template<typename T1, typename T2>
 class SVfitAlgorithm
 {
  public:
-  enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ,
-                      kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass, 
-                      kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass };
-  
   SVfitAlgorithm(const edm::ParameterSet& cfg)
     : currentDiTau_(0),
       isFirstFit_(true)
@@ -364,15 +368,17 @@ class SVfitAlgorithm
   void applyParameters(SVfitDiTauSolution& diTauSolution, const std::vector<double>& x) const 
   {
 //--- set primary event vertex position (tau lepton production vertex)
-    diTauSolution.eventVertexPositionCorr_.SetX(x[kPrimaryVertexX]);
-    diTauSolution.eventVertexPositionCorr_.SetY(x[kPrimaryVertexY]);
-    diTauSolution.eventVertexPositionCorr_.SetZ(x[kPrimaryVertexZ]);
+    diTauSolution.eventVertexPositionCorr_.SetX(x[SVfit_namespace::kPrimaryVertexX]);
+    diTauSolution.eventVertexPositionCorr_.SetY(x[SVfit_namespace::kPrimaryVertexY]);
+    diTauSolution.eventVertexPositionCorr_.SetZ(x[SVfit_namespace::kPrimaryVertexZ]);
 
 //--- build first tau decay "leg"
-    applyParametersToLeg(kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass, diTauSolution.leg1_, x);
+    applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, SVfit_namespace::kLeg1phiLab, 
+			 SVfit_namespace::kLeg1flightPathLab, SVfit_namespace::kLeg1nuInvMass, diTauSolution.leg1_, x);
 
 //--- build second tau decay "leg"
-    applyParametersToLeg(kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass, diTauSolution.leg2_, x);
+    applyParametersToLeg(SVfit_namespace::kLeg2thetaRest, SVfit_namespace::kLeg2phiLab, 
+			 SVfit_namespace::kLeg2flightPathLab, SVfit_namespace::kLeg2nuInvMass, diTauSolution.leg2_, x);
   }
 
   void applyParametersToLeg(int gjAngleIndex, int phiLabIndex, int flightDistanceIndex, int massNuNuIndex,
