@@ -14,11 +14,18 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.9 $
+ * \version $Revision: 1.10 $
  *
- * $Id: SVfitAlgorithm.h,v 1.9 2010/09/02 11:37:20 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.10 2010/09/04 13:24:16 veelken Exp $
  *
  */
+
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 #include "TauAnalysis/CandidateTools/interface/SVfitDiTauLikelihoodBase.h"
 #include "TauAnalysis/CandidateTools/interface/SVfitEventVertexRefitter.h"
@@ -404,6 +411,9 @@ class SVfitAlgorithm
   void compErrorEstimates() const
   {
     //std::cout << "<SVfitAlgorithm::compErrorEstimates>:" << std::endl;
+
+//--- compute estimate for error matrix using Minuit's HESSE algorithm
+    minuit_->ExecuteCommand("HESSE", 0, 0);
 
 //--- copy error matrix estimated by Minuit into TMatrixDSym object;
 //    only copy elements corresponding to "free" fit parameters,
