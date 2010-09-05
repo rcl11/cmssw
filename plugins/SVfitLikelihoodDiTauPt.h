@@ -7,9 +7,9 @@
  * 
  * \author Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitLikelihoodMEt.h,v 1.3 2010/09/02 16:39:23 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauPt.h,v 1.1 2010/09/04 13:24:56 veelken Exp $
  *
  */
 
@@ -32,10 +32,10 @@ class SVfitLikelihoodDiTauPt : public SVfitDiTauLikelihoodBase<T1,T2>
   SVfitLikelihoodDiTauPt(const edm::ParameterSet&);
   ~SVfitLikelihoodDiTauPt();
 
-  double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const;
- private:
   void print(std::ostream&) const;
 
+  double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const;
+ private:
   TFormula* pdf_;
   std::map<int, TFormula*> pdfParameters_;
   int parseError_;
