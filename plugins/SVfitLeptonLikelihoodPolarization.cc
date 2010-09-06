@@ -42,21 +42,24 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
   double prob = 0.;
 
   if ( !useCollApproxFormulas_ ) {
-    double emuMass2 = square(lepton.mass());                                         // electron/muon mass
+    double emuMass2 = square(lepton.mass());                                        // electron/muon mass
     std::cout << " emuMass2 = " << emuMass2 << std::endl;
-    double Emax = (tauLeptonMass2 + emuMass2)/(2*tauLeptonMass);                     // formula (2.6)    
-    double E = lepton.energy();                                                      // electron/muon energy
-    double p = lepton.p();                                                           // electron/muon momentum
+    double Emax = (tauLeptonMass2 + emuMass2)/(2*tauLeptonMass);                    // formula (2.6)    
+    double E = lepton.energy();                                                     // electron/muon energy
+    double p = lepton.p();                                                          // electron/muon momentum
     double cosTheta = solution.cosThetaRest();
     double theta = TMath::ACos(cosTheta);
+    double sinTheta = TMath::Sin(theta);
     prob = p*E*(3*Emax - 2*E - emuMass2/E
                + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + emuMass2/tauLeptonMass))
-          *TMath::Sin(theta);                                                        // formula (2.5)
-  } else {
-    double z = solution.x();                                                         // tau lepton visible momentum fraction
+          *sinTheta;                                                                // formula (2.5)
+  } else { 
+    double z = solution.x();                                                        // tau lepton visible momentum fraction
     double z2 = square(z);
-    prob = (1./3.)*(1 - z)*((5 + 5*z - 4*z2) + tauLeptonPol*(1 + z - 8*z2));         // formula (2.8)
+    prob = (1./3.)*(1 - z)*((5 + 5*z - 4*z2) + tauLeptonPol*(1 + z - 8*z2));        // formula (2.8)
   }
+
+  std::cout << "--> prob = " << prob << std::endl;
 
   if ( !(prob > 0.) ) {
     edm::LogWarning ("SVfitLeptonLikelihoodPolarization::operator()") 
