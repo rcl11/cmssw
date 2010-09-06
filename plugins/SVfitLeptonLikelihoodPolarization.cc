@@ -33,9 +33,9 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
 //    assuming  matrix element of V-A electroweak decay
 //
 //    NOTE: The formulas taken from the paper
-//            "Tau polarization and its correlations as a probe of new physics",
-//            B.K. Bullock, K. Hagiwara and A.D. Martin,
-//            Nucl. Phys. B395 (1993) 499.
+//           "Tau polarization and its correlations as a probe of new physics",
+//           B.K. Bullock, K. Hagiwara and A.D. Martin,
+//           Nucl. Phys. B395 (1993) 499.
 //
   std::cout << "<SVfitLeptonLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
           
