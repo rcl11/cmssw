@@ -25,7 +25,7 @@ SVfitLeptonLikelihoodPolarization<T>::~SVfitLeptonLikelihoodPolarization()
 
 template <typename T>
 double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
-  const T& leg, const SVfitLegSolution& solution, double tauLeptonPol) const
+  const T& lepton, const SVfitLegSolution& solution, double tauLeptonPol) const
 {
 //--- compute negative log-likelihood for tau lepton decay "leg"
 //    to be compatible with decay tau- --> e- nu nu (tau- --> mu- nu nu)
@@ -42,11 +42,11 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
   double prob = 0.;
 
   if ( !useCollApproxFormulas_ ) {
-    double emuMass2 = square(leg.mass());                                            // electron/muon mass
+    double emuMass2 = square(lepton.mass());                                         // electron/muon mass
     std::cout << " emuMass2 = " << emuMass2 << std::endl;
     double Emax = (tauLeptonMass2 + emuMass2)/(2*tauLeptonMass);                     // formula (2.6)    
-    double E = leg.energy();                                                         // electron/muon energy
-    double p = leg.p();                                                              // electron/muon momentum
+    double E = lepton.energy();                                                      // electron/muon energy
+    double p = lepton.p();                                                           // electron/muon momentum
     double cosTheta = solution.cosThetaRest();
     double theta = TMath::ACos(cosTheta);
     prob = p*E*(3*Emax - 2*E - emuMass2/E
