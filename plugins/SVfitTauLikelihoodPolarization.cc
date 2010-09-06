@@ -203,7 +203,7 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
   }
 
   double prob = vGen_*vProb_;
-  std::cout << " prob = " << prob << std::endl;
+  std::cout << "--> prob = " << prob << std::endl;
 
   if ( !(prob > 0.) ) {
     edm::LogWarning ("SVfitTauLikelihoodPolarization::operator()") 
@@ -224,13 +224,30 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
 double SVfitTauLikelihoodPolarization::probOneProngZeroPi0(
          const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
 {
-  // dummy implementation
-  return 0.;
+  std::cout << "<SVfitTauLikelihoodPolarization::probOneProngZeroPi0>:" << std::endl;
+          
+  double prob = 0.;
+
+  if ( !useCollApproxFormulas_ ) {
+    double cosTheta = solution.cosThetaRest();
+    double theta = TMath::ACos(cosTheta);
+    double sinTheta = TMath::Sin(theta);
+    prob = 0.5*(1. + tauLeptonPol*cosTheta)*sinTheta; // [1], formula (2.1)
+  } else {    
+    double z = solution.x();                          // tau lepton visible momentum fraction
+    prob = (1. + tauLeptonPol*(2*z - 1.));            // [1], formula (2.4)
+  }
+
+  std::cout << "--> prob = " << prob << std::endl;
+
+  return prob;
 }
 
 double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
          const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
 {
+
+
   // dummy implementation
   return 0.;
 }
