@@ -2,6 +2,7 @@
 
 #include "DataFormats/TauReco/interface/PFTauDecayMode.h"
 
+#include "TauAnalysis/CandidateTools/interface/candidateAuxFunctions.h"
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 
 #include <TFile.h>
@@ -17,7 +18,7 @@ size_t getSupportedTauDecayModeIndex(const std::vector<int>& supportedTauDecayMo
 {
   size_t numSupportedTauDecayModes = supportedTauDecayModes.size();
   for ( size_t iDecayMode = 0; iDecayMode < numSupportedTauDecayModes; ++iDecayMode ) {
-    if ( SVfit_namespace::getTauDecayModeName(iDecayMode) == tauDecayModeName ) return iDecayMode;
+    if ( getTauDecayModeName(iDecayMode) == tauDecayModeName ) return iDecayMode;
   }
   
   edm::LogError("getSupportedTauDecayModeIndex") 
