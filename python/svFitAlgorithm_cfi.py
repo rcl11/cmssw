@@ -17,6 +17,48 @@ svFitLikelihoodDiTauKinematicsPhaseSpace = cms.PSet(
     )
 )
 
+svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodDiTauKinematicsPolarized"),
+    pluginType = cms.string("SVfitLikelihoodMuTauPairKinematics"),
+    polarizationCoefficients = cms.PSet(
+        LL = cms.double(0.5),
+        LR = cms.double(0.576),
+        RL = cms.double(0.424),
+        RR = cms.double(0.5)
+    ),
+    leg1 = cms.PSet(
+        pluginType = cms.string("SVfitMuonLikelihoodPolarization"),
+        useCollApproxFormulas = cms.bool(True) 
+    ),
+    leg2 = cms.PSet(
+        pluginType = cms.string("SVfitTauLikelihoodPolarization"),
+        mapRecToGenTauDecayModes = cms.PSet(
+            fileName = cms.string("/afs/cern.ch/user/v/veelken/public/plotsAHtoMuTau.root"),
+            meName = cms.string('DQMData/ahMuTauAnalyzer_woBtag/afterEvtSelNonCentralJetEt20bTag/TauQuantities/TauRecVsGenDecayMode')
+        ),
+        decayModeParameters = cms.PSet(
+            oneProngZeroPi0s = cms.PSet(),
+            oneProngOnePi0 = cms.PSet(
+                xSigma = cms.double(0.014),
+                xBias = cms.double(0.000),
+                pMin = cms.double(0.05)
+            ),
+            oneProngTwoPi0s = cms.PSet(
+                xSigma = cms.double(0.013),
+                xBias = cms.double(0.000),
+                pMin = cms.double(0.05)
+            ),
+            threeProngZeroPi0s = cms.PSet(
+                xSigma = cms.double(0.018),
+                xBias = cms.double(0.000),
+                pMin = cms.double(0.05)
+            )
+        ),
+        usePolarization = cms.bool(True),
+        useCollApproxFormulas = cms.bool(True) 
+    )
+)
+
 svFitLikelihoodMEt = cms.PSet(
     pluginName = cms.string("svFitLikelihoodMEt"),
     pluginType = cms.string("SVfitLikelihoodMEtMuTau"),
