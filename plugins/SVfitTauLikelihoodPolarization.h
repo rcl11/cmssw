@@ -13,9 +13,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitTauLikelihoodPolarization.h,v 1.2 2010/09/06 12:08:08 veelken Exp $
+ * $Id: SVfitTauLikelihoodPolarization.h,v 1.3 2010/09/08 10:20:01 veelken Exp $
  *
  */
 
@@ -33,6 +33,10 @@ class SVfitTauLikelihoodPolarization : public SVfitLegLikelihoodPolarizationBase
  public:
   SVfitTauLikelihoodPolarization(const edm::ParameterSet&);
   ~SVfitTauLikelihoodPolarization();
+
+  void beginCandidate(const pat::Tau&);
+
+  bool isFittedParameter(int, int) const;
 
  private:
   double negLogLikelihoodPolarized(const pat::Tau&, const SVfitLegSolution&, double) const;
@@ -57,12 +61,18 @@ class SVfitTauLikelihoodPolarization : public SVfitLegLikelihoodPolarizationBase
   mutable TVectorD vGen_;
   mutable TVectorD vProb_;
 
-  TFormula* xVMrhoSigma_;
-  TFormula* xVMrhoBias_;
-  TFormula* xVMa1NeutralSigma_;
-  TFormula* xVMa1NeutralBias_;
-  TFormula* xVMa1ChargedSigma_;
-  TFormula* xVMa1ChargedBias_;
+  struct decayModeEntryType
+  {
+    decayModeEntryType(const edm::ParameterSet&);
+    ~decayModeEntryType();
+    TFormula* xSigma_;
+    TFormula* xBias_;
+    double pMin_;
+  };
+
+  decayModeEntryType* rhoParameters_;
+  decayModeEntryType* a1NeutralParameters_;
+  decayModeEntryType* a1ChargedParameters_;
 
   SVfitVMlineShapeIntegral* rhoLpolLineShape_;
   SVfitVMlineShapeIntegral* rhoTpolLineShape_;
