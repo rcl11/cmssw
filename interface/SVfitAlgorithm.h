@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.12 $
+ * \version $Revision: 1.13 $
  *
- * $Id: SVfitAlgorithm.h,v 1.12 2010/09/05 15:19:30 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.13 2010/09/08 13:27:14 veelken Exp $
  *
  */
 
@@ -281,7 +281,7 @@ class SVfitAlgorithm
     minuit_->SetParameter(SVfit_namespace::kPrimaryVertexX, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
     minuit_->SetParameter(SVfit_namespace::kPrimaryVertexY, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
     minuit_->SetParameter(SVfit_namespace::kPrimaryVertexZ, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
-    minuit_->SetParameter(SVfit_namespace::kLeg1thetaRest, "sv1_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaRest, "sv1_thetaRest", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
     minuit_->SetParameter(SVfit_namespace::kLeg1phiLab, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg1Radius0 = diTauCandidate.leg1()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
     minuit_->SetParameter(SVfit_namespace::kLeg1flightPathLab, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
@@ -297,11 +297,11 @@ class SVfitAlgorithm
     }
     //std::cout << " leg1NuMassMax = " << leg1NuMassMax << std::endl;
     minuit_->SetParameter(SVfit_namespace::kLeg1nuInvMass, "sv1_m12", leg1NuMass0, leg1NuMassErr, 0., leg1NuMassMax);
-    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMrho, "sv1_thetaVMrho", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMa1, "sv1_thetaVMa1", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMa1r, "sv1_thetaVMa1r", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMrho, "sv1_thetaVMrho", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMa1, "sv1_thetaVMa1", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMa1r, "sv1_thetaVMa1r", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
     minuit_->SetParameter(SVfit_namespace::kLeg1phiVMa1r, "sv1_phiVMa1r", 0., TMath::Pi(), 0., 0.); // do not set limits for phiVMa1r
-    minuit_->SetParameter(SVfit_namespace::kLeg2thetaRest, "sv2_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaRest, "sv2_thetaRest", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
     minuit_->SetParameter(SVfit_namespace::kLeg2phiLab, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg2Radius0 = diTauCandidate.leg2()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
     minuit_->SetParameter(SVfit_namespace::kLeg2flightPathLab, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
@@ -317,9 +317,9 @@ class SVfitAlgorithm
     }
     //std::cout << " leg2NuMassMax = " << leg2NuMassMax << std::endl;
     minuit_->SetParameter(SVfit_namespace::kLeg2nuInvMass, "sv2_m12", leg2NuMass0, leg2NuMassErr, 0., leg2NuMassMax);
-    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMrho, "sv2_thetaVMrho", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMa1, "sv2_thetaVMa1", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMa1r, "sv2_thetaVMa1r", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMrho, "sv2_thetaVMrho", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMa1, "sv2_thetaVMa1", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMa1r, "sv2_thetaVMa1r", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
     minuit_->SetParameter(SVfit_namespace::kLeg2phiVMa1r, "sv2_phiVMa1r", 0., TMath::Pi(), 0., 0.); // do not set limits for phiVMa1r
     
     for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
