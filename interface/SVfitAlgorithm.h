@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.11 $
+ * \version $Revision: 1.12 $
  *
- * $Id: SVfitAlgorithm.h,v 1.11 2010/09/05 13:40:56 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.12 2010/09/05 15:19:30 veelken Exp $
  *
  */
 
@@ -80,8 +80,10 @@ class SVfitMinuitFCNadapter : public ROOT::Minuit2::FCNBase
 namespace SVfit_namespace 
 {
   enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ,
-                      kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass, 
-                      kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass };
+                      kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass,
+		      kLeg1thetaVMrho, kLeg1thetaVMa1, kLeg1thetaVMa1r, kLeg1phiVMa1r,
+                      kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass,
+		      kLeg2thetaVMrho, kLeg2thetaVMa1, kLeg2thetaVMa1r, kLeg2phiVMa1r };
   enum tauDecayProducts { kLeg1, kLeg2 };
 }
 
@@ -90,8 +92,7 @@ class SVfitAlgorithm
 {
  public:
   SVfitAlgorithm(const edm::ParameterSet& cfg)
-    : currentDiTau_(0),
-      isFirstFit_(true)
+    : currentDiTau_(0)
   {
     name_ = cfg.getParameter<std::string>("name");
 
@@ -130,18 +131,7 @@ class SVfitAlgorithm
     minuit_->CreateMinimizer();
         
     minuitFittedParameterValues_.resize(minuitNumParameters_);
-    minuitLockParameters_.resize(minuitNumParameters_);
     
-//--- lock (i.e. set to fixed values) Minuit parameters
-//    which are not constrained by any likelihood function
-    for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-      minuitLockParameters_[iParameter] = true;
-      for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
-	    likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
-	if ( (*likelihoodFunction)->isFittedParameter(iParameter) ) minuitLockParameters_[iParameter] = false;
-      }
-    }
-
     if ( cfg.exists("estUncertainties") ) {
       edm::ParameterSet cfgEstUncertainties = cfg.getParameter<edm::ParameterSet>("estUncertainties");
       numSamplings_ = cfgEstUncertainties.getParameter<int>("numSamplings");
@@ -183,12 +173,6 @@ class SVfitAlgorithm
       (*likelihoodFunction)->print(stream);
     }
     stream << " minuitNumParameters = " << minuitNumParameters_ << std::endl;
-    for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-      stream << " Parameter #" << iParameter << ": ";
-      if ( minuitLockParameters_[iParameter] ) stream << "LOCKED";
-      else stream << "FITTED";
-      stream << std::endl;
-    }
     stream << " numSamplings = " << numSamplings_ << std::endl;
     stream << std::endl;
   }
@@ -294,13 +278,13 @@ class SVfitAlgorithm
       pvPositionZerr = 10.;
     }
 
-    minuit_->SetParameter(0, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
-    minuit_->SetParameter(1, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
-    minuit_->SetParameter(2, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
-    minuit_->SetParameter(3, "sv1_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_->SetParameter(4, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
+    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexX, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
+    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexY, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
+    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexZ, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaRest, "sv1_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1phiLab, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg1Radius0 = diTauCandidate.leg1()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_->SetParameter(5, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
+    minuit_->SetParameter(SVfit_namespace::kLeg1flightPathLab, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
     double leg1NuMass0, leg1NuMassErr, leg1NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T1>() ) {
       leg1NuMass0 = 0.8;
@@ -312,11 +296,15 @@ class SVfitAlgorithm
       leg1NuMassMax = 0.;
     }
     //std::cout << " leg1NuMassMax = " << leg1NuMassMax << std::endl;
-    minuit_->SetParameter(6, "sv1_m12", leg1NuMass0, leg1NuMassErr, 0., leg1NuMassMax);
-    minuit_->SetParameter(7, "sv2_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-    minuit_->SetParameter(8, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
+    minuit_->SetParameter(SVfit_namespace::kLeg1nuInvMass, "sv1_m12", leg1NuMass0, leg1NuMassErr, 0., leg1NuMassMax);
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMrho, "sv1_thetaVMrho", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMa1, "sv1_thetaVMa1", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMa1r, "sv1_thetaVMa1r", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg1phiVMa1r, "sv1_phiVMa1r", 0., TMath::Pi(), 0., 0.); // do not set limits for phiVMa1r
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaRest, "sv2_thetaRest", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2phiLab, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
     double leg2Radius0 = diTauCandidate.leg2()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_->SetParameter(9, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
+    minuit_->SetParameter(SVfit_namespace::kLeg2flightPathLab, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
     double leg2NuMass0, leg2NuMassErr, leg2NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T2>() ) {
       leg2NuMass0 = 0.8;
@@ -328,20 +316,40 @@ class SVfitAlgorithm
       leg2NuMassMax = 0.;
     }
     //std::cout << " leg2NuMassMax = " << leg2NuMassMax << std::endl;
-    minuit_->SetParameter(10, "sv2_m12", leg2NuMass0, leg2NuMassErr, 0., leg2NuMassMax);
-
-    if ( isFirstFit_ ) {
-      for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
-	if ( minuitLockParameters_[iParameter] ) minuit_->FixParameter(iParameter);
-      }
-      
-      minuitNumFreeParameters_ = minuit_->GetNumberFreeParameters();
-      minuitNumFixedParameters_ = minuit_->GetNumberTotalParameters() - minuitNumFreeParameters_;
-      
-      std::cout << " minuitNumParameters = " << minuit_->GetNumberTotalParameters()
-		<< " (free = " << minuitNumFreeParameters_ << ", fixed = " << minuitNumFixedParameters_ << ")" << std::endl;
-      isFirstFit_ = false;
+    minuit_->SetParameter(SVfit_namespace::kLeg2nuInvMass, "sv2_m12", leg2NuMass0, leg2NuMassErr, 0., leg2NuMassMax);
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMrho, "sv2_thetaVMrho", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMa1, "sv2_thetaVMa1", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2thetaVMa1r, "sv2_thetaVMa1r", 0.5*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
+    minuit_->SetParameter(SVfit_namespace::kLeg2phiVMa1r, "sv2_phiVMa1r", 0., TMath::Pi(), 0., 0.); // do not set limits for phiVMa1r
+    
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
+	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+      (*likelihoodFunction)->beginCandidate(diTauCandidate);
     }
+
+//--- lock (i.e. set to fixed values) Minuit parameters
+//    which are not constrained by any likelihood function
+    for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+      bool minuitLockParameter = true;
+      for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
+	    likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+	if ( (*likelihoodFunction)->isFittedParameter(iParameter) ) minuitLockParameter = false;
+      }
+
+      if (  minuitLockParameter && !minuit_->IsFixed(iParameter) ) minuit_->FixParameter(iParameter);
+      if ( !minuitLockParameter &&  minuit_->IsFixed(iParameter) ) minuit_->ReleaseParameter(iParameter);
+
+      std::cout << " Parameter #" << iParameter << ": ";
+      if ( minuitLockParameter ) std::cout << "LOCKED";
+      else std::cout << "FITTED";
+      std::cout << std::endl;
+    }
+      
+    minuitNumFreeParameters_ = minuit_->GetNumberFreeParameters();
+    minuitNumFixedParameters_ = minuit_->GetNumberTotalParameters() - minuitNumFreeParameters_;
+    
+    std::cout << " minuitNumParameters = " << minuit_->GetNumberTotalParameters()
+	      << " (free = " << minuitNumFreeParameters_ << ", fixed = " << minuitNumFixedParameters_ << ")" << std::endl;
     assert((minuitNumFreeParameters_ + minuitNumFixedParameters_) == minuitNumParameters_);
 
     int minuitStatus = minuit_->Minimize();
@@ -373,21 +381,20 @@ class SVfitAlgorithm
     diTauSolution.eventVertexPositionCorr_.SetZ(x[SVfit_namespace::kPrimaryVertexZ]);
 
 //--- build first tau decay "leg"
-    applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, SVfit_namespace::kLeg1phiLab, 
-			 SVfit_namespace::kLeg1flightPathLab, SVfit_namespace::kLeg1nuInvMass, diTauSolution.leg1_, x);
+    applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, diTauSolution.leg1_, x);
 
 //--- build second tau decay "leg"
-    applyParametersToLeg(SVfit_namespace::kLeg2thetaRest, SVfit_namespace::kLeg2phiLab, 
-			 SVfit_namespace::kLeg2flightPathLab, SVfit_namespace::kLeg2nuInvMass, diTauSolution.leg2_, x);
+    applyParametersToLeg(SVfit_namespace::kLeg2thetaRest, diTauSolution.leg2_, x);
   }
 
-  void applyParametersToLeg(int gjAngleIndex, int phiLabIndex, int flightDistanceIndex, int massNuNuIndex,
-			    SVfitLegSolution& legSolution, const std::vector<double>& x) const 
+  void applyParametersToLeg(int index0, SVfitLegSolution& legSolution, const std::vector<double>& x) const 
   {
-    double gjAngle        = x[gjAngleIndex];
-    double phiLab         = x[phiLabIndex];
-    double flightDistance = x[flightDistanceIndex];
-    double massNuNu       = x[massNuNuIndex];
+    int legOffset = index0 - SVfit_namespace::kLeg1thetaRest;
+		     
+    double gjAngle        = x[legOffset + SVfit_namespace::kLeg1thetaRest];
+    double phiLab         = x[legOffset + SVfit_namespace::kLeg1phiLab];
+    double flightDistance = x[legOffset + SVfit_namespace::kLeg1flightPathLab];
+    double massNuNu       = x[legOffset + SVfit_namespace::kLeg1nuInvMass];
 
     const reco::Candidate::LorentzVector& p4Vis = legSolution.p4Vis();
 
@@ -412,6 +419,14 @@ class SVfitAlgorithm
 
     // Set the flight path
     legSolution.tauFlightPath_ = direction*flightDistance;
+
+    // Set meson decay angles for tau- --> rho- nu --> pi- pi0 nu 
+    // and tau- --> a1- nu --> pi- pi0 pi0 nu, tau- --> a1- nu --> pi- pi+ pi- nu decay modes
+    // (needed in case likelihood functions for decays of polarized tau leptons are used)
+    legSolution.thetaVMrho_ = x[legOffset + SVfit_namespace::kLeg1thetaVMrho];
+    legSolution.thetaVMa1_  = x[legOffset + SVfit_namespace::kLeg1thetaVMa1];
+    legSolution.thetaVMa1r_ = x[legOffset + SVfit_namespace::kLeg1thetaVMa1r];
+    legSolution.phiVMa1r_   = x[legOffset + SVfit_namespace::kLeg1phiVMa1r];
   }
 
   void compErrorEstimates() const
@@ -543,13 +558,10 @@ class SVfitAlgorithm
   
   mutable TFitterMinuit* minuit_;
   SVfitMinuitFCNadapter<T1,T2> minuitFCNadapter_;
-  const static unsigned minuitNumParameters_ = 11;
+  const static unsigned minuitNumParameters_ = 19;
   mutable unsigned minuitNumFreeParameters_;
   mutable unsigned minuitNumFixedParameters_;
   mutable std::vector<double> minuitFittedParameterValues_;
-  std::vector<bool> minuitLockParameters_;
-
-  mutable bool isFirstFit_;
 
   int numSamplings_;
   mutable TRandom3 rnd_;
