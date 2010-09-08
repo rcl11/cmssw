@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.6 $
+ * \version $Revision: 1.7 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.6 2010/09/02 16:38:00 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.7 2010/09/05 15:21:04 veelken Exp $
  *
  */
 
@@ -37,6 +37,7 @@ class SVfitLegLikelihoodBase
   virtual ~SVfitLegLikelihoodBase() {}
 
   virtual void beginEvent(const edm::Event&, const edm::EventSetup&) {}
+  virtual void beginCandidate(const T&) {}
 
   virtual void print(std::ostream& stream) const
   {

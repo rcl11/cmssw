@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.6 $
+ * \version $Revision: 1.7 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.6 2010/09/01 15:25:35 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.7 2010/09/02 16:38:00 veelken Exp $
  *
  */
 
@@ -38,6 +38,7 @@ class SVfitDiTauLikelihoodBase
   const std::string& name() const { return pluginName_; }
 
   virtual void beginEvent(const edm::Event&, const edm::EventSetup&) {}
+  virtual void beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>&) {}
 
   virtual void print(std::ostream& stream) const
   {
