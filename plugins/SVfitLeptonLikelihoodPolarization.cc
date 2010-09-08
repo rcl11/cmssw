@@ -14,6 +14,8 @@ template <typename T>
 SVfitLeptonLikelihoodPolarization<T>::SVfitLeptonLikelihoodPolarization(const edm::ParameterSet& cfg)
   : SVfitLegLikelihoodPolarizationBase<T>(cfg)
 {
+  std::cout << "<SVfitLeptonLikelihoodPolarization::SVfitLeptonLikelihoodPolarization>:" << std::endl;
+
   useCollApproxFormulas_ = cfg.getParameter<bool>("useCollApproxFormulas");
 }
 
