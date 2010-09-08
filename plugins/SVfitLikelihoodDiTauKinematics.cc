@@ -18,12 +18,12 @@
 //   Nucl. Phys. B395 (1993) 499.
 //
 const double sin2theta_weinberg = 0.231;
-const double v = -0.5 + 2*sin2theta_weinberg*sin2theta_weinberg;
+const double v = -0.5 + 2*sin2theta_weinberg;                              // -0.038
 const double a = -0.5;
-const double polarization_Ztautau = -2*v*a/(a*a + v*v);
+const double polarization_Ztautau = -2*v*a/(a*a + v*v);                    // -0.151
 const double defaultCoeffPolarizationLL = 0.5;
-const double defaultCoeffPolarizationLR = 0.5*(1. - polarization_Ztautau);
-const double defaultCoeffPolarizationRL = 0.5*(1. + polarization_Ztautau);
+const double defaultCoeffPolarizationLR = 0.5*(1. - polarization_Ztautau); //  0.576
+const double defaultCoeffPolarizationRL = 0.5*(1. + polarization_Ztautau); //  0.424
 const double defaultCoeffPolarizationRR = 0.5;
 //-------------------------------------------------------------------------------
 
@@ -112,6 +112,13 @@ void SVfitLikelihoodDiTauKinematics<T1,T2>::beginEvent(edm::Event& evt, const ed
 {
   leg1Likelihood_->beginEvent(evt, es);
   leg2Likelihood_->beginEvent(evt, es);
+}
+
+template <typename T1, typename T2>
+void SVfitLikelihoodDiTauKinematics<T1,T2>::beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau)
+{
+  leg1Likelihood_->beginCandidate(*diTau.leg1());
+  leg2Likelihood_->beginCandidate(*diTau.leg2());
 }
 
 template <typename T1, typename T2>
