@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.6 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitLegLikelihoodPolarizationBase.h,v 1.6 2010/09/02 16:38:00 veelken Exp $
+ * $Id: SVfitLegLikelihoodPolarizationBase.h,v 1.1 2010/09/05 13:39:30 veelken Exp $
  *
  */
 
@@ -63,7 +63,7 @@ class SVfitLegLikelihoodPolarizationBase : public SVfitLegLikelihoodBase<T>
 	return negLogLikelihoodUnpolarized(leg, solution);
       }
 
-      if      ( solution.polarizationHypothesis() == SVfitLegSolution::kLeftHanded  ) {
+      if ( solution.polarizationHypothesis() == SVfitLegSolution::kLeftHanded  ) {
 	return negLogLikelihoodPolarized(leg, solution, +1.*tauPolarizationSign);
       } else if ( solution.polarizationHypothesis() == SVfitLegSolution::kRightHanded ) {
 	return negLogLikelihoodPolarized(leg, solution, -1.*tauPolarizationSign);
