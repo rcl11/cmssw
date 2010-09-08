@@ -28,6 +28,7 @@ svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
     ),
     leg1 = cms.PSet(
         pluginType = cms.string("SVfitMuonLikelihoodPolarization"),
+        usePolarization = cms.bool(True),
         useCollApproxFormulas = cms.bool(True) 
     ),
     leg2 = cms.PSet(
@@ -39,18 +40,18 @@ svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
         decayModeParameters = cms.PSet(
             oneProngZeroPi0s = cms.PSet(),
             oneProngOnePi0 = cms.PSet(
-                xSigma = cms.double(0.014),
-                xBias = cms.double(0.000),
+                xSigma = cms.string("0.014"),
+                xBias = cms.string("0.000"),
                 pMin = cms.double(0.05)
             ),
             oneProngTwoPi0s = cms.PSet(
-                xSigma = cms.double(0.013),
-                xBias = cms.double(0.000),
+                xSigma = cms.string("0.013"),
+                xBias = cms.string("0.000"),
                 pMin = cms.double(0.05)
             ),
             threeProngZeroPi0s = cms.PSet(
-                xSigma = cms.double(0.018),
-                xBias = cms.double(0.000),
+                xSigma = cms.string("0.018"),
+                xBias = cms.string("0.000"),
                 pMin = cms.double(0.05)
             )
         ),
