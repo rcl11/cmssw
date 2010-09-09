@@ -29,16 +29,18 @@ svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
     leg1 = cms.PSet(
         pluginType = cms.string("SVfitMuonLikelihoodPolarization"),
         usePolarization = cms.bool(True),
-        useCollApproxFormulas = cms.bool(True) 
+        useCollApproxFormulas = cms.bool(False) 
     ),
     leg2 = cms.PSet(
         pluginType = cms.string("SVfitTauLikelihoodPolarization"),
-        mapRecToGenTauDecayModes = cms.PSet(
-            fileName = cms.string("/afs/cern.ch/user/v/veelken/public/plotsAHtoMuTau.root"),
-            meName = cms.string('DQMData/ahMuTauAnalyzer_woBtag/afterEvtSelNonCentralJetEt20bTag/TauQuantities/TauRecVsGenDecayMode')
-        ),
+        ##mapRecToGenTauDecayModes = cms.PSet(
+        ##    fileName = cms.string("/afs/cern.ch/user/v/veelken/public/plotsAHtoMuTau.root"),
+        ##    meName = cms.string('DQMData/ahMuTauAnalyzer_woBtag/afterEvtSelNonCentralJetEt20bTag/TauQuantities/TauRecVsGenDecayMode')
+        ##),
         decayModeParameters = cms.PSet(
-            oneProngZeroPi0s = cms.PSet(),
+            oneProngZeroPi0s = cms.PSet(
+                pMin = cms.double(0.05)
+            ),
             oneProngOnePi0 = cms.PSet(
                 xSigma = cms.string("0.014"),
                 xBias = cms.string("0.000"),
@@ -56,7 +58,7 @@ svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
             )
         ),
         usePolarization = cms.bool(True),
-        useCollApproxFormulas = cms.bool(True) 
+        useCollApproxFormulas = cms.bool(False) 
     )
 )
 
