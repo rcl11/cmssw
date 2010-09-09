@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.13 $
+ * \version $Revision: 1.14 $
  *
- * $Id: SVfitAlgorithm.h,v 1.13 2010/09/08 13:27:14 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.14 2010/09/08 16:40:13 veelken Exp $
  *
  */
 
@@ -365,7 +365,7 @@ class SVfitAlgorithm
     for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
 	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
       double likelihoodFunctionValue = (**likelihoodFunction)(*currentDiTau_, currentDiTauSolution_);
-      currentDiTauSolution_.logLikelihoods_.insert(std::make_pair((*likelihoodFunction)->name(), likelihoodFunctionValue));
+      currentDiTauSolution_.negLogLikelihoods_.insert(std::make_pair((*likelihoodFunction)->name(), likelihoodFunctionValue));
     }
 
     currentDiTauSolution_.minuitStatus_ = minuitStatus;
