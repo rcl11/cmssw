@@ -13,9 +13,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitTauLikelihoodPolarization.h,v 1.3 2010/09/08 10:20:01 veelken Exp $
+ * $Id: SVfitTauLikelihoodPolarization.h,v 1.4 2010/09/08 13:31:05 veelken Exp $
  *
  */
 
@@ -39,6 +39,8 @@ class SVfitTauLikelihoodPolarization : public SVfitLegLikelihoodPolarizationBase
   bool isFittedParameter(int, int) const;
 
  private:
+  enum decayModes { kPion, kVMrho, kVMa1Neutral, kVMa1Charged, kOther };
+
   double negLogLikelihoodPolarized(const pat::Tau&, const SVfitLegSolution&, double) const;
 
   double probOneProngZeroPi0s(const pat::Tau&, const SVfitLegSolution&, double) const;
@@ -65,21 +67,19 @@ class SVfitTauLikelihoodPolarization : public SVfitLegLikelihoodPolarizationBase
   {
     decayModeEntryType(const edm::ParameterSet&);
     ~decayModeEntryType();
+    void print(std::ostream&) const;
     TFormula* xSigma_;
     TFormula* xBias_;
     double pMin_;
   };
 
-  decayModeEntryType* rhoParameters_;
-  decayModeEntryType* a1NeutralParameters_;
-  decayModeEntryType* a1ChargedParameters_;
+  std::vector<decayModeEntryType*> decayModeParameters_;
+  std::vector<bool> fitDecayMode_;
 
   SVfitVMlineShapeIntegral* rhoLpolLineShape_;
   SVfitVMlineShapeIntegral* rhoTpolLineShape_;
   SVfitVMlineShapeIntegral* a1LpolLineShape_;
   SVfitVMlineShapeIntegral* a1TpolLineShape_;
-
-  int tauDecayModeOther_index_;
 
   SVfitLegLikelihoodBase<pat::Tau>* likelihoodPhaseSpace_;
 
