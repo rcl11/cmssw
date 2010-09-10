@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.14 $
+ * \version $Revision: 1.15 $
  *
- * $Id: SVfitAlgorithm.h,v 1.14 2010/09/08 16:40:13 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.15 2010/09/09 14:07:51 veelken Exp $
  *
  */
 
@@ -339,17 +339,17 @@ class SVfitAlgorithm
       if (  minuitLockParameter && !minuit_->IsFixed(iParameter) ) minuit_->FixParameter(iParameter);
       if ( !minuitLockParameter &&  minuit_->IsFixed(iParameter) ) minuit_->ReleaseParameter(iParameter);
 
-      std::cout << " Parameter #" << iParameter << ": ";
-      if ( minuitLockParameter ) std::cout << "LOCKED";
-      else std::cout << "FITTED";
-      std::cout << std::endl;
+      //std::cout << " Parameter #" << iParameter << ": ";
+      //if ( minuitLockParameter ) std::cout << "LOCKED";
+      //else std::cout << "FITTED";
+      //std::cout << std::endl;
     }
       
     minuitNumFreeParameters_ = minuit_->GetNumberFreeParameters();
     minuitNumFixedParameters_ = minuit_->GetNumberTotalParameters() - minuitNumFreeParameters_;
     
-    std::cout << " minuitNumParameters = " << minuit_->GetNumberTotalParameters()
-	      << " (free = " << minuitNumFreeParameters_ << ", fixed = " << minuitNumFixedParameters_ << ")" << std::endl;
+    //std::cout << " minuitNumParameters = " << minuit_->GetNumberTotalParameters()
+    //	        << " (free = " << minuitNumFreeParameters_ << ", fixed = " << minuitNumFixedParameters_ << ")" << std::endl;
     assert((minuitNumFreeParameters_ + minuitNumFixedParameters_) == minuitNumParameters_);
 
     int minuitStatus = minuit_->Minimize();

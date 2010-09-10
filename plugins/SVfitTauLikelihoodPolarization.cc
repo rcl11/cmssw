@@ -196,17 +196,6 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
   decayModeParameters_[kVMa1Neutral] = new decayModeEntryType(cfgDecayModes.getParameter<edm::ParameterSet>("oneProngTwoPi0s"));
   decayModeParameters_[kVMa1Charged] = new decayModeEntryType(cfgDecayModes.getParameter<edm::ParameterSet>("threeProngZeroPi0s"));
 
-  std::cout << " piParameters:" << std::endl;
-  decayModeParameters_[kPion]->print(std::cout);
-
-  std::cout << " rhoParameters:" << std::endl;
-  decayModeParameters_[kVMrho]->print(std::cout);
-
-  std::cout << " a1NeutralParameters:" << std::endl;
-  decayModeParameters_[kVMa1Neutral]->print(std::cout);
-  std::cout << " a1ChargedParameters:" << std::endl;
-  decayModeParameters_[kVMa1Charged]->print(std::cout);
-
   fitDecayMode_.resize(numSupportedTauDecayModes_);
   fitDecayMode_[kOther] = true;
 
@@ -258,10 +247,10 @@ SVfitTauLikelihoodPolarization::~SVfitTauLikelihoodPolarization()
 
 void SVfitTauLikelihoodPolarization::beginCandidate(const pat::Tau& tau)
 {
-  std::cout << "<SVfitTauLikelihoodPolarization::beginCandidate>:" << std::endl;
+  //std::cout << "<SVfitTauLikelihoodPolarization::beginCandidate>:" << std::endl;
 
   int recTauDecayMode = tau.decayMode();
-  std::cout << " recTauDecayMode = " << recTauDecayMode << std::endl;
+  //std::cout << " recTauDecayMode = " << recTauDecayMode << std::endl;
   
   vRec_.Zero();
   std::vector<int>::const_iterator tauDecayMode_index 
@@ -272,14 +261,14 @@ void SVfitTauLikelihoodPolarization::beginCandidate(const pat::Tau& tau)
     vRec_(kOther) = 1.;
   }
   
-  std::cout << " vRec:" << std::endl;
-  vRec_.Print();
+  //std::cout << " vRec:" << std::endl;
+  //vRec_.Print();
 
   vGen_ = vRec_;
   vGen_ *= mapRecToGenTauDecayModes_;
 
-  std::cout << " vGen:" << std::endl;
-  vGen_.Print();
+  //std::cout << " vGen:" << std::endl;
+  //vGen_.Print();
 
   for ( size_t iDecayMode = 0; iDecayMode < kOther; ++iDecayMode ) {
     double pDecayMode = vGen_(iDecayMode);
@@ -323,7 +312,7 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
 //             S. Raychaudhuri and D.P. Roy,
 //             Phys. Rev.  D52 (1995) 1556.           
 //
-  std::cout << "<SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
+  //std::cout << "<SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
 
   double normProb = 0.;
   for ( size_t iDecayMode = 0; iDecayMode < numSupportedTauDecayModes_; ++iDecayMode ) {
@@ -344,13 +333,13 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
     }
   }
 
-  std::cout << " vProb:" << std::endl;
-  vProb_.Print();
+  //std::cout << " vProb:" << std::endl;
+  //vProb_.Print();
 
-  std::cout << " normProb = " << normProb << std::endl;
+  //std::cout << " normProb = " << normProb << std::endl;
 
   double prob = (vGen_*vProb_)/normProb;
-  std::cout << "--> prob = " << prob << std::endl;
+  //std::cout << "--> prob = " << prob << std::endl;
 
   if ( !(prob > 0.) ) {
     edm::LogWarning ("SVfitTauLikelihoodPolarization::operator()") 
@@ -359,7 +348,7 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
   }
   
   double logLikelihood = TMath::Log(prob);
-  std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
+  //std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
   
   return -logLikelihood;
 }
@@ -371,7 +360,7 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
 double SVfitTauLikelihoodPolarization::probOneProngZeroPi0s(
          const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
 {
-  std::cout << "<SVfitTauLikelihoodPolarization::probOneProngZeroPi0s>:" << std::endl;
+  //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngZeroPi0s>:" << std::endl;
           
   double prob = 0.;
 
@@ -385,7 +374,7 @@ double SVfitTauLikelihoodPolarization::probOneProngZeroPi0s(
     prob = (1. + tauLeptonPol*(2*z - 1.));            // [1], formula (2.4)
   }
 
-  std::cout << "--> prob = " << prob << std::endl;
+  //std::cout << "--> prob = " << prob << std::endl;
 
 //--- multiply tau- --> pi- nu decay probability by
 //    average over angles { thetaVMa1, thetaVMa1r, phiVMa1r }
@@ -420,7 +409,7 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
 {
 //--- compute likelihood for tau- --> rho- nu --> pi- pi0 nu decay
 
-  std::cout << "<SVfitTauLikelihoodPolarization::probOneProngOnePi0>:" << std::endl;
+  //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngOnePi0>:" << std::endl;
 
   double cosTheta = solution.cosThetaRest();
   double theta = TMath::ACos(cosTheta);
@@ -428,7 +417,7 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
   
   double probTauDecayL = (*rhoLpolLineShape_)(theta, tauLeptonPol, z);
   double probTauDecayT = (*rhoTpolLineShape_)(theta, tauLeptonPol, z);
-  std::cout << " probTauDecayL = " << probTauDecayL << ", probTauDecayT = " << probTauDecayT << std::endl;
+  //std::cout << " probTauDecayL = " << probTauDecayL << ", probTauDecayT = " << probTauDecayT << std::endl;
 
 //--- find "distinguishable" pion in tau-jet;
 //    in case "distinguishable" pion cannot be found 
@@ -436,12 +425,12 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
 //    assume the "distinguishable" pion to be very soft
   const reco::Candidate* distPion = getDistPion(tau);
   double xMeasured = ( distPion != 0 ) ? distPion->energy()/tau.energy() : 0.;
-  std::cout << " xMeasured = " << xMeasured << std::endl;
+  //std::cout << " xMeasured = " << xMeasured << std::endl;
   double thetaVMrho = solution.thetaVMrho();
   double cosThetaVMrho = TMath::Cos(thetaVMrho);
   double sinThetaVMrho = TMath::Sin(thetaVMrho);
   double xFitted = 0.5*(1. + TMath::Sqrt(1 - 4.*(chargedPionMass2/rhoMesonMass2))*cosThetaVMrho); // [2], formula (41)
-  std::cout << " xFitted = " << xFitted << std::endl;
+  //std::cout << " xFitted = " << xFitted << std::endl;
 
   double probVMrhoDecayL, probVMrhoDecayT;
   if ( !useCollApproxFormulas_ ) {
@@ -452,21 +441,21 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
     probVMrhoDecayT = 3*xFitted*(1. - xFitted) ;               // [2], formula (40)
   }
 
-  std::cout << " probVMrhoDecayL = " << probVMrhoDecayL << ", probVMrhoDecayT = " << probVMrhoDecayT << std::endl;
+  //std::cout << " probVMrhoDecayL = " << probVMrhoDecayL << ", probVMrhoDecayT = " << probVMrhoDecayT << std::endl;
 
   double xSigma = decayModeParameters_[kVMrho]->xSigma_->Eval(tau.pt());
   double xBias = decayModeParameters_[kVMrho]->xBias_->Eval(tau.pt());
-  std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
+  //std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
 
   double xResidual = xMeasured - xFitted - xBias;
-  std::cout << " xResidual = " << xResidual << std::endl;
+  //std::cout << " xResidual = " << xResidual << std::endl;
 
   double probSmear = compProbSmear(xResidual, xSigma);
-  std::cout << " probSmear = " << probSmear << std::endl;
+  //std::cout << " probSmear = " << probSmear << std::endl;
 
   double probL = probTauDecayL*probVMrhoDecayL*probSmear;
   double probT = probTauDecayT*probVMrhoDecayT*probSmear;
-  std::cout << "--> probL = " << probL << ", probT = " << probT << std::endl;
+  //std::cout << "--> probL = " << probL << ", probT = " << probT << std::endl;
 
 //--- multiply tau- --> rho- nu --> pi- pi0 nu decay probability by
 //    average over angles { thetaVMa1r, phiVMa1r } 
@@ -508,7 +497,7 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
 {
 //--- compute likelihood for tau- --> a1- nu --> pi- pi0 pi0 nu decay
 
-  std::cout << "<SVfitTauLikelihoodPolarization::probOneProngTwoPi0s>:" << std::endl;
+  //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngTwoPi0s>:" << std::endl;
 
   double cosTheta = solution.cosThetaRest();
   double theta = TMath::ACos(cosTheta);
@@ -516,7 +505,7 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
   
   double probTauDecayL = (*a1LpolLineShape_)(theta, tauLeptonPol, z);
   double probTauDecayT = (*a1TpolLineShape_)(theta, tauLeptonPol, z);
-  std::cout << " probTauDecayL = " << probTauDecayL << ", probTauDecayT = " << probTauDecayT << std::endl;
+  //std::cout << " probTauDecayL = " << probTauDecayL << ", probTauDecayT = " << probTauDecayT << std::endl;
 
 //--- find "distinguishable" pion in tau-jet;
 //    in case "distinguishable" pion cannot be found 
@@ -524,7 +513,7 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
 //    assume the "distinguishable" pion to be very soft
   const reco::Candidate* distPion = getDistPion(tau);
   double xMeasured = ( distPion != 0 ) ? distPion->energy()/tau.energy() : 0.;
-  std::cout << " xMeasured = " << xMeasured << std::endl;
+  //std::cout << " xMeasured = " << xMeasured << std::endl;
   double thetaVMa1 = solution.thetaVMa1();
   double cosThetaVMa1  = TMath::Cos(thetaVMa1);
   double sinThetaVMa1  = TMath::Sin(thetaVMa1);
@@ -535,27 +524,27 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
   double cosPhiVMa1r   = TMath::Cos(phiVMa1r);
   double sinPhiVMa1r   = TMath::Sin(phiVMa1r);
   double xFitted = compVMa1x(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r);
-  std::cout << " xFitted = " << xFitted << std::endl;
+  //std::cout << " xFitted = " << xFitted << std::endl;
 
 //--- CV: only non-collinear approximation type formulas available in literature
 //        for tau- --> a1- nu --> pi- pi0 pi0 nu decay
   double probVMa1DecayL = compVMa1DecayProbL(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r);
   double probVMa1DecayT = compVMa1DecayProbT(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r, sinPhiVMa1r);
-  std::cout << " probVMa1DecayL = " << probVMa1DecayL << ", probVMa1DecayT = " << probVMa1DecayT << std::endl;
+  //std::cout << " probVMa1DecayL = " << probVMa1DecayL << ", probVMa1DecayT = " << probVMa1DecayT << std::endl;
 
   double xSigma = decayModeParameters_[kVMa1Neutral]->xSigma_->Eval(tau.pt());
   double xBias = decayModeParameters_[kVMa1Neutral]->xBias_->Eval(tau.pt());
-  std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
+  //std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
 
   double xResidual = xMeasured - xFitted - xBias;
-  std::cout << " xResidual = " << xResidual << std::endl;
+  //std::cout << " xResidual = " << xResidual << std::endl;
 
   double probSmear = compProbSmear(xResidual, xSigma);
-  std::cout << " probSmear = " << probSmear << std::endl;
+  //std::cout << " probSmear = " << probSmear << std::endl;
 
   double probL = probTauDecayL*probVMa1DecayL*probSmear;
   double probT = probTauDecayT*probVMa1DecayT*probSmear;
-  std::cout << "--> probL = " << probL << ", probT = " << probT << std::endl;
+  //std::cout << "--> probL = " << probL << ", probT = " << probT << std::endl;
 
   return (probL + probT);
 }
@@ -565,7 +554,7 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
 {
 //--- compute likelihood for tau- --> a1- nu --> pi- pi+ pi- nu decay
 
-  std::cout << "<SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s>:" << std::endl;
+  //std::cout << "<SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s>:" << std::endl;
 
   double cosTheta = solution.cosThetaRest();
   double theta = TMath::ACos(cosTheta);
@@ -573,7 +562,7 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
   
   double probTauDecayL = (*a1LpolLineShape_)(theta, tauLeptonPol, z);
   double probTauDecayT = (*a1TpolLineShape_)(theta, tauLeptonPol, z);
-  std::cout << " probTauDecayL = " << probTauDecayL << ", probTauDecayT = " << probTauDecayT << std::endl;
+  //std::cout << " probTauDecayL = " << probTauDecayL << ", probTauDecayT = " << probTauDecayT << std::endl;
 
 //--- find "distinguishable" pion in tau-jet;
 //    in case "distinguishable" pion cannot be found 
@@ -581,7 +570,7 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
 //    assume the "distinguishable" pion to be very soft
   const reco::Candidate* distPion = getDistPion(tau);
   double xMeasured = ( distPion != 0 ) ? distPion->energy()/tau.energy() : 0.;
-  std::cout << " xMeasured = " << xMeasured << std::endl;
+  //std::cout << " xMeasured = " << xMeasured << std::endl;
   double thetaVMa1 = solution.thetaVMa1();
   double cosThetaVMa1  = TMath::Cos(thetaVMa1);
   double sinThetaVMa1  = TMath::Sin(thetaVMa1);
@@ -592,27 +581,27 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
   double cosPhiVMa1r   = TMath::Cos(phiVMa1r);
   double sinPhiVMa1r   = TMath::Sin(phiVMa1r);
   double xFitted = compVMa1x(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r);
-  std::cout << " xFitted = " << xFitted << std::endl;
+  //std::cout << " xFitted = " << xFitted << std::endl;
 
 //--- CV: only non-collinear approximation type formulas available in literature
 //        for tau- --> a1- nu --> pi- pi+ pi- nu decay
   double probVMa1DecayL = compVMa1DecayProbL(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r);
   double probVMa1DecayT = compVMa1DecayProbT(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r, sinPhiVMa1r);
-  std::cout << " probVMa1DecayL = " << probVMa1DecayL << ", probVMa1DecayT = " << probVMa1DecayT << std::endl;
+  //std::cout << " probVMa1DecayL = " << probVMa1DecayL << ", probVMa1DecayT = " << probVMa1DecayT << std::endl;
 
   double xSigma = decayModeParameters_[kVMa1Charged]->xSigma_->Eval(tau.pt());
   double xBias = decayModeParameters_[kVMa1Charged]->xBias_->Eval(tau.pt());
-  std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
+  //std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
 
   double xResidual = xMeasured - xFitted - xBias;
-  std::cout << " xResidual = " << xResidual << std::endl;
+  //std::cout << " xResidual = " << xResidual << std::endl;
 
   double probSmear = compProbSmear(xResidual, xSigma);
-  std::cout << " probSmear = " << probSmear << std::endl;
+  //std::cout << " probSmear = " << probSmear << std::endl;
 
   double probL = probTauDecayL*probVMa1DecayL*probSmear;
   double probT = probTauDecayT*probVMa1DecayT*probSmear;
-  std::cout << "--> probL = " << probL << ", probT = " << probT << std::endl;
+  //std::cout << "--> probL = " << probL << ", probT = " << probT << std::endl;
 
   return (probL + probT);
 }

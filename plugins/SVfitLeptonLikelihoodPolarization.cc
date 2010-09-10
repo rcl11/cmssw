@@ -39,31 +39,35 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
 //           B.K. Bullock, K. Hagiwara and A.D. Martin,
 //           Nucl. Phys. B395 (1993) 499.
 //
-  std::cout << "<SVfitLeptonLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
+  //std::cout << "<SVfitLeptonLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
+  //std::cout << " lepton charge = " << lepton.charge() << std::endl;
+  //std::cout << " lepton handedness = " << solution.polarizationHypothesisName() << std::endl;
+  //std::cout << "--> lepton polarization = " << tauLeptonPol << std::endl;
           
   double prob = 0.;
 
   if ( !useCollApproxFormulas_ ) {
     double emuMass2 = square(lepton.mass());                                 // electron/muon mass
-    std::cout << " emuMass2 = " << emuMass2 << std::endl;
+    //std::cout << " emuMass2 = " << emuMass2 << std::endl;
     double Emax = (tauLeptonMass2 + emuMass2)/(2*tauLeptonMass);             // formula (2.6)    
     double E = solution.p4VisRestFrame().energy();                           // electron/muon energy (in tau lepton rest-frame)
-    std::cout << " E = " << E << std::endl;
+    //std::cout << " E = " << E << std::endl;
     double p = solution.p4VisRestFrame().P();                                // electron/muon momentum (in tau lepton rest-frame)
-    std::cout << " p = " << p << std::endl;
+    //std::cout << " p = " << p << std::endl;
     double cosTheta = solution.cosThetaRest();
     double theta = TMath::ACos(cosTheta);
     double sinTheta = TMath::Sin(theta);
+    double nuMass = solution.p4InvisRestFrame().mass();
     prob = p*E*(3*Emax - 2*E - emuMass2/E
                + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + emuMass2/tauLeptonMass))
-          *sinTheta;                                                         // formula (2.5)
+          *sinTheta*(nuMass/tauLeptonMass);                                  // formula (2.5)
   } else { 
     double z = solution.x();                                                 // tau lepton visible momentum fraction (in laboratory frame)
     double z2 = square(z);
     prob = (1./3.)*(1 - z)*((5 + 5*z - 4*z2) + tauLeptonPol*(1 + z - 8*z2)); // formula (2.8)
   }
 
-  std::cout << "--> prob = " << prob << std::endl;
+  //std::cout << "--> prob = " << prob << std::endl;
 
   if ( !(prob > 0.) ) {
     edm::LogWarning ("SVfitLeptonLikelihoodPolarization::operator()") 
@@ -72,7 +76,7 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
   }
   
   double logLikelihood = TMath::Log(prob);
-  std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
+  //std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
   
   return -logLikelihood;
 }
