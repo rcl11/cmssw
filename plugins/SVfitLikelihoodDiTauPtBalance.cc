@@ -81,20 +81,31 @@ double SVfitLikelihoodDiTauPtBalance<T1,T2>::operator()(const CompositePtrCandid
 //--- compute negative log-likelihood for two tau leptons 
 //    to have transverse momenta leg1Pt, leg2Pt
 
-  //std::cout << "<SVfitLikelihoodDiTauPtBalance::operator()>:" << std::endl;
+  if ( verbosity_ ) std::cout << "<SVfitLikelihoodDiTauPtBalance::operator()>:" << std::endl;
 
   double diTauMass = solution.p4().mass();
-  //std::cout << " diTauMass = " << diTauMass << std::endl;
+  if ( verbosity_ ) std::cout << " diTauMass = " << diTauMass << std::endl;
 
   double leg1Pt = solution.leg1().p4().pt();
-  //std::cout << " leg1Pt = " << leg1Pt << std::endl;
   double leg2Pt = solution.leg2().p4().pt();
-  //std::cout << " leg2Pt = " << leg2Pt << std::endl;
+  if ( verbosity_ ) {
+    std::cout << " leg1Pt = " << leg1Pt << std::endl;
+    std::cout << " leg2Pt = " << leg2Pt << std::endl;
+  }
 
-  double negLogLikelihood = -(TMath::Log(movingTauLeptonPtPDF(leg1Pt, diTauMass)*movingTauLeptonPtPDF(leg2Pt, diTauMass)));
-  //std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
+  double prob = movingTauLeptonPtPDF(leg1Pt, diTauMass)*movingTauLeptonPtPDF(leg2Pt, diTauMass);
+  if ( verbosity_ ) std::cout << "--> prob = " << prob << std::endl;
 
-  return negLogLikelihood;
+  if ( !(prob > 0.) ) {
+    edm::LogWarning ("SVfitLikelihoodDiTauPtBalance::operator()") 
+      << " Unphysical solution --> returning very large negative number !!";
+    return std::numeric_limits<float>::min();
+  }
+  
+  double logLikelihood = TMath::Log(prob);
+  if ( verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
+  
+  return -logLikelihood;
 }
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
