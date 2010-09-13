@@ -53,10 +53,14 @@ void SVfitLikelihoodMEt<T1,T2>::beginEvent(const edm::Event& evt, const edm::Eve
 template <typename T1, typename T2>
 bool SVfitLikelihoodMEt<T1,T2>::isFittedParameter(int index) const
 {
+//--- CV: thetaRest and phiLab parameters seem to be heavily correlated
+//        in case no tracking information is used, 
+//        causing the Minuit for to become numerically unstable
+//       --> only allow phiLab to vary in case tracking information is used in fit
   if      ( index == SVfit_namespace::kLeg1thetaRest ) return true;
-  else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
+  //else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
   else if ( index == SVfit_namespace::kLeg2thetaRest ) return true;
-  else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
+  //else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
   else return false;
 }
 
@@ -69,8 +73,10 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 //
 //    NB: MET likelihood is split into perp/par components along (leptonic) leg1 of the diTau object  
 //
-  //std::cout << "SVfitLikelihoodMEt::operator()>:" << std::endl;
-  //std::cout << " sumEt = " << diTau.met()->sumEt() << std::endl;
+  if ( verbosity_ ) {
+    std::cout << "SVfitLikelihoodMEt::operator()>:" << std::endl;
+    std::cout << " sumEt = " << diTau.met()->sumEt() << std::endl;
+  }
 
 //--- make unit vector bisecting tau lepton "legs"
 //    and project difference between "true" generated and reconstructed MET
@@ -79,16 +85,18 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 
   double dummy, metSumP_par, metSumP_perp;
   computeMEtProjection(*pfCandidates_, diTauDirection, dummy, metSumP_par, metSumP_perp);
-  //std::cout << " metSumP_par = " << metSumP_par << std::endl;
-  //std::cout << " metSumP_perp = " << metSumP_perp << std::endl;
+  if ( verbosity_ ) {
+    std::cout << " metSumP_par = " << metSumP_par << std::endl;
+    std::cout << " metSumP_perp = " << metSumP_perp << std::endl;
+  }
   
   double parSigma = parSigma_->Eval(metSumP_par);
   double parBias = parBias_->Eval(metSumP_par);
-  //std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
+  if ( verbosity_ ) std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
 
   double perpSigma = perpSigma_->Eval(metSumP_perp);
   double perpBias = perpBias_->Eval(metSumP_perp);
-  //std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
+  if ( verbosity_ ) std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
 
   double projCosPhi = diTauDirection.X();
   double projSinPhi = diTauDirection.Y();
@@ -97,27 +105,33 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
   double metPy = diTau.met()->py();
 
   double recoMET_par = (metPx*projCosPhi + metPy*projSinPhi);
-  //std::cout << " recoMET_par = " << recoMET_par << std::endl;
   double recoMET_perp = (metPx*projSinPhi - metPy*projCosPhi);
-  //std::cout << " recoMET_perp = " << recoMET_perp << std::endl;
+  if ( verbosity_ ) {
+    std::cout << " recoMET_par = " << recoMET_par << std::endl;
+    std::cout << " recoMET_perp = " << recoMET_perp << std::endl;
+  }
   
   reco::Candidate::LorentzVector nuP4 = solution.leg1().p4Invis() + solution.leg2().p4Invis();
   double nuPx = nuP4.px();
   double nuPy = nuP4.py();
 
   double fittedMET_par = (nuPx*projCosPhi + nuPy*projSinPhi);
-  //std::cout << " fittedMET_par = " << fittedMET_par << std::endl;
   double fittedMET_perp = (nuPx*projSinPhi - nuPy*projCosPhi);
-  //std::cout << " fittedMET_perp = " << fittedMET_perp << std::endl;
-  
+  if ( verbosity_ ) {
+    std::cout << " fittedMET_par = " << fittedMET_par << std::endl;
+    std::cout << " fittedMET_perp = " << fittedMET_perp << std::endl;
+  }
+
   double parResidual = recoMET_par - fittedMET_par - parBias;
-  //std::cout << " parResidual = " << parResidual << std::endl;
   double perpResidual = recoMET_perp - fittedMET_perp - perpBias;
-  //std::cout << " perpResidual = " << perpResidual << std::endl;
-
+  if ( verbosity_ ) {
+    std::cout << " parResidual = " << parResidual << std::endl;
+    std::cout << " perpResidual = " << perpResidual << std::endl;
+  }
+  
   double negLogLikelihood = -(logGaussian(parResidual, parSigma) + logGaussian(perpResidual, perpSigma));
-  //std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
-
+  if ( verbosity_ ) std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
+  
   return negLogLikelihood;
 }
 

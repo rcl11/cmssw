@@ -13,9 +13,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.5 $
  *
- * $Id: SVfitTauLikelihoodPolarization.h,v 1.4 2010/09/08 13:31:05 veelken Exp $
+ * $Id: SVfitTauLikelihoodPolarization.h,v 1.5 2010/09/09 14:11:01 veelken Exp $
  *
  */
 
@@ -93,6 +93,8 @@ class SVfitTauLikelihoodPolarization : public SVfitLegLikelihoodPolarizationBase
   double a1q_;
   double a1_8piDiv9_;
   double a1_16piDiv9_;
+
+  static const int verbosity_ = 0;
 };
 
 #endif

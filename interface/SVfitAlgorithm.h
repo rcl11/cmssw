@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.15 $
+ * \version $Revision: 1.16 $
  *
- * $Id: SVfitAlgorithm.h,v 1.15 2010/09/09 14:07:51 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.16 2010/09/10 12:24:18 veelken Exp $
  *
  */
 
@@ -179,7 +179,10 @@ class SVfitAlgorithm
 
   std::vector<SVfitDiTauSolution> fit(const CompositePtrCandidateT1T2MEt<T1,T2>& diTauCandidate)
   {
-    //std::cout << "<SVfitAlgorithm::fit>:" << std::endl;
+    if ( verbosity_ ) {
+      std::cout << "<SVfitAlgorithm::fit>:" << std::endl;
+      std::cout << " name = " << name_ << std::endl;
+    }
 
     std::vector<SVfitDiTauSolution> solutions;
     
@@ -216,8 +219,15 @@ class SVfitAlgorithm
   
   double negLogLikelihood(const std::vector<double>& x) const
   {
-    //std::cout << "<SVfitAlgorithm::negLogLikelihood>:" << std::endl;
-    //std::cout << " numParameters = " << numParameters << std::endl;
+    ++indexFitFunctionCall_;
+
+    if ( verbosity_ ) {
+      std::cout << "<SVfitAlgorithm::negLogLikelihood>:" << std::endl;
+      std::cout << " indexFitFunctionCall = " << indexFitFunctionCall_ << std::endl;
+      for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+	std::cout << " Parameter #" << iParameter << " = " << x[iParameter] << std::endl;
+      }
+    }
 
     if ( !currentDiTau_ ) {
       edm::LogError("SVfitAlgorithm::logLikelihood") 
@@ -232,7 +242,9 @@ class SVfitAlgorithm
 	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
       negLogLikelihood += (**likelihoodFunction)(*currentDiTau_, currentDiTauSolution_);
     }
-    
+
+    if ( verbosity_ ) std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
+
     return negLogLikelihood;
   }
   
@@ -339,18 +351,24 @@ class SVfitAlgorithm
       if (  minuitLockParameter && !minuit_->IsFixed(iParameter) ) minuit_->FixParameter(iParameter);
       if ( !minuitLockParameter &&  minuit_->IsFixed(iParameter) ) minuit_->ReleaseParameter(iParameter);
 
-      //std::cout << " Parameter #" << iParameter << ": ";
-      //if ( minuitLockParameter ) std::cout << "LOCKED";
-      //else std::cout << "FITTED";
-      //std::cout << std::endl;
+      if ( verbosity_ ) {
+	std::cout << " Parameter #" << iParameter << ": ";
+	if ( minuitLockParameter ) std::cout << "LOCKED";
+	else std::cout << "FITTED";
+	std::cout << std::endl;
+      }
     }
       
     minuitNumFreeParameters_ = minuit_->GetNumberFreeParameters();
     minuitNumFixedParameters_ = minuit_->GetNumberTotalParameters() - minuitNumFreeParameters_;
     
-    //std::cout << " minuitNumParameters = " << minuit_->GetNumberTotalParameters()
-    //	        << " (free = " << minuitNumFreeParameters_ << ", fixed = " << minuitNumFixedParameters_ << ")" << std::endl;
+    if ( verbosity_ ) {
+      std::cout << " minuitNumParameters = " << minuit_->GetNumberTotalParameters()
+		<< " (free = " << minuitNumFreeParameters_ << ", fixed = " << minuitNumFixedParameters_ << ")" << std::endl;
+    }
     assert((minuitNumFreeParameters_ + minuitNumFixedParameters_) == minuitNumParameters_);
+
+    indexFitFunctionCall_ = 0;
 
     int minuitStatus = minuit_->Minimize();
     edm::LogInfo("SVfitAlgorithm::fit") 
@@ -565,6 +583,8 @@ class SVfitAlgorithm
 
   int numSamplings_;
   mutable TRandom3 rnd_;
+
+  mutable long indexFitFunctionCall_;
 
   static const int verbosity_ = 0;
 };

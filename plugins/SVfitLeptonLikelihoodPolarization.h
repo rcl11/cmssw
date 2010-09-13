@@ -12,7 +12,7 @@
  *
  * \version $Revision: 1.1 $
  *
- * $Id: SVfitLeptonLikelihoodPolarization.h,v 1.1 2010/08/28 14:12:06 veelken Exp $
+ * $Id: SVfitLeptonLikelihoodPolarization.h,v 1.1 2010/09/05 13:39:30 veelken Exp $
  *
  */
 
@@ -31,6 +31,8 @@ class SVfitLeptonLikelihoodPolarization : public SVfitLegLikelihoodPolarizationB
   double negLogLikelihoodPolarized(const T&, const SVfitLegSolution&, double) const;
 
   bool useCollApproxFormulas_;
+
+  static const int verbosity_ = 0;
 };
 
 #endif

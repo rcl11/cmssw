@@ -312,7 +312,7 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
 //             S. Raychaudhuri and D.P. Roy,
 //             Phys. Rev.  D52 (1995) 1556.           
 //
-  //std::cout << "<SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
+  if ( verbosity_ ) std::cout << "<SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
 
   double normProb = 0.;
   for ( size_t iDecayMode = 0; iDecayMode < numSupportedTauDecayModes_; ++iDecayMode ) {
@@ -333,13 +333,16 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
     }
   }
 
-  //std::cout << " vProb:" << std::endl;
-  //vProb_.Print();
-
-  //std::cout << " normProb = " << normProb << std::endl;
+  if ( verbosity_ ) {
+    std::cout << " vProb:" << std::endl;
+    vProb_.Print();
+  }
 
   double prob = (vGen_*vProb_)/normProb;
-  //std::cout << "--> prob = " << prob << std::endl;
+  if ( verbosity_ ) {
+    std::cout << " normProb = " << normProb << std::endl;
+    std::cout << "--> prob = " << prob << std::endl;
+  }
 
   if ( !(prob > 0.) ) {
     edm::LogWarning ("SVfitTauLikelihoodPolarization::operator()") 
@@ -348,7 +351,7 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
   }
   
   double logLikelihood = TMath::Log(prob);
-  //std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
+  if ( verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
   
   return -logLikelihood;
 }
