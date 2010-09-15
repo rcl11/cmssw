@@ -7,10 +7,10 @@
 //-------------------------------------------------------------------------------
 // define "default" values (used in case no values are specified explicitely via configuration parameters)
 // for probabilities to find tau lepton pair to be polarized
-//  o leg1  left-handed + leg2  left-handed (LL; expected for H --> tau+ tau- events)
-//  o leg1  left-handed + leg2 right-handed (LR; expected for Z --> tau+ tau- events) 
-//  o leg1 right-handed + leg2  left-handed (RL; expected for Z --> tau+ tau- events)
-//  o leg1 right-handed + leg2 right-handed (RR; expected for H --> tau+ tau- events)
+//  o left-handed  tau+ + left-handed  tau- (LL; expected for H --> tau+ tau- events)
+//  o left-handed  tau+ + right-handed tau- (LR; expected for Z --> tau+ tau- events) 
+//  o right-handed tau+ + left-handed  tau- (RL; expected for Z --> tau+ tau- events)
+//  o right-handed tau+ + right-handed tau- (RR; expected for H --> tau+ tau- events)
 //
 // Formulas taken from paper: 
 //   "Tau polarization and its correlations as a probe of new physics",
@@ -159,20 +159,27 @@ bool SVfitLikelihoodDiTauKinematics<T1,T2>::supportsPolarization() const
 
 template <typename T1, typename T2>
 double SVfitLikelihoodDiTauKinematics<T1,T2>::logPolarizationCoefficient(
-  SVfitLegSolution::polarizationHypothesisType leg1PolarizationHypothesis, 
-  SVfitLegSolution::polarizationHypothesisType leg2PolarizationHypothesis) const
+  SVfitLegSolution::polarizationHypothesisType tauPlusPolarizationHypothesis, 
+  SVfitLegSolution::polarizationHypothesisType tauMinusPolarizationHypothesis) const
 {
   const double* logPolarizationCoefficient_ptr 
     = TauAnalysis_namespace::findMapElement<SVfitLegSolution::polarizationHypothesisType,SVfitLegSolution::polarizationHypothesisType,double>(
-	logPolarizationCoefficients_, leg1PolarizationHypothesis, leg2PolarizationHypothesis);
+	logPolarizationCoefficients_, tauPlusPolarizationHypothesis, tauMinusPolarizationHypothesis);
   if ( logPolarizationCoefficient_ptr ) {
     return *logPolarizationCoefficient_ptr;
   } else {
     edm::LogError("SVfitAlgorithm::logPolarizationCoefficient") 
       << " Invalid combination of tau lepton polarizations;" 
-      << " leg1 = " << leg1PolarizationHypothesis << ", leg2 = " << leg2PolarizationHypothesis << " !!";
+      << " tau+ = " << tauPlusPolarizationHypothesis << ", tau- = " << tauMinusPolarizationHypothesis << " !!";
     return 0.;
   }
+}
+
+SVfitLegSolution::polarizationHypothesisType negatePolarizationHypothesis(SVfitLegSolution::polarizationHypothesisType p)
+{
+  if      ( p == SVfitLegSolution::kLeftHanded  ) return SVfitLegSolution::kRightHanded;
+  else if ( p == SVfitLegSolution::kRightHanded ) return SVfitLegSolution::kLeftHanded;
+  else return SVfitLegSolution::kUnknown;
 }
 
 template <typename T1, typename T2>
@@ -181,15 +188,27 @@ double SVfitLikelihoodDiTauKinematics<T1,T2>::operator()(const CompositePtrCandi
 {
   SVfitLegSolution::polarizationHypothesisType leg1PolarizationHypothesis = solution.leg1().polarizationHypothesis();
   SVfitLegSolution::polarizationHypothesisType leg2PolarizationHypothesis = solution.leg2().polarizationHypothesis();
-  
+
 //--- check that polarization hypothesis for tau lepton decay "legs"
 //    is either "unknown" for both legs for "unknown" for none of the legs
   if ( leg1PolarizationHypothesis == SVfitLegSolution::kUnknown ) assert(leg2PolarizationHypothesis == SVfitLegSolution::kUnknown);
   if ( leg2PolarizationHypothesis == SVfitLegSolution::kUnknown ) assert(leg1PolarizationHypothesis == SVfitLegSolution::kUnknown);
+
+//--- check if 
+//     leg1 is tau+ and leg2 tau- 
+//    or
+//     leg1 is tau- and leg2 tau+ (in which case "L" and "R" polarization labels need to be swapped)
+  SVfitLegSolution::polarizationHypothesisType tauPlusPolarizationHypothesis, tauMinusPolarizationHypothesis;
+  if      ( diTau.leg1()->charge() > 0.5 ) tauPlusPolarizationHypothesis  = leg1PolarizationHypothesis;
+  else if ( diTau.leg1()->charge() < 0.5 ) tauPlusPolarizationHypothesis  = negatePolarizationHypothesis(leg1PolarizationHypothesis);
+  else tauPlusPolarizationHypothesis = SVfitLegSolution::kUnknown;
+  if      ( diTau.leg2()->charge() < 0.5 ) tauMinusPolarizationHypothesis = leg2PolarizationHypothesis;
+  else if ( diTau.leg2()->charge() > 0.5 ) tauMinusPolarizationHypothesis = negatePolarizationHypothesis(leg2PolarizationHypothesis);
+  else tauMinusPolarizationHypothesis = SVfitLegSolution::kUnknown;
   
 //--- compute negative log-likelihood for tau lepton pair hypothesis given as function argument
 //    (sum of polarization efficient and log-likelihoods for the two tau lepton decay "legs")
-  double negativeLogLikelihood = -logPolarizationCoefficient(leg1PolarizationHypothesis, leg2PolarizationHypothesis);
+  double negativeLogLikelihood = -logPolarizationCoefficient(tauPlusPolarizationHypothesis, tauMinusPolarizationHypothesis);
   negativeLogLikelihood += (*leg1Likelihood_)(*diTau.leg1(), solution.leg1());
   negativeLogLikelihood += (*leg2Likelihood_)(*diTau.leg2(), solution.leg2());
   
