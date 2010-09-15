@@ -53,14 +53,10 @@ void SVfitLikelihoodMEt<T1,T2>::beginEvent(const edm::Event& evt, const edm::Eve
 template <typename T1, typename T2>
 bool SVfitLikelihoodMEt<T1,T2>::isFittedParameter(int index) const
 {
-//--- CV: thetaRest and phiLab parameters seem to be heavily correlated
-//        in case no tracking information is used, 
-//        causing the Minuit for to become numerically unstable
-//       --> only allow phiLab to vary in case tracking information is used in fit
   if      ( index == SVfit_namespace::kLeg1thetaRest ) return true;
-  //else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
+  else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
   else if ( index == SVfit_namespace::kLeg2thetaRest ) return true;
-  //else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
+  else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
   else return false;
 }
 
