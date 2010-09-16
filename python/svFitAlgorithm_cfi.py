@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 svFitLikelihoodDiTauKinematicsPhaseSpace = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauKinematicsPhaseSpace"),
-    pluginType = cms.string("SVfitLikelihoodMuTauPairKinematics"),
+    pluginType = cms.string("SVfitLikelihoodDiTauKinematics"),
     polarizationCoefficients = cms.PSet(
         LL = cms.double(0.5),
         LR = cms.double(0.5),
@@ -10,16 +10,16 @@ svFitLikelihoodDiTauKinematicsPhaseSpace = cms.PSet(
         RR = cms.double(0.5)
     ),
     leg1 = cms.PSet(
-        pluginType = cms.string("SVfitMuonLikelihoodPhaseSpace")
+        pluginType = cms.string("SVfitLegLikelihoodPhaseSpace")
     ),
     leg2 = cms.PSet(
-        pluginType = cms.string("SVfitTauLikelihoodPhaseSpace")
+        pluginType = cms.string("SVfitLegLikelihoodPhaseSpace")
     )
 )
 
 svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauKinematicsPolarized"),
-    pluginType = cms.string("SVfitLikelihoodMuTauPairKinematics"),
+    pluginType = cms.string("SVfitLikelihoodDiTauKinematics"),
     polarizationCoefficients = cms.PSet(
         LL = cms.double(0.5),
         LR = cms.double(0.576),
@@ -27,12 +27,13 @@ svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
         RR = cms.double(0.5)
     ),
     leg1 = cms.PSet(
-        pluginType = cms.string("SVfitMuonLikelihoodPolarization"),
+        pluginType = cms.string("SVfitLegLikelihoodPolarizationBase"),
         usePolarization = cms.bool(True),
-        useCollApproxFormulas = cms.bool(False) 
+        useCollApproxFormulas = cms.bool(False)
+        #useCollApproxFormulas = cms.bool(True)
     ),
     leg2 = cms.PSet(
-        pluginType = cms.string("SVfitTauLikelihoodPolarization"),
+        pluginType = cms.string("SVfitLegLikelihoodPolarizationBase"),
         ##mapRecToGenTauDecayModes = cms.PSet(
         ##    fileName = cms.string("/afs/cern.ch/user/v/veelken/public/plotsAHtoMuTau.root"),
         ##    meName = cms.string('DQMData/ahMuTauAnalyzer_woBtag/afterEvtSelNonCentralJetEt20bTag/TauQuantities/TauRecVsGenDecayMode')
@@ -58,13 +59,14 @@ svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
             )
         ),
         usePolarization = cms.bool(True),
-        useCollApproxFormulas = cms.bool(False) 
+        useCollApproxFormulas = cms.bool(False)
+        #useCollApproxFormulas = cms.bool(True)
     )
 )
 
 svFitLikelihoodMEt = cms.PSet(
     pluginName = cms.string("svFitLikelihoodMEt"),
-    pluginType = cms.string("SVfitLikelihoodMEtMuTau"),
+    pluginType = cms.string("SVfitLikelihoodMEt"),
     resolution = cms.PSet(
         parSigma = cms.string("2.6 + 0.0383*x"),
         parBias = cms.string("1.45"),
@@ -76,12 +78,12 @@ svFitLikelihoodMEt = cms.PSet(
 
 svFitLikelihoodDiTauPtBalance = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauPtBalance"),
-    pluginType = cms.string("SVfitLikelihoodMuTauPairPtBalance")
+    pluginType = cms.string("SVfitLikelihoodDiTauPtBalance")
 )
 
 svFitLikelihoodDiTauPt = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauPt"),
-    pluginType = cms.string("SVfitLikelihoodMuTauPairPt"),
+    pluginType = cms.string("SVfitLikelihoodDiTauPt"),
     pdf = cms.string("[0]*[1]/[2]*TMath::Sqrt(0.5*TMath::Pi())*TMath::Exp([1]*[1]/(2*[2]*[2]) - (x - [3])/[2])"
                     + "*(1. - TMath::Erf((([3] - x)/[1] + [1]/[2])/TMath::Sqrt(2.)))"),
     par0 = cms.string("5.38553e-1"),
