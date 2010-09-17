@@ -84,8 +84,8 @@ namespace svMassReco {
     SVmassRecoFitter(const edm::ParameterSet& options)
       : options_(options),minuit_(11)
     {
-      std::cout << "<SVmassRecoFitter::SVmassRecoFitter>:" << std::endl;
-      std::cout << " disabling MINUIT output..." << std::endl;
+      //std::cout << "<SVmassRecoFitter::SVmassRecoFitter>:" << std::endl;
+      //std::cout << " disabling MINUIT output..." << std::endl;
       minuit_.SetPrintLevel(-1);
       minuit_.SetErrorDef(0.5);
     }

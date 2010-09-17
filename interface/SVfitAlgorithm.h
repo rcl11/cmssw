@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.16 $
+ * \version $Revision: 1.17 $
  *
- * $Id: SVfitAlgorithm.h,v 1.16 2010/09/10 12:24:18 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.17 2010/09/13 12:50:18 veelken Exp $
  *
  */
 
@@ -123,8 +123,8 @@ class SVfitAlgorithm
     minuit_->SetStrategy(2);
     minuit_->SetMaxIterations(1000);
 
-    std::cout << "<SVfitAlgorithm::SVfitAlgorithm>:" << std::endl;
-    std::cout << " disabling MINUIT output..." << std::endl;
+    //std::cout << "<SVfitAlgorithm::SVfitAlgorithm>:" << std::endl;
+    //std::cout << " disabling MINUIT output..." << std::endl;
     minuit_->SetPrintLevel(-1);
     minuit_->SetErrorDef(0.5);
 
@@ -141,7 +141,7 @@ class SVfitAlgorithm
       if ( (numSamplings_ % 2) == 0 ) ++numSamplings_;
     }
     
-    print(std::cout);
+    //print(std::cout);
   }
 
   ~SVfitAlgorithm()
@@ -172,6 +172,7 @@ class SVfitAlgorithm
 	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
       (*likelihoodFunction)->print(stream);
     }
+    stream << " likelihoodsSupportPolarization = " << likelihoodsSupportPolarization_ << std::endl;
     stream << " minuitNumParameters = " << minuitNumParameters_ << std::endl;
     stream << " numSamplings = " << numSamplings_ << std::endl;
     stream << std::endl;

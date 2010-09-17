@@ -89,7 +89,7 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
     a1TpolLineShape_(0),
     likelihoodPhaseSpace_(0)
 {
-  std::cout << "<SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization>:" << std::endl;
+  //std::cout << "<SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization>:" << std::endl;
 
 //--- create list of supported decay modes
 //   o tau- --> pi- nu
@@ -182,8 +182,8 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
     }
   }
 
-  std::cout << " mapRecToGenTauDecayModes:" << std::endl;
-  mapRecToGenTauDecayModes_.Print();
+  //std::cout << " mapRecToGenTauDecayModes:" << std::endl;
+  //mapRecToGenTauDecayModes_.Print();
 
 //--- initialize resolution and bias values for reconstructing
 //    momentum fraction x = E(dist. pion)/E(vector meson)
