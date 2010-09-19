@@ -2,13 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 svFitLikelihoodDiTauKinematicsPhaseSpace = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauKinematicsPhaseSpace"),
-    pluginType = cms.string("SVfitLikelihoodDiTauKinematics"),
-    polarizationCoefficients = cms.PSet(
-        LL = cms.double(0.5),
-        LR = cms.double(0.5),
-        RL = cms.double(0.5),
-        RR = cms.double(0.5)
-    ),
+    pluginType = cms.string("SVfitLikelihoodDiTauLegs"),
     leg1 = cms.PSet(
         pluginType = cms.string("SVfitLegLikelihoodPhaseSpace")
     ),
@@ -19,13 +13,7 @@ svFitLikelihoodDiTauKinematicsPhaseSpace = cms.PSet(
 
 svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauKinematicsPolarized"),
-    pluginType = cms.string("SVfitLikelihoodDiTauKinematics"),
-    polarizationCoefficients = cms.PSet(
-        LL = cms.double(0.5),
-        LR = cms.double(0.576),
-        RL = cms.double(0.424),
-        RR = cms.double(0.5)
-    ),
+    pluginType = cms.string("SVfitLikelihoodDiTauLegs"),
     leg1 = cms.PSet(
         pluginType = cms.string("SVfitLegLikelihoodPolarizationBase"),
         usePolarization = cms.bool(True),

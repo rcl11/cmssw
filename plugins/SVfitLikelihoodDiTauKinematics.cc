@@ -4,29 +4,6 @@
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/tauAnalysisAuxFunctions.h"
 
-//-------------------------------------------------------------------------------
-// define "default" values (used in case no values are specified explicitely via configuration parameters)
-// for probabilities to find tau lepton pair to be polarized
-//  o left-handed  tau+ + left-handed  tau- (LL; expected for H --> tau+ tau- events)
-//  o left-handed  tau+ + right-handed tau- (LR; expected for Z --> tau+ tau- events) 
-//  o right-handed tau+ + left-handed  tau- (RL; expected for Z --> tau+ tau- events)
-//  o right-handed tau+ + right-handed tau- (RR; expected for H --> tau+ tau- events)
-//
-// Formulas taken from paper: 
-//   "Tau polarization and its correlations as a probe of new physics",
-//   B.K. Bullock, K. Hagiwara and A.D. Martin,
-//   Nucl. Phys. B395 (1993) 499.
-//
-const double sin2theta_weinberg = 0.231;
-const double v = -0.5 + 2*sin2theta_weinberg;                              // -0.038
-const double a = -0.5;
-const double polarization_Ztautau = -2*v*a/(a*a + v*v);                    // -0.151
-const double defaultCoeffPolarizationLL = 0.5;
-const double defaultCoeffPolarizationLR = 0.5*(1. - polarization_Ztautau); //  0.576
-const double defaultCoeffPolarizationRL = 0.5*(1. + polarization_Ztautau); //  0.424
-const double defaultCoeffPolarizationRR = 0.5;
-//-------------------------------------------------------------------------------
-
 using namespace SVfit_namespace;
 
 template <typename T>
@@ -73,31 +50,6 @@ SVfitLikelihoodDiTauKinematics<T1,T2>::SVfitLikelihoodDiTauKinematics(const edm:
 
   leg1Likelihood_ = createLikelihoodPlugin<T1>(cfgLeg1Likelihood);
   leg2Likelihood_ = createLikelihoodPlugin<T2>(cfgLeg2Likelihood);
-
-//--- initialize coefficients representing probabilities 
-//    for different polarizations of tau lepton pair
-  double coeffPolarizationLL = defaultCoeffPolarizationLL;
-  double coeffPolarizationLR = defaultCoeffPolarizationLR;
-  double coeffPolarizationRL = defaultCoeffPolarizationRL;
-  double coeffPolarizationRR = defaultCoeffPolarizationRR;
-
-  if ( cfg.exists("polarizationCoefficients") ) {
-    edm::ParameterSet cfgPolarizationCoefficients = cfg.getParameter<edm::ParameterSet>("polarizationCoefficients");
-
-    coeffPolarizationLL = cfgPolarizationCoefficients.getParameter<double>("LL");
-    coeffPolarizationLR = cfgPolarizationCoefficients.getParameter<double>("LR");
-    coeffPolarizationRL = cfgPolarizationCoefficients.getParameter<double>("RL");
-    coeffPolarizationRR = cfgPolarizationCoefficients.getParameter<double>("RR");
-  }
-
-  logPolarizationCoefficients_[SVfitLegSolution::kLeftHanded][SVfitLegSolution::kLeftHanded]   = TMath::Log(coeffPolarizationLL);
-  logPolarizationCoefficients_[SVfitLegSolution::kLeftHanded][SVfitLegSolution::kRightHanded]  = TMath::Log(coeffPolarizationLR);
-  logPolarizationCoefficients_[SVfitLegSolution::kRightHanded][SVfitLegSolution::kLeftHanded]  = TMath::Log(coeffPolarizationRL);
-  logPolarizationCoefficients_[SVfitLegSolution::kRightHanded][SVfitLegSolution::kRightHanded] = TMath::Log(coeffPolarizationRR); 
-  polarizationCoefficientsEqual_ = (coeffPolarizationLL == coeffPolarizationLR && 
-				    coeffPolarizationLL == coeffPolarizationRL && 
-				    coeffPolarizationLL == coeffPolarizationRR);
-  logPolarizationCoefficients_[SVfitLegSolution::kUnknown][SVfitLegSolution::kUnknown] = TMath::Log(1.);
 }
 
 template <typename T1, typename T2>
@@ -154,32 +106,7 @@ bool SVfitLikelihoodDiTauKinematics<T1,T2>::isFittedParameter(int index) const
 template <typename T1, typename T2>
 bool SVfitLikelihoodDiTauKinematics<T1,T2>::supportsPolarization() const
 {
-  return ( !polarizationCoefficientsEqual_ || leg1Likelihood_->supportsPolarization() || leg2Likelihood_->supportsPolarization() );
-}
-
-template <typename T1, typename T2>
-double SVfitLikelihoodDiTauKinematics<T1,T2>::logPolarizationCoefficient(
-  SVfitLegSolution::polarizationHypothesisType tauPlusPolarizationHypothesis, 
-  SVfitLegSolution::polarizationHypothesisType tauMinusPolarizationHypothesis) const
-{
-  const double* logPolarizationCoefficient_ptr 
-    = TauAnalysis_namespace::findMapElement<SVfitLegSolution::polarizationHypothesisType,SVfitLegSolution::polarizationHypothesisType,double>(
-	logPolarizationCoefficients_, tauPlusPolarizationHypothesis, tauMinusPolarizationHypothesis);
-  if ( logPolarizationCoefficient_ptr ) {
-    return *logPolarizationCoefficient_ptr;
-  } else {
-    edm::LogError("SVfitAlgorithm::logPolarizationCoefficient") 
-      << " Invalid combination of tau lepton polarizations;" 
-      << " tau+ = " << tauPlusPolarizationHypothesis << ", tau- = " << tauMinusPolarizationHypothesis << " !!";
-    return 0.;
-  }
-}
-
-SVfitLegSolution::polarizationHypothesisType negatePolarizationHypothesis(SVfitLegSolution::polarizationHypothesisType p)
-{
-  if      ( p == SVfitLegSolution::kLeftHanded  ) return SVfitLegSolution::kRightHanded;
-  else if ( p == SVfitLegSolution::kRightHanded ) return SVfitLegSolution::kLeftHanded;
-  else return SVfitLegSolution::kUnknown;
+  return ( leg1Likelihood_->supportsPolarization() || leg2Likelihood_->supportsPolarization() );
 }
 
 template <typename T1, typename T2>
@@ -193,24 +120,11 @@ double SVfitLikelihoodDiTauKinematics<T1,T2>::operator()(const CompositePtrCandi
 //    is either "unknown" for both legs for "unknown" for none of the legs
   if ( leg1PolarizationHypothesis == SVfitLegSolution::kUnknown ) assert(leg2PolarizationHypothesis == SVfitLegSolution::kUnknown);
   if ( leg2PolarizationHypothesis == SVfitLegSolution::kUnknown ) assert(leg1PolarizationHypothesis == SVfitLegSolution::kUnknown);
-
-//--- check if 
-//     leg1 is tau+ and leg2 tau- 
-//    or
-//     leg1 is tau- and leg2 tau+ (in which case "L" and "R" polarization labels need to be swapped)
-  SVfitLegSolution::polarizationHypothesisType tauPlusPolarizationHypothesis, tauMinusPolarizationHypothesis;
-  if      ( diTau.leg1()->charge() > 0.5 ) tauPlusPolarizationHypothesis  = leg1PolarizationHypothesis;
-  else if ( diTau.leg1()->charge() < 0.5 ) tauPlusPolarizationHypothesis  = negatePolarizationHypothesis(leg1PolarizationHypothesis);
-  else tauPlusPolarizationHypothesis = SVfitLegSolution::kUnknown;
-  if      ( diTau.leg2()->charge() < 0.5 ) tauMinusPolarizationHypothesis = leg2PolarizationHypothesis;
-  else if ( diTau.leg2()->charge() > 0.5 ) tauMinusPolarizationHypothesis = negatePolarizationHypothesis(leg2PolarizationHypothesis);
-  else tauMinusPolarizationHypothesis = SVfitLegSolution::kUnknown;
   
 //--- compute negative log-likelihood for tau lepton pair hypothesis given as function argument
-//    (sum of polarization efficient and log-likelihoods for the two tau lepton decay "legs")
-  double negativeLogLikelihood = -logPolarizationCoefficient(tauPlusPolarizationHypothesis, tauMinusPolarizationHypothesis);
-  negativeLogLikelihood += (*leg1Likelihood_)(*diTau.leg1(), solution.leg1());
-  negativeLogLikelihood += (*leg2Likelihood_)(*diTau.leg2(), solution.leg2());
+//    (sum of log-likelihoods for the two tau lepton decay "legs")
+  double negativeLogLikelihood = (*leg1Likelihood_)(*diTau.leg1(), solution.leg1())
+                                + (*leg2Likelihood_)(*diTau.leg2(), solution.leg2());
   
   return negativeLogLikelihood;
 }

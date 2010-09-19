@@ -10,9 +10,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.2 2010/08/30 13:32:25 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.3 2010/09/08 13:29:43 veelken Exp $
  *
  */
 
@@ -43,13 +43,6 @@ template <typename T1, typename T2>
 
   double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const;
  private:
-  double logPolarizationCoefficient(SVfitLegSolution::polarizationHypothesisType, SVfitLegSolution::polarizationHypothesisType) const;
-
-  typedef std::map<SVfitLegSolution::polarizationHypothesisType, double> leg2PolarizationLUTtype;
-  typedef std::map<SVfitLegSolution::polarizationHypothesisType, leg2PolarizationLUTtype> leg12PolarizationLUTtype;
-  leg12PolarizationLUTtype logPolarizationCoefficients_;
-  bool polarizationCoefficientsEqual_;
-
   SVfitLegLikelihoodBase<T1>* leg1Likelihood_;
   SVfitLegLikelihoodBase<T2>* leg2Likelihood_;
 };
