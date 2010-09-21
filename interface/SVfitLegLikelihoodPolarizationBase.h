@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitLegLikelihoodPolarizationBase.h,v 1.2 2010/09/08 13:28:09 veelken Exp $
+ * $Id: SVfitLegLikelihoodPolarizationBase.h,v 1.3 2010/09/15 07:41:23 veelken Exp $
  *
  */
 
@@ -53,20 +53,9 @@ class SVfitLegLikelihoodPolarizationBase : public SVfitLegLikelihoodBase<T>
 //   o P(tau-_{L}) = P(tau+_{R}) = -1
 //   o P(tau-_{R}) = P(tau+_{L}) = +1
 //
-      double tauPolarizationSign = 0.;
-      if      ( leg.charge() < 0. ) tauPolarizationSign = +1.; // tau- case
-      else if ( leg.charge() > 0. ) tauPolarizationSign = -1.; // tau+ case
-      else {
-	edm::LogWarning ("SVfitLegLikelihoodPolarizationBase::operator()") 
-	  << " Failed to identify whether visible tau decay products come from a tau- or a tau+ decay"
-	  << " --> returning log-likelihood value for unpolarized case !!";
-	return negLogLikelihoodUnpolarized(leg, solution);
-      }
-
-      if ( solution.polarizationHypothesis() == SVfitLegSolution::kLeftHanded  ) {
-	return negLogLikelihoodPolarized(leg, solution, -1.*tauPolarizationSign);
-      } else if ( solution.polarizationHypothesis() == SVfitLegSolution::kRightHanded ) {
-	return negLogLikelihoodPolarized(leg, solution, +1.*tauPolarizationSign);
+      double tauLeptonPolarization = getTauLeptonPolarization(solution.polarizationHypothesis(), leg.charge());
+      if ( tauLeptonPolarization != 0. ) {
+	return negLogLikelihoodPolarized(leg, solution, tauLeptonPolarization);
       } else {
 	edm::LogWarning ("SVfitLegLikelihoodPolarizationBase::operator()") 
 	  << " Unknown polarization of tau lepton" 
