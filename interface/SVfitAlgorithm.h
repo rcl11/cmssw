@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.17 $
+ * \version $Revision: 1.18 $
  *
- * $Id: SVfitAlgorithm.h,v 1.17 2010/09/13 12:50:18 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.18 2010/09/17 12:28:17 veelken Exp $
  *
  */
 
@@ -46,8 +46,6 @@
 #include <TMatrixDSym.h>
 #include <TDecompChol.h>
 #include <TRandom3.h>
-
-#include <Math/VectorUtil.h>
 
 #include <vector>
 #include <algorithm>
@@ -432,9 +430,8 @@ class SVfitAlgorithm
     legSolution.p4Invis_ =  tauP4 - p4Vis;
 
     // Build boost vector and compute the rest frame quanitites
-    reco::Candidate::Vector boost = tauP4.BoostToCM();
-    legSolution.p4VisRestFrame_ = ROOT::Math::VectorUtil::boost(legSolution.p4Vis_, boost);
-    legSolution.p4InvisRestFrame_ = ROOT::Math::VectorUtil::boost(legSolution.p4Invis_, boost);
+    legSolution.p4VisRestFrame_ = SVfit_namespace::boostToCOM(legSolution.p4Vis_, tauP4);
+    legSolution.p4InvisRestFrame_ = SVfit_namespace::boostToCOM(legSolution.p4Invis_, tauP4);
 
     // Set the flight path
     legSolution.tauFlightPath_ = direction*flightDistance;
