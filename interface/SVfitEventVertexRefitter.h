@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitEventVertexRefitter.h,v 1.4 2010/08/28 10:54:33 veelken Exp $
+ * $Id: SVfitEventVertexRefitter.h,v 1.1 2010/08/30 13:26:49 veelken Exp $
  *
  */
 
@@ -34,7 +34,7 @@ class SVfitEventVertexRefitter
   SVfitEventVertexRefitter(const edm::ParameterSet&);
   ~SVfitEventVertexRefitter();
 
-  void beginEvent(edm::Event&, const edm::EventSetup&);
+  void beginEvent(const edm::Event&, const edm::EventSetup&);
 
   TransientVertex refit(const std::vector<reco::TrackBaseRef>& leg1Tracks,
 			const std::vector<reco::TrackBaseRef>& leg2Tracks);

@@ -25,14 +25,14 @@ SVfitEventVertexRefitter::~SVfitEventVertexRefitter()
   delete vertexFitAlgorithm_;
 }
 
-void SVfitEventVertexRefitter::beginEvent(edm::Event& evt, const edm::EventSetup& es)
+void SVfitEventVertexRefitter::beginEvent(const edm::Event& evt, const edm::EventSetup& es)
 {
 //--- get primary event vertex
   edm::Handle<reco::VertexCollection> vertices;
   pf::fetchCollection(vertices, srcPrimaryEventVertex_, evt);
   primaryEventVertex_ = &((*vertices)[0]);
   if ( !primaryEventVertex_ ) {
-    edm::LogError ("SVfitEventVertexRefitter::initialize") 
+    edm::LogError ("SVfitEventVertexRefitter::beginEvent") 
       << " Failed to access primaryEventVertex !!";
   }
 
@@ -41,7 +41,7 @@ void SVfitEventVertexRefitter::beginEvent(edm::Event& evt, const edm::EventSetup
   pf::fetchCollection(beamSpotHandle, srcBeamSpot_, evt);
   beamSpot_ = beamSpotHandle.product();
   if ( !beamSpot_ ) {
-    edm::LogError ("SVfitEventVertexRefitter::initialize") 
+    edm::LogError ("SVfitEventVertexRefitter::beginEvent") 
       << " Failed to access BeamSpot !!";
   }
 
@@ -50,7 +50,7 @@ void SVfitEventVertexRefitter::beginEvent(edm::Event& evt, const edm::EventSetup
   es.get<TransientTrackRecord>().get("TransientTrackBuilder", trackBuilderHandle);
   trackBuilder_ = trackBuilderHandle.product();
   if ( !trackBuilder_ ) {
-    edm::LogError ("SVfitEventVertexRefitter::initialize") 
+    edm::LogError ("SVfitEventVertexRefitter::beginEvent") 
       << " Failed to access TransientTrackBuilder !!";
   }
 }
