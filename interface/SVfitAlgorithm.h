@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.18 $
+ * \version $Revision: 1.19 $
  *
- * $Id: SVfitAlgorithm.h,v 1.18 2010/09/17 12:28:17 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.19 2010/09/21 08:32:44 friis Exp $
  *
  */
 
@@ -152,6 +152,14 @@ class SVfitAlgorithm
     }
   }
 
+  void beginJob()
+  {
+    for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
+	  likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+      (*likelihoodFunction)->beginJob();
+    }
+  }
+
   void beginEvent(edm::Event& evt, const edm::EventSetup& es)
   {
     eventVertexRefitAlgorithm_->beginEvent(evt, es);
@@ -260,8 +268,15 @@ class SVfitAlgorithm
 
 //--- initialize data-members of diTauSolution object
     if ( pv.isValid() ) {
-      currentDiTauSolution_.eventVertexPosition_.SetXYZ(pv.position().x(), pv.position().y(), pv.position().z());
-      currentDiTauSolution_.eventVertexPositionErr_ = pv.positionError().matrix();
+      currentDiTauSolution_.eventVertexPosition_(0) = pv.position().x();
+      currentDiTauSolution_.eventVertexPosition_(1) = pv.position().y();
+      currentDiTauSolution_.eventVertexPosition_(2) = pv.position().z();
+      AlgebraicSymMatrix eventVertexPosErrMatrix = pv.positionError().matrix();
+      for ( unsigned iRow = 0; iRow < 3; ++iRow ) {
+	for ( unsigned iColumn = 0; iColumn < 3; ++iColumn ) {
+	  currentDiTauSolution_.eventVertexPositionErr_(iRow, iColumn) = eventVertexPosErrMatrix(iRow, iColumn);
+	}
+      }
     }
     currentDiTauSolution_.eventVertexIsValid_ = pv.isValid();
     currentDiTauSolution_.leg1_.p4Vis_ = diTauCandidate.leg1()->p4();
@@ -393,18 +408,19 @@ class SVfitAlgorithm
   void applyParameters(SVfitDiTauSolution& diTauSolution, const std::vector<double>& x) const 
   {
 //--- set primary event vertex position (tau lepton production vertex)
-    diTauSolution.eventVertexPositionCorr_.SetX(x[SVfit_namespace::kPrimaryVertexX]);
-    diTauSolution.eventVertexPositionCorr_.SetY(x[SVfit_namespace::kPrimaryVertexY]);
-    diTauSolution.eventVertexPositionCorr_.SetZ(x[SVfit_namespace::kPrimaryVertexZ]);
+    diTauSolution.eventVertexPositionShift_(0) = x[SVfit_namespace::kPrimaryVertexX];
+    diTauSolution.eventVertexPositionShift_(1) = x[SVfit_namespace::kPrimaryVertexY];
+    diTauSolution.eventVertexPositionShift_(2) = x[SVfit_namespace::kPrimaryVertexZ];
 
 //--- build first tau decay "leg"
-    applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, diTauSolution.leg1_, x);
+    applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, diTauSolution.leg1_, x, diTauSolution.eventVertexPosSVrefitted());
 
 //--- build second tau decay "leg"
-    applyParametersToLeg(SVfit_namespace::kLeg2thetaRest, diTauSolution.leg2_, x);
+    applyParametersToLeg(SVfit_namespace::kLeg2thetaRest, diTauSolution.leg2_, x, diTauSolution.eventVertexPosSVrefitted());
   }
 
-  void applyParametersToLeg(int index0, SVfitLegSolution& legSolution, const std::vector<double>& x) const 
+  void applyParametersToLeg(int index0, SVfitLegSolution& legSolution, const std::vector<double>& x,
+			    const AlgebraicVector3& eventVertexPos) const 
   {
     int legOffset = index0 - SVfit_namespace::kLeg1thetaRest;
 		     
@@ -427,14 +443,16 @@ class SVfitAlgorithm
     reco::Candidate::LorentzVector tauP4 = SVfit_namespace::tauP4(direction, momentumLabFrame);
 
     // Build the tau four vector. By construction, the neutrino is tauP4 - visP4
-    legSolution.p4Invis_ =  tauP4 - p4Vis;
+    legSolution.p4Invis_ = tauP4 - p4Vis;
 
     // Build boost vector and compute the rest frame quanitites
     legSolution.p4VisRestFrame_ = SVfit_namespace::boostToCOM(legSolution.p4Vis_, tauP4);
     legSolution.p4InvisRestFrame_ = SVfit_namespace::boostToCOM(legSolution.p4Invis_, tauP4);
 
     // Set the flight path
-    legSolution.tauFlightPath_ = direction*flightDistance;
+    legSolution.decayVertexPos_(0) = eventVertexPos(0) + flightDistance*direction.x();
+    legSolution.decayVertexPos_(1) = eventVertexPos(1) + flightDistance*direction.y();
+    legSolution.decayVertexPos_(2) = eventVertexPos(2) + flightDistance*direction.z();
 
     // Set meson decay angles for tau- --> rho- nu --> pi- pi0 nu 
     // and tau- --> a1- nu --> pi- pi0 pi0 nu, tau- --> a1- nu --> pi- pi+ pi- nu decay modes
