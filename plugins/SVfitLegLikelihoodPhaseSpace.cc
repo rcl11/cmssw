@@ -37,7 +37,7 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
 //
   reco::Candidate::LorentzVector legP4 = solution.p4();
   
-  double thetaRestFrame = TMath::ACos(solution.cosThetaRest());
+  double thetaRestFrame = solution.thetaRest();
   double nuMass = solution.p4InvisRestFrame().mass();
   double visMass = solution.p4VisRestFrame().mass();
 

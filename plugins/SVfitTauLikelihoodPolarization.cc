@@ -368,8 +368,8 @@ double SVfitTauLikelihoodPolarization::probOneProngZeroPi0s(
   double prob = 0.;
 
   if ( !useCollApproxFormulas_ ) {
-    double cosTheta = solution.cosThetaRest();
-    double theta = TMath::ACos(cosTheta);
+    double theta = solution.thetaRest();
+    double cosTheta = TMath::Cos(theta);
     double sinTheta = TMath::Sin(theta);
     prob = 0.5*(1. + tauLeptonPol*cosTheta)*sinTheta; // [1], formula (2.1)
   } else {    
@@ -414,8 +414,7 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
 
   //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngOnePi0>:" << std::endl;
 
-  double cosTheta = solution.cosThetaRest();
-  double theta = TMath::ACos(cosTheta);
+  double theta = solution.thetaRest();
   double z = tau.energy()/solution.p4().energy();
   
   double probTauDecayL = (*rhoLpolLineShape_)(theta, tauLeptonPol, z);
@@ -502,8 +501,7 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
 
   //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngTwoPi0s>:" << std::endl;
 
-  double cosTheta = solution.cosThetaRest();
-  double theta = TMath::ACos(cosTheta);
+  double theta = solution.thetaRest();
   double z = tau.energy()/solution.p4().energy();
   
   double probTauDecayL = (*a1LpolLineShape_)(theta, tauLeptonPol, z);
@@ -559,8 +557,7 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
 
   //std::cout << "<SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s>:" << std::endl;
 
-  double cosTheta = solution.cosThetaRest();
-  double theta = TMath::ACos(cosTheta);
+  double theta = solution.thetaRest();
   double z = tau.energy()/solution.p4().energy();
   
   double probTauDecayL = (*a1LpolLineShape_)(theta, tauLeptonPol, z);

@@ -53,8 +53,8 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
     double Emax = (tauLeptonMass2 + emuMass2)/(2*tauLeptonMass);             // formula (2.6)    
     double E = solution.p4VisRestFrame().energy();                           // electron/muon energy (in tau lepton rest-frame)
     double p = solution.p4VisRestFrame().P();                                // electron/muon momentum (in tau lepton rest-frame)
-    double cosTheta = solution.cosThetaRest();
-    double theta = TMath::ACos(cosTheta);
+    double theta = solution.thetaRest();
+    double cosTheta = TMath::Cos(theta);
     double sinTheta = TMath::Sin(theta);
     double nuMass = solution.p4InvisRestFrame().mass();    
     if ( verbosity_ ) {
@@ -62,7 +62,7 @@ double SVfitLeptonLikelihoodPolarization<T>::negLogLikelihoodPolarized(
       std::cout << " Emax = " << Emax << std::endl;
       std::cout << " E = " << E << std::endl;
       std::cout << " p = " << p << std::endl;
-      std::cout << " theta = " << TMath::ACos(solution.cosThetaRest()) << std::endl;
+      std::cout << " theta = " << theta << std::endl;
       std::cout << " nuMass = " << nuMass << std::endl;
     }
     prob = p*E*(3*Emax - 2*E - emuMass2/E
