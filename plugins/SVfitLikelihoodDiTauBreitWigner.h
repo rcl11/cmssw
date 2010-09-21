@@ -6,18 +6,17 @@
  * Plugin for computing likelihood for invariant mass of tau lepton pair
  * to be compatible with Breit-Wigner resonance of mass M and width Gamma
  * 
- * \author Evan Friis, Christian Veelken; UC Davis
+ * \author Christian Veelken; UC Davis
  *
  * \version $Revision: 1.1 $
  *
- * $Id: SVfitLikelihoodDiTauBreitWigner.h,v 1.1 2010/08/28 10:48:59 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauBreitWigner.h,v 1.1 2010/08/28 13:18:03 veelken Exp $
  *
  */
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "TauAnalysis/CandidateTools/interface/SVfitDiTauLikelihoodBase.h"
-#include "TauAnalysis/CandidateTools/interface/SVfitLegLikelihoodBase.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/CompositePtrCandidateT1T2MEt.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/SVfitDiTauSolution.h"
