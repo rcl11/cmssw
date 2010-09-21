@@ -60,6 +60,13 @@ SVfitLikelihoodDiTauKinematics<T1,T2>::~SVfitLikelihoodDiTauKinematics()
 }
 
 template <typename T1, typename T2>
+void SVfitLikelihoodDiTauKinematics<T1,T2>::beginJob()
+{
+  leg1Likelihood_->beginJob();
+  leg2Likelihood_->beginJob();
+}
+
+template <typename T1, typename T2>
 void SVfitLikelihoodDiTauKinematics<T1,T2>::beginEvent(edm::Event& evt, const edm::EventSetup& es)
 {
   leg1Likelihood_->beginEvent(evt, es);

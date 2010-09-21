@@ -10,9 +10,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.3 2010/09/08 13:29:43 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.4 2010/09/19 13:07:05 veelken Exp $
  *
  */
 
@@ -33,6 +33,7 @@ template <typename T1, typename T2>
   SVfitLikelihoodDiTauKinematics(const edm::ParameterSet&);
   ~SVfitLikelihoodDiTauKinematics();
 
+  virtual void beginJob();
   virtual void beginEvent(edm::Event&, const edm::EventSetup&);
   virtual void beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>&);
 
