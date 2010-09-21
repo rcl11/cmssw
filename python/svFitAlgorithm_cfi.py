@@ -64,6 +64,18 @@ svFitLikelihoodMEt = cms.PSet(
     srcPFCandidates = cms.InputTag('particleFlow')
 )
 
+svFitLikelihoodTrackInfo = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodTrackInfo"),
+    pluginType = cms.string("SVfitLikelihoodDiTauTrackInfo"),
+    leg1 = cms.PSet(
+        pluginType = cms.string("SVfitLegLikelihoodTrackInfo")
+    ),
+    leg2 = cms.PSet(
+        pluginType = cms.string("SVfitLegLikelihoodTrackInfo")
+    ),    
+    useLifetimeConstraint = cms.bool(True)
+)
+
 svFitLikelihoodDiTauPtBalance = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauPtBalance"),
     pluginType = cms.string("SVfitLikelihoodDiTauPtBalance")
@@ -80,5 +92,9 @@ svFitLikelihoodDiTauPt = cms.PSet(
     par3 = cms.string("8.85593e-1")
 )
 
-
+svFitLikelihoodDiTauProdZ0 = cms.PSet(
+    process = cms.string("Z0"), # either 'Z0' or 'Higgs'
+    pdfSet = cms.string("cteq65.LHgrid"),
+    sqrtS = cms.double(7000.) # 7 TeV center-of-mass energy
+)
 
