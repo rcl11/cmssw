@@ -10,9 +10,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.5 $
  *
- * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.4 2010/09/19 13:07:05 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauKinematics.h,v 1.5 2010/09/21 09:01:43 veelken Exp $
  *
  */
 
@@ -43,6 +43,7 @@ template <typename T1, typename T2>
   bool supportsPolarization() const;
 
   double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const;
+
  private:
   SVfitLegLikelihoodBase<T1>* leg1Likelihood_;
   SVfitLegLikelihoodBase<T2>* leg2Likelihood_;
