@@ -14,9 +14,8 @@
 using namespace SVfit_namespace;
 
 namespace LHAPDF {
-  void initPDFSet(const std::string& name);
-  void initPDF(int memset);
-  std::vector<double> xfx(double x, double Q);
+  void initPDFSet(int nset, const std::string& filename, int member);
+  double xfx(int nset, double x, double Q, int fl);
 }
 
 template <typename T1, typename T2>
@@ -48,23 +47,17 @@ SVfitLikelihoodDiTauProd<T1,T2>::~SVfitLikelihoodDiTauProd()
 template <typename T1, typename T2>
 void SVfitLikelihoodDiTauProd<T1,T2>::beginJob()
 {
-  LHAPDF::initPDFSet(0, pdfSet_);
-  LHAPDF::initPDF(0); // use "best-fit" PDF values
+  LHAPDF::initPDFSet(0, pdfSet_, 0); // use "best-fit" PDF values
 }
 
-double getPDFprob(int q, double xPlus,  const std::vector<double>& pdfValuesPlus, 
-                         double xMinus, const std::vector<double>& pdfValuesMinus)
+double getPDFprob(int flavor, double xPlus, double xMinus, double Q) 
 {
 //--- compute probability to find either to gluons or two quarks of flavor q and qBar in pp system 
 //
 //    NOTE: 
 //        (1) the Z0 can be produced by annihilation of q + qBar "opposite flavor" quark pairs only;
 //            the (MSSM) Higgs is produced by gluon-gluon fusion
-//        (2) the PDF values are stored in the order
-//             0.. 5: tbar, ..., ubar, dbar
-//                 6: g; 
-//             7..12: d, u, ..., t 
-//            while the numbering of flavors is different
+//        (2) the flavors are encoded as:
 //                -6: tbar
 //                -5: bbar
 //                -4: cbar
@@ -83,27 +76,23 @@ double getPDFprob(int q, double xPlus,  const std::vector<double>& pdfValuesPlus
 //                 http://projects.hepforge.org/lhapdf/cc/namespaceLHAPDF.html )
 //            --> need to add -LHAPDF::TBAR to flavor |q| when computing index for PDF value look-up
 
-  std::cout << "<getPDFprob>:" << std::endl;
+  //std::cout << "<getPDFprob>:" << std::endl;
 
-  q = TMath::Abs(q);
+  flavor = TMath::Abs(flavor);
 
   double prob = 0.;
-  if ( q == LHAPDF::UP   || q == LHAPDF::CHARM   || q == LHAPDF::TOP    ||
-       q == LHAPDF::DOWN || q == LHAPDF::STRANGE || q == LHAPDF::BOTTOM ) {
-    int index1 = +q - LHAPDF::TBAR;
-    int index2 = -q - LHAPDF::TBAR;
-
-    prob = (pdfValuesPlus[index1]/xPlus)*(pdfValuesMinus[index2]/xMinus) 
-          + (pdfValuesMinus[index1]/xMinus)*(pdfValuesPlus[index2]/xPlus);
-  } else if ( q == LHAPDF::GLUON ) {
-    int index = q - LHAPDF::TBAR;
-    prob = 2.*(pdfValuesPlus[index]/xPlus)*(pdfValuesMinus[index]/xMinus);
+  if ( flavor == LHAPDF::UP   || flavor == LHAPDF::CHARM   || flavor == LHAPDF::TOP    ||
+       flavor == LHAPDF::DOWN || flavor == LHAPDF::STRANGE || flavor == LHAPDF::BOTTOM ) {
+    prob = (LHAPDF::xfx(0, xPlus, Q, +flavor)/xPlus)*(LHAPDF::xfx(0, xMinus, Q, -flavor)/xMinus)
+          + (LHAPDF::xfx(0, xPlus, Q, -flavor)/xPlus)*(LHAPDF::xfx(0, xMinus, Q, +flavor)/xMinus);
+  } else if ( flavor == LHAPDF::GLUON ) {
+    prob = 2.*(LHAPDF::xfx(0, xPlus, Q, flavor)/xPlus)*(LHAPDF::xfx(0, xMinus, Q, flavor)/xMinus);
   } else {
     edm::LogError ("getPDFprob") 
-      << " Invalid flavor type = " << q << " !!";
+      << " Invalid flavor type = " << flavor << " !!";
   }
 
-  std::cout << "--> prob = " << prob << std::endl;
+  //std::cout << "--> prob = " << prob << std::endl;
   
   return prob;
 }
@@ -172,7 +161,7 @@ template <typename T1, typename T2>
 double SVfitLikelihoodDiTauProd<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau, 
 						   const SVfitDiTauSolution& solution) const
 {
-  std::cout << "<SVfitLikelihoodDiTauProd::operator()>:" << std::endl;
+  //std::cout << "<SVfitLikelihoodDiTauProd::operator()>:" << std::endl;
 
   if ( cfgError_ ) {
     edm::LogError ("SVfitLikelihoodDiTauProd<T1,T2>::operator()") 
@@ -185,19 +174,14 @@ double SVfitLikelihoodDiTauProd<T1,T2>::operator()(const CompositePtrCandidateT1
   double eta = solution.p4().eta();
 
   double xPlus = (mass/sqrtS_)*TMath::Exp(+eta);
-  std::cout << " xPlus = " << xPlus << std::endl;
+  //std::cout << " xPlus = " << xPlus << std::endl;
   double xMinus = (mass/sqrtS_)*TMath::Exp(-eta);
-  std::cout << " xMinus = " << xMinus << std::endl;
+  //std::cout << " xMinus = " << xMinus << std::endl;
 
-  std::vector<double> pdfValuesPlus = LHAPDF::xfx(xPlus, mass);
-  std::vector<double> pdfValuesMinus = LHAPDF::xfx(xMinus, mass);
-
-  double upTypePdfSum = getPDFprob(LHAPDF::UP, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus)
-                       + getPDFprob(LHAPDF::CHARM, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus)
-                       + getPDFprob(LHAPDF::TOP, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus);
-  double downTypePdfSum = getPDFprob(LHAPDF::DOWN, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus)
-                       + getPDFprob(LHAPDF::STRANGE, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus)
-                       + getPDFprob(LHAPDF::BOTTOM, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus);
+  double upTypePdfSum   = getPDFprob(LHAPDF::UP, xPlus, xMinus, mass) 
+                         + getPDFprob(LHAPDF::CHARM, xPlus, xMinus, mass) + getPDFprob(LHAPDF::TOP, xPlus, xMinus, mass);
+  double downTypePdfSum = getPDFprob(LHAPDF::DOWN, xPlus, xMinus, mass) 
+                         + getPDFprob(LHAPDF::STRANGE, xPlus, xMinus, mass) + getPDFprob(LHAPDF::BOTTOM, xPlus, xMinus, mass);
 
   double upTypeCrossSection = 0.;
   double downTypeCrossSection = 0.;
