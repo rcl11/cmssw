@@ -2,6 +2,8 @@
 
 #include "DataFormats/CLHEP/interface/AlgebraicObjects.h"
 
+#include "TauAnalysis/CandidateTools/plugins/SVfitLegLikelihoodTrackInfo.h"
+
 #include "TauAnalysis/CandidateTools/interface/SVfitAlgorithm.h"
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 
@@ -52,7 +54,7 @@ SVfitLikelihoodDiTauTrackInfo<T1,T2>::SVfitLikelihoodDiTauTrackInfo(const edm::P
   }
 
   leg1Likelihood_ = createLikelihoodPlugin<T1>(cfgLeg1Likelihood);
-  leg2Likelihood_ = createLikelihoodPlugin<T2>(cfgLeg2Likelihood);  
+  leg2Likelihood_ = createLikelihoodPlugin<T2>(cfgLeg2Likelihood);
 
   useLifetimeConstraint_ = cfg.getParameter<bool>("useLifetimeConstraint");
 }
@@ -65,7 +67,14 @@ SVfitLikelihoodDiTauTrackInfo<T1,T2>::~SVfitLikelihoodDiTauTrackInfo()
 }
 
 template <typename T1, typename T2>
-void SVfitLikelihoodDiTauTrackInfo<T1,T2>::beginEvent(edm::Event& evt, const edm::EventSetup& es)
+void SVfitLikelihoodDiTauTrackInfo<T1,T2>::beginJob()
+{
+  leg1Likelihood_->beginJob();
+  leg2Likelihood_->beginJob();
+}
+
+template <typename T1, typename T2>
+void SVfitLikelihoodDiTauTrackInfo<T1,T2>::beginEvent(const edm::Event& evt, const edm::EventSetup& es)
 {
   leg1Likelihood_->beginEvent(evt, es);
   leg2Likelihood_->beginEvent(evt, es);
@@ -92,28 +101,31 @@ bool SVfitLikelihoodDiTauTrackInfo<T1,T2>::isFittedParameter(int index) const
 //--- check if tau decay leg1, leg2 has tracks passing the track selection;
 //    do not include primary event (tau production) vertex position in fit parameters
 //    in case none of the tau decay "legs" add track constraints
-  bool isLeg1TrackInfo = leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, SVfit_namespace::kLeg1flightPathLab);
-  bool isLeg2TrackInfo = leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, SVfit_namespace::kLeg2flightPathLab);
+  bool isLeg1TrackInfo = leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, SVfit_namespace::kLeg1sqrtDecayDistanceLab);
+  bool isLeg2TrackInfo = leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, SVfit_namespace::kLeg2sqrtDecayDistanceLab);
 
-  if      ( index == SVfit_namespace::kPrimaryVertexX    ||
-	    index == SVfit_namespace::kPrimaryVertexY    ||
-	    index == SVfit_namespace::kPrimaryVertexZ    ) return (isLeg1TrackInfo || isLeg2TrackInfo);
-  else if ( index == SVfit_namespace::kLeg1thetaRest     || 
-            index == SVfit_namespace::kLeg1phiLab        ||
-            index == SVfit_namespace::kLeg1flightPathLab ||
-            index == SVfit_namespace::kLeg1nuInvMass     ||
-	    index == SVfit_namespace::kLeg1thetaVMrho    ||
-	    index == SVfit_namespace::kLeg1thetaVMa1     ||
-	    index == SVfit_namespace::kLeg1thetaVMa1r    ||
-	    index == SVfit_namespace::kLeg1phiVMa1r      ) return leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, index);
-  else if ( index == SVfit_namespace::kLeg2thetaRest     || 
-            index == SVfit_namespace::kLeg2phiLab        ||
-            index == SVfit_namespace::kLeg2flightPathLab ||
-            index == SVfit_namespace::kLeg2nuInvMass     ||
-	    index == SVfit_namespace::kLeg2thetaVMrho    ||
-	    index == SVfit_namespace::kLeg2thetaVMa1     ||
-	    index == SVfit_namespace::kLeg2thetaVMa1r    ||
-	    index == SVfit_namespace::kLeg2phiVMa1r      ) return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
+  if      ( index == SVfit_namespace::kPrimaryVertexShiftX      ||
+	    index == SVfit_namespace::kPrimaryVertexShiftY      ||
+	    index == SVfit_namespace::kPrimaryVertexShiftZ      ) 
+    return (isLeg1TrackInfo || isLeg2TrackInfo);
+  else if ( index == SVfit_namespace::kLeg1thetaRest            || 
+            index == SVfit_namespace::kLeg1phiLab               ||
+            index == SVfit_namespace::kLeg1sqrtDecayDistanceLab ||
+            index == SVfit_namespace::kLeg1nuInvMass            ||
+	    index == SVfit_namespace::kLeg1thetaVMrho           ||
+	    index == SVfit_namespace::kLeg1thetaVMa1            ||
+	    index == SVfit_namespace::kLeg1thetaVMa1r           ||
+	    index == SVfit_namespace::kLeg1phiVMa1r             ) 
+    return leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, index);
+  else if ( index == SVfit_namespace::kLeg2thetaRest            || 
+            index == SVfit_namespace::kLeg2phiLab               ||
+            index == SVfit_namespace::kLeg2sqrtDecayDistanceLab ||
+            index == SVfit_namespace::kLeg2nuInvMass            ||
+	    index == SVfit_namespace::kLeg2thetaVMrho           ||
+	    index == SVfit_namespace::kLeg2thetaVMa1            ||
+	    index == SVfit_namespace::kLeg2thetaVMa1r           ||
+	    index == SVfit_namespace::kLeg2phiVMa1r             ) 
+    return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
   else return false;
 }
 
@@ -138,6 +150,7 @@ double logExponentialDecay(double tauFlightPath, double p)
 //         (rather than the probability to decay at distance x0 or greater)
 //
   double a = (p/tauLeptonMass)*cTauLifetime;
+  if ( tauFlightPath < 0. ) tauFlightPath = 0.;
   return -TMath::Log(a) - tauFlightPath/a;
 }
 
@@ -145,24 +158,36 @@ template <typename T1, typename T2>
 double SVfitLikelihoodDiTauTrackInfo<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau, 
 							 const SVfitDiTauSolution& solution) const
 {
+  //std::cout << "<SVfitLikelihoodDiTauTrackInfo::operator()>:" << std::endl;
+
 //--- compute negative log-likelihood for shift 
 //    of primary event (tau lepton production) vertex position
 //    to be compatible with estimated covariance matrix,
 //    determined by vertex refit
-  double negativeLogLikelihood = -logGaussianNd(solution.eventVertexShiftSVrefitted(), solution.eventVertexErrSVrefitted());
+  double negLogLikelihood = -logGaussianNd(solution.eventVertexShiftSVrefitted(), solution.eventVertexErrSVrefitted());
+  //std::cout << " eventVertex: -log(likelihood) = " << negLogLikelihood << std::endl;
 
 //--- compute negative log-likelihoods for tracks
 //    of the two tau lepton decay "legs" to be compatible 
 //    with secondary (tau lepton decay) vertex positions
-  negativeLogLikelihood += (*leg1Likelihood_)(*diTau.leg1(), solution.leg1());
-  negativeLogLikelihood += (*leg2Likelihood_)(*diTau.leg2(), solution.leg2());
+  AlgebraicVector3 pvPosition = solution.eventVertexPosSVrefitted() - solution.eventVertexShiftSVrefitted();
+  dynamic_cast<SVfitLegLikelihoodTrackInfo<T1>*>(leg1Likelihood_)->setEventVertexPos(pvPosition);
+  negLogLikelihood += (*leg1Likelihood_)(*diTau.leg1(), solution.leg1());
+  dynamic_cast<SVfitLegLikelihoodTrackInfo<T2>*>(leg2Likelihood_)->setEventVertexPos(pvPosition);
+  negLogLikelihood += (*leg2Likelihood_)(*diTau.leg2(), solution.leg2());
   
   if ( useLifetimeConstraint_ ) {
-    negativeLogLikelihood -= logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P());
-    negativeLogLikelihood -= logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P());
+    negLogLikelihood -= logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P());
+    //std::cout << " leg1DecayDistance: -log(likelihood) = " 
+    //	        << -logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P()) << std::endl;
+    negLogLikelihood -= logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P());
+    //std::cout << " leg2DecayDistance: -log(likelihood) = " 
+    //	        << -logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P()) << std::endl;
   }
 
-  return negativeLogLikelihood;
+  //std::cout << "--> -log(likelihood) = " << negLogLikelihood << std::endl;
+
+  return negLogLikelihood;
 }
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
