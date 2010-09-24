@@ -95,6 +95,8 @@ svFitLikelihoodDiTauPt = cms.PSet(
 )
 
 svFitLikelihoodDiTauProdZ0 = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodDiTauProdZ0"),
+    pluginType = cms.string("SVfitLikelihoodDiTauProd"),
     process = cms.string("Z0"), # either 'Z0' or 'Higgs'
     pdfSet = cms.string("cteq65.LHgrid"),
     sqrtS = cms.double(7000.) # 7 TeV center-of-mass energy
