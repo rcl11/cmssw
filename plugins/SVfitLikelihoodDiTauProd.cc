@@ -199,7 +199,8 @@ double SVfitLikelihoodDiTauProd<T1,T2>::operator()(const CompositePtrCandidateT1
                        + getPDFprob(LHAPDF::STRANGE, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus)
                        + getPDFprob(LHAPDF::BOTTOM, xPlus, pdfValuesPlus, xMinus, pdfValuesMinus);
 
-  double upTypeCrossSection, downTypeCrossSection;
+  double upTypeCrossSection = 0.;
+  double downTypeCrossSection = 0.;
   if ( process_ == kZ0    ) {
     double sHat = square(mass);
     
