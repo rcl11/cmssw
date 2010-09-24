@@ -14,9 +14,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.19 $
+ * \version $Revision: 1.20 $
  *
- * $Id: SVfitAlgorithm.h,v 1.19 2010/09/21 08:32:44 friis Exp $
+ * $Id: SVfitAlgorithm.h,v 1.20 2010/09/21 08:58:21 veelken Exp $
  *
  */
 
@@ -77,12 +77,14 @@ class SVfitMinuitFCNadapter : public ROOT::Minuit2::FCNBase
 
 namespace SVfit_namespace 
 {
-  enum fitParameter { kPrimaryVertexX, kPrimaryVertexY, kPrimaryVertexZ,
-                      kLeg1thetaRest, kLeg1phiLab, kLeg1flightPathLab, kLeg1nuInvMass,
+  enum fitParameter { kPrimaryVertexShiftX, kPrimaryVertexShiftY, kPrimaryVertexShiftZ,
+                      kLeg1thetaRest, kLeg1phiLab, kLeg1sqrtDecayDistanceLab, kLeg1nuInvMass,
 		      kLeg1thetaVMrho, kLeg1thetaVMa1, kLeg1thetaVMa1r, kLeg1phiVMa1r,
-                      kLeg2thetaRest, kLeg2phiLab, kLeg2flightPathLab, kLeg2nuInvMass,
+                      kLeg2thetaRest, kLeg2phiLab, kLeg2sqrtDecayDistanceLab, kLeg2nuInvMass,
 		      kLeg2thetaVMrho, kLeg2thetaVMa1, kLeg2thetaVMa1r, kLeg2phiVMa1r };
   enum tauDecayProducts { kLeg1, kLeg2 };
+
+  const unsigned defaultMinuitMaxInterations = 5000;
 }
 
 template<typename T1, typename T2>
@@ -110,6 +112,9 @@ class SVfitAlgorithm
       likelihoodFunctions_.push_back(likelihoodFunction);
     }
     
+    minuitMaxInterations_ = cfg.exists("minuitMaxInterations") ? 
+      cfg.getParameter<unsigned>("minuitMaxInterations") : SVfit_namespace::defaultMinuitMaxInterations;
+    
 //--- initialize Minuit    
     minuitFCNadapter_.setSVfitAlgorithm(this);
 
@@ -119,7 +124,7 @@ class SVfitAlgorithm
 //    in order to enable reliable error estimates
 //    ( cf. http://www-cdf.fnal.gov/physics/statistics/recommendations/minuit.html )
     minuit_->SetStrategy(2);
-    minuit_->SetMaxIterations(1000);
+    minuit_->SetMaxIterations(minuitMaxInterations_);
 
     //std::cout << "<SVfitAlgorithm::SVfitAlgorithm>:" << std::endl;
     //std::cout << " disabling MINUIT output..." << std::endl;
@@ -162,6 +167,8 @@ class SVfitAlgorithm
 
   void beginEvent(edm::Event& evt, const edm::EventSetup& es)
   {
+    //std::cout << "<SVfitAlgorithm::beginEvent>:" << std::endl;
+
     eventVertexRefitAlgorithm_->beginEvent(evt, es);
 
     for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
@@ -198,6 +205,12 @@ class SVfitAlgorithm
     std::vector<reco::TrackBaseRef> leg1Tracks = leg1TrackExtractor_(*diTauCandidate.leg1());
     std::vector<reco::TrackBaseRef> leg2Tracks = leg2TrackExtractor_(*diTauCandidate.leg2());
     TransientVertex pv = eventVertexRefitAlgorithm_->refit(leg1Tracks, leg2Tracks);
+    if ( verbosity_ ) {
+      std::cout << " refitted event vertex (#tracks = " << pv.originalTracks().size() << "):"
+		<< " x = " << pv.position().x() << " +/- " << TMath::Sqrt(pv.positionError().cxx()) << ","
+		<< " y = " << pv.position().y() << " +/- " << TMath::Sqrt(pv.positionError().cyy()) << ","
+		<< " z = " << pv.position().z() << " +/- " << TMath::Sqrt(pv.positionError().czz()) << std::endl;
+    }
     
 //--- check if at least one likelihood function supports polarization 
 //    (i.e. returns a polarization depent likelihood value);
@@ -271,13 +284,9 @@ class SVfitAlgorithm
       currentDiTauSolution_.eventVertexPosition_(0) = pv.position().x();
       currentDiTauSolution_.eventVertexPosition_(1) = pv.position().y();
       currentDiTauSolution_.eventVertexPosition_(2) = pv.position().z();
-      AlgebraicSymMatrix eventVertexPosErrMatrix = pv.positionError().matrix();
-      for ( unsigned iRow = 0; iRow < 3; ++iRow ) {
-	for ( unsigned iColumn = 0; iColumn < 3; ++iColumn ) {
-	  currentDiTauSolution_.eventVertexPositionErr_(iRow, iColumn) = eventVertexPosErrMatrix(iRow, iColumn);
-	}
-      }
+      currentDiTauSolution_.eventVertexPositionErr_ = pv.positionError().matrix_new();
     }
+    // CV: need to add protection against case that primary event vertex is not valid <-- FIXME ?
     currentDiTauSolution_.eventVertexIsValid_ = pv.isValid();
     currentDiTauSolution_.leg1_.p4Vis_ = diTauCandidate.leg1()->p4();
     currentDiTauSolution_.leg2_.p4Vis_ = diTauCandidate.leg2()->p4();
@@ -287,30 +296,33 @@ class SVfitAlgorithm
 //    CV: how to deal with measurement errors in the visible momenta of the two tau decay "legs"
 //        when setting the maximum mass of the neutrino system ?
 //
-    double pvPositionX, pvPositionXerr, pvPositionY, pvPositionYerr, pvPositionZ, pvPositionZerr;
-    if ( pv.isValid() ) {
-      pvPositionX = pv.position().x();
-      pvPositionXerr = pv.positionError().cxx();
-      pvPositionY = pv.position().y();
-      pvPositionYerr = pv.positionError().cyy();
-      pvPositionZ = pv.position().z();
-      pvPositionZerr = pv.positionError().czz();
-    } else {
-      pvPositionX = 0.;
-      pvPositionXerr = 0.1;
-      pvPositionY = 0.;
-      pvPositionYerr = 0.1;
-      pvPositionZ = 0.;
-      pvPositionZerr = 10.;
-    }
 
-    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexX, "pv_x", pvPositionX, pvPositionXerr,  -1.,  +1.);
-    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexY, "pv_y", pvPositionY, pvPositionYerr,  -1.,  +1.);
-    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexZ, "pv_z", pvPositionZ, pvPositionZerr, -50., +50.);
+    double pvPositionXerr, pvPositionYerr, pvPositionZerr;
+    if ( pv.isValid() ) {
+      pvPositionXerr = TMath::Sqrt(pv.positionError().cxx());
+      pvPositionYerr = TMath::Sqrt(pv.positionError().cyy());
+      pvPositionZerr = TMath::Sqrt(pv.positionError().czz());
+    } else {
+      pvPositionXerr = 0.01;
+      pvPositionYerr = 0.01;
+      pvPositionZerr = 0.01;
+    }
+    
+    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexShiftX, "pv_dx", 0., pvPositionXerr,  -1.,  +1.);
+    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexShiftY, "pv_dy", 0., pvPositionYerr,  -1.,  +1.);
+    minuit_->SetParameter(SVfit_namespace::kPrimaryVertexShiftZ, "pv_dz", 0., pvPositionZerr, -50., +50.);
     minuit_->SetParameter(SVfit_namespace::kLeg1thetaRest, "sv1_thetaRest", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
     minuit_->SetParameter(SVfit_namespace::kLeg1phiLab, "sv1_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
-    double leg1Radius0 = diTauCandidate.leg1()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_->SetParameter(SVfit_namespace::kLeg1flightPathLab, "sv1_radiusLab", leg1Radius0, leg1Radius0, 0., 100.*leg1Radius0); 
+    double leg1DecayDistanceLab0 = (diTauCandidate.leg1()->energy()/SVfit_namespace::tauLeptonMass)*SVfit_namespace::cTauLifetime;
+    if ( verbosity_ ) {
+      std::cout << "leg1: energy = " << diTauCandidate.leg1()->energy() 
+		<< " --> gamma = " << (diTauCandidate.leg1()->energy()/SVfit_namespace::tauLeptonMass) << std::endl;
+      std::cout << " leg1DecayDistanceLab0 = " << leg1DecayDistanceLab0 << std::endl;    
+    }
+    // do not set limits for decayDistanceLab; guarantee that decayDistanceLab is positive by taking square-root as fit parameter
+    double sqrtLeg1DecayDistanceLab0 = TMath::Sqrt(leg1DecayDistanceLab0);
+    minuit_->SetParameter(SVfit_namespace::kLeg1sqrtDecayDistanceLab, "sv1_sqrtDecayDistanceLab", 
+			  sqrtLeg1DecayDistanceLab0, 0.5*sqrtLeg1DecayDistanceLab0, 0., 0.);
     double leg1NuMass0, leg1NuMassErr, leg1NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T1>() ) {
       leg1NuMass0 = 0.8;
@@ -329,8 +341,16 @@ class SVfitAlgorithm
     minuit_->SetParameter(SVfit_namespace::kLeg1phiVMa1r, "sv1_phiVMa1r", 0., TMath::Pi(), 0., 0.); // do not set limits for phiVMa1r
     minuit_->SetParameter(SVfit_namespace::kLeg2thetaRest, "sv2_thetaRest", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
     minuit_->SetParameter(SVfit_namespace::kLeg2phiLab, "sv2_phiLab", 0., TMath::Pi(), 0., 0.); // do not set limits for phiLab
-    double leg2Radius0 = diTauCandidate.leg2()->energy()*SVfit_namespace::cTauLifetime/SVfit_namespace::tauLeptonMass;
-    minuit_->SetParameter(SVfit_namespace::kLeg2flightPathLab, "sv2_radiusLab", leg2Radius0, leg2Radius0, 0., 100.*leg2Radius0); 
+    double leg2DecayDistanceLab0 = (diTauCandidate.leg2()->energy()/SVfit_namespace::tauLeptonMass)*SVfit_namespace::cTauLifetime;
+    if ( verbosity_ ) {
+      std::cout << "leg2: energy = " << diTauCandidate.leg2()->energy() 
+		<< " --> gamma = " << (diTauCandidate.leg2()->energy()/SVfit_namespace::tauLeptonMass) << std::endl;
+      std::cout << " leg2DecayDistanceLab0 = " << leg2DecayDistanceLab0 << std::endl;
+    }
+    // do not set limits for decayDistanceLab; guarantee that decayDistanceLab is positive by taking square-root as fit parameter
+    double sqrtLeg2DecayDistanceLab0 = TMath::Sqrt(leg2DecayDistanceLab0);
+    minuit_->SetParameter(SVfit_namespace::kLeg2sqrtDecayDistanceLab, "sv2_decayDistanceLab", 
+			  sqrtLeg2DecayDistanceLab0, 0.5*sqrtLeg2DecayDistanceLab0, 0., 0.);
     double leg2NuMass0, leg2NuMassErr, leg2NuMassMax;
     if ( !SVfit_namespace::isMasslessNuSystem<T2>() ) {
       leg2NuMass0 = 0.8;
@@ -408,9 +428,9 @@ class SVfitAlgorithm
   void applyParameters(SVfitDiTauSolution& diTauSolution, const std::vector<double>& x) const 
   {
 //--- set primary event vertex position (tau lepton production vertex)
-    diTauSolution.eventVertexPositionShift_(0) = x[SVfit_namespace::kPrimaryVertexX];
-    diTauSolution.eventVertexPositionShift_(1) = x[SVfit_namespace::kPrimaryVertexY];
-    diTauSolution.eventVertexPositionShift_(2) = x[SVfit_namespace::kPrimaryVertexZ];
+    diTauSolution.eventVertexPositionShift_(0) = x[SVfit_namespace::kPrimaryVertexShiftX];
+    diTauSolution.eventVertexPositionShift_(1) = x[SVfit_namespace::kPrimaryVertexShiftY];
+    diTauSolution.eventVertexPositionShift_(2) = x[SVfit_namespace::kPrimaryVertexShiftZ];
 
 //--- build first tau decay "leg"
     applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, diTauSolution.leg1_, x, diTauSolution.eventVertexPosSVrefitted());
@@ -426,7 +446,8 @@ class SVfitAlgorithm
 		     
     double gjAngle        = x[legOffset + SVfit_namespace::kLeg1thetaRest];
     double phiLab         = x[legOffset + SVfit_namespace::kLeg1phiLab];
-    double flightDistance = x[legOffset + SVfit_namespace::kLeg1flightPathLab];
+    double flightDistance = SVfit_namespace::square(x[legOffset + SVfit_namespace::kLeg1sqrtDecayDistanceLab]);
+    //std::cout << " flightDistance = " << flightDistance << std::endl;
     double massNuNu       = x[legOffset + SVfit_namespace::kLeg1nuInvMass];
 
     const reco::Candidate::LorentzVector& p4Vis = legSolution.p4Vis();
@@ -439,6 +460,7 @@ class SVfitAlgorithm
     double momentumLabFrame = SVfit_namespace::tauMomentumLabFrame(p4Vis.mass(), pVisRestFrame, gjAngle, p4Vis.P());
     // Determine the direction of the tau
     reco::Candidate::Vector direction = SVfit_namespace::tauDirection(p4Vis.Vect().Unit(), angleVisLabFrame, phiLab);
+    //std::cout << " direction: x = " << direction.x() << ", y = " << direction.y() << ", z = " << direction.z() << std::endl;
 
     reco::Candidate::LorentzVector tauP4 = SVfit_namespace::tauP4(direction, momentumLabFrame);
 
@@ -446,8 +468,8 @@ class SVfitAlgorithm
     legSolution.p4Invis_ = tauP4 - p4Vis;
 
     // Build boost vector and compute the rest frame quanitites
-    legSolution.p4VisRestFrame_ = SVfit_namespace::boostToCOM(legSolution.p4Vis_, tauP4);
-    legSolution.p4InvisRestFrame_ = SVfit_namespace::boostToCOM(legSolution.p4Invis_, tauP4);
+    legSolution.p4VisRestFrame_ = SVfit_namespace::boostToCOM(tauP4, legSolution.p4Vis_);
+    legSolution.p4InvisRestFrame_ = SVfit_namespace::boostToCOM(tauP4, legSolution.p4Invis_);
 
     // Set the flight path
     legSolution.decayVertexPos_(0) = eventVertexPos(0) + flightDistance*direction.x();
@@ -592,6 +614,7 @@ class SVfitAlgorithm
   
   mutable TFitterMinuit* minuit_;
   SVfitMinuitFCNadapter<T1,T2> minuitFCNadapter_;
+  unsigned minuitMaxInterations_;
   const static unsigned minuitNumParameters_ = 19;
   mutable unsigned minuitNumFreeParameters_;
   mutable unsigned minuitNumFixedParameters_;
