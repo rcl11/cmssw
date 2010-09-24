@@ -68,10 +68,12 @@ svFitLikelihoodTrackInfo = cms.PSet(
     pluginName = cms.string("svFitLikelihoodTrackInfo"),
     pluginType = cms.string("SVfitLikelihoodDiTauTrackInfo"),
     leg1 = cms.PSet(
-        pluginType = cms.string("SVfitLegLikelihoodTrackInfo")
+        pluginType = cms.string("SVfitLegLikelihoodTrackInfo"),
+        useLinearApprox = cms.bool(True)
     ),
     leg2 = cms.PSet(
-        pluginType = cms.string("SVfitLegLikelihoodTrackInfo")
+        pluginType = cms.string("SVfitLegLikelihoodTrackInfo"),
+        useLinearApprox = cms.bool(True)
     ),    
     useLifetimeConstraint = cms.bool(True)
 )
