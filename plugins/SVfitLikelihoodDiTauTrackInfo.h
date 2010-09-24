@@ -10,9 +10,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitLikelihoodDiTauTrackInfo.h,v 1.4 2010/09/19 13:07:05 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauTrackInfo.h,v 1.1 2010/09/21 09:03:00 veelken Exp $
  *
  */
 
@@ -33,8 +33,9 @@ template <typename T1, typename T2>
   SVfitLikelihoodDiTauTrackInfo(const edm::ParameterSet&);
   ~SVfitLikelihoodDiTauTrackInfo();
 
-  virtual void beginEvent(edm::Event&, const edm::EventSetup&);
-  virtual void beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>&);
+  void beginJob();
+  void beginEvent(const edm::Event&, const edm::EventSetup&);
+  void beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>&);
 
   void print(std::ostream&) const;
 
@@ -42,6 +43,7 @@ template <typename T1, typename T2>
   bool supportsPolarization() const;
 
   double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const;
+
  private:
   SVfitLegLikelihoodBase<T1>* leg1Likelihood_;
   SVfitLegLikelihoodBase<T2>* leg2Likelihood_;
