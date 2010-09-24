@@ -35,15 +35,21 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
 //          K. Nakamura et al. (Particle Data Group), J. Phys. G 37, 075021 (2010);
 //          formulas 38.20a, 38.20b
 //
+  //std::cout << "<SVfitLegLikelihoodPhaseSpace::operator()>:" << std::endl;
+
   reco::Candidate::LorentzVector legP4 = solution.p4();
   
   double thetaRestFrame = solution.thetaRest();
   double nuMass = solution.p4InvisRestFrame().mass();
   double visMass = solution.p4VisRestFrame().mass();
 
+  //std::cout << " thetaRestFrame = " << thetaRestFrame*180./TMath::Pi() << std::endl;
+  //std::cout << " nuMass = " << nuMass << std::endl;
+  //std::cout << " visMass = " << visMass << std::endl;
+
   double logLikelihood = TMath::Log(TMath::Sin(thetaRestFrame));
   if ( !isMasslessNuSystem<T>() ) {
-    if ( nuMass > 0. && nuMass < (tauLeptonMass - visMass) ) {
+    if ( nuMass >= 0. && nuMass <= (tauLeptonMass - visMass) ) {
       double logP1 = TMath::Log(nuMass) - TMath::Log(2.);
       double logP3 = 0.5*TMath::Log((tauLeptonMass2 - square(nuMass + visMass))*(tauLeptonMass2 - square(nuMass - visMass)))
                     - TMath::Log(2*tauLeptonMass);
