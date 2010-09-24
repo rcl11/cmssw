@@ -139,6 +139,8 @@ TransientVertex SVfitEventVertexRefitter::refit(const std::vector<reco::TrackBas
     edm::LogWarning ("SVfitEventVertexRefitter::refit") 
       << "Insufficient tracks remaining after excluding tracks associated to tau decay products" 
       << " --> skipping primary event vertex refit !!";
+    // CV: need to enlarge errors on reconstructed event vertex position
+    //     in SVfitLikelihoodDiTauTrackInfo in this case <-- FIXME
     return vertexFitAlgorithm_->vertex(pvTracks_original, *beamSpot_);
   }
 }
