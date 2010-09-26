@@ -345,8 +345,8 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
   }
 
   if ( !(prob > 0.) ) {
-    edm::LogWarning ("SVfitTauLikelihoodPolarization::operator()") 
-      << " Unphysical solution --> returning very large negative number !!";
+    //edm::LogWarning ("SVfitTauLikelihoodPolarization::operator()") 
+    //  << " Unphysical solution --> returning very large negative number !!";
     return std::numeric_limits<float>::min();
   }
   

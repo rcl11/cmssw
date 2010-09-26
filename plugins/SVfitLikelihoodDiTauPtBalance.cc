@@ -97,8 +97,8 @@ double SVfitLikelihoodDiTauPtBalance<T1,T2>::operator()(const CompositePtrCandid
   if ( verbosity_ ) std::cout << "--> prob = " << prob << std::endl;
 
   if ( !(prob > 0.) ) {
-    edm::LogWarning ("SVfitLikelihoodDiTauPtBalance::operator()") 
-      << " Unphysical solution --> returning very large negative number !!";
+    //edm::LogWarning ("SVfitLikelihoodDiTauPtBalance::operator()") 
+    //  << " Unphysical solution --> returning very large negative number !!";
     return std::numeric_limits<float>::min();
   }
   
