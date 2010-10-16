@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.8 $
+ * \version $Revision: 1.9 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.8 2010/09/08 13:27:51 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.9 2010/09/21 08:57:06 veelken Exp $
  *
  */
 
@@ -71,6 +71,8 @@ typedef SVfitDiTauLikelihoodBase<pat::Electron, pat::Tau> SVfitElecTauPairLikeli
 typedef SVfitDiTauLikelihoodBase<pat::Muon, pat::Tau> SVfitMuTauPairLikelihoodBase;
 typedef SVfitDiTauLikelihoodBase<pat::Tau, pat::Tau> SVfitDiTauPairLikelihoodBase;
 typedef SVfitDiTauLikelihoodBase<pat::Electron, pat::Muon> SVfitElecMuPairLikelihoodBase;
+typedef SVfitDiTauLikelihoodBase<pat::Electron, pat::Electron> SVfitDiElecPairLikelihoodBase;
+typedef SVfitDiTauLikelihoodBase<pat::Muon, pat::Muon> SVfitDiMuPairLikelihoodBase;
 
 #include "DataFormats/Candidate/interface/Candidate.h"
 
@@ -82,6 +84,9 @@ typedef edmplugin::PluginFactory<SVfitElecTauPairLikelihoodBase* (const edm::Par
 typedef edmplugin::PluginFactory<SVfitMuTauPairLikelihoodBase* (const edm::ParameterSet&)> SVfitMuTauPairLikelihoodBasePluginFactory;
 typedef edmplugin::PluginFactory<SVfitDiTauPairLikelihoodBase* (const edm::ParameterSet&)> SVfitDiTauPairLikelihoodBasePluginFactory;
 typedef edmplugin::PluginFactory<SVfitElecMuPairLikelihoodBase* (const edm::ParameterSet&)> SVfitElecMuPairLikelihoodBasePluginFactory;
+typedef edmplugin::PluginFactory<SVfitDiElecPairLikelihoodBase* (const edm::ParameterSet&)> SVfitDiElecPairLikelihoodBasePluginFactory;
+typedef edmplugin::PluginFactory<SVfitDiMuPairLikelihoodBase* (const edm::ParameterSet&)> SVfitDiMuPairLikelihoodBasePluginFactory;
+
 typedef edmplugin::PluginFactory<SVfitDiCandidatePairLikelihoodBase* (const edm::ParameterSet&)> SVfitDiCandidatePairLikelihoodBasePluginFactory;
 
 #endif
