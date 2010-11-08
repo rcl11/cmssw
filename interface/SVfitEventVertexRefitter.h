@@ -5,12 +5,12 @@
  *
  * Class to refit position of primary event vertex,
  * excluding the tracks associated to tau decay products
- * 
+ *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVfitEventVertexRefitter.h,v 1.1 2010/08/30 13:26:49 veelken Exp $
+ * $Id: SVfitEventVertexRefitter.h,v 1.2 2010/09/21 08:55:39 veelken Exp $
  *
  */
 
@@ -36,8 +36,13 @@ class SVfitEventVertexRefitter
 
   void beginEvent(const edm::Event&, const edm::EventSetup&);
 
+  /// Refit the primary vertex after subtracting the tau associated tracks.
   TransientVertex refit(const std::vector<reco::TrackBaseRef>& leg1Tracks,
 			const std::vector<reco::TrackBaseRef>& leg2Tracks);
+
+  /// Refit a three prong tau.
+  TransientVertex fitSecondaryVertex(
+      const std::vector<reco::TrackBaseRef>& tracks) const;
 
  private:
   edm::InputTag srcPrimaryEventVertex_;
@@ -47,7 +52,7 @@ class SVfitEventVertexRefitter
   const reco::BeamSpot* beamSpot_;
 
   const TransientTrackBuilder* trackBuilder_;
-  
+
   const KalmanVertexFitter* vertexFitAlgorithm_;
 
   unsigned minNumTracksRefit_;
