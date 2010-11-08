@@ -5,12 +5,12 @@
  *
  * Abstract base-class for plugins computing likelihood for one tau lepton decay "leg";
  * used by SVfit algorithm
- * 
+ *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.8 $
+ * \version $Revision: 1.9 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.8 2010/09/08 13:27:51 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.9 2010/09/21 08:56:48 veelken Exp $
  *
  */
 
@@ -30,7 +30,7 @@ template <typename T>
 class SVfitLegLikelihoodBase
 {
  public:
-  SVfitLegLikelihoodBase(const edm::ParameterSet& cfg) 
+  SVfitLegLikelihoodBase(const edm::ParameterSet& cfg)
   {
     pluginType_ = cfg.getParameter<std::string>("pluginType");
   }
@@ -48,11 +48,11 @@ class SVfitLegLikelihoodBase
 
   virtual bool isFittedParameter(int legIndex, int parIndex) const
   {
-    if      ( (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1thetaRest) ||
-	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2thetaRest) ) 
+    if ( (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1thetaRest) ||
+	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2thetaRest) )
       return true;
     else if ( (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1nuInvMass) ||
-	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2nuInvMass) ) 
+	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2nuInvMass) )
       return !SVfit_namespace::isMasslessNuSystem<T>();
     else
       return false;

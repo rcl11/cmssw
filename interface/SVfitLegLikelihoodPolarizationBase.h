@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitLegLikelihoodPolarizationBase.h,v 1.3 2010/09/15 07:41:23 veelken Exp $
+ * $Id: SVfitLegLikelihoodPolarizationBase.h,v 1.4 2010/09/21 08:56:31 veelken Exp $
  *
  */
 
@@ -30,7 +30,7 @@ template <typename T>
 class SVfitLegLikelihoodPolarizationBase : public SVfitLegLikelihoodBase<T>
 {
  public:
-  SVfitLegLikelihoodPolarizationBase(const edm::ParameterSet& cfg) 
+  SVfitLegLikelihoodPolarizationBase(const edm::ParameterSet& cfg)
     : SVfitLegLikelihoodBase<T>(cfg)
   {
     usePolarization_ = cfg.getParameter<bool>("usePolarization");
@@ -57,8 +57,8 @@ class SVfitLegLikelihoodPolarizationBase : public SVfitLegLikelihoodBase<T>
       if ( tauLeptonPolarization != 0. ) {
 	return negLogLikelihoodPolarized(leg, solution, tauLeptonPolarization);
       } else {
-	edm::LogWarning ("SVfitLegLikelihoodPolarizationBase::operator()") 
-	  << " Unknown polarization of tau lepton" 
+	edm::LogWarning ("SVfitLegLikelihoodPolarizationBase::operator()")
+	  << " Unknown polarization of tau lepton"
 	  << " --> returning log-likelihood value for unpolarized case !!";
 	return negLogLikelihoodUnpolarized(leg, solution);
       }
@@ -67,7 +67,7 @@ class SVfitLegLikelihoodPolarizationBase : public SVfitLegLikelihoodBase<T>
     }
   }
  protected:
-  double negLogLikelihoodUnpolarized(const T& leg, const SVfitLegSolution& solution) const 
+  double negLogLikelihoodUnpolarized(const T& leg, const SVfitLegSolution& solution) const
   {
     return 0.5*(negLogLikelihoodPolarized(leg, solution, +1.) +  negLogLikelihoodPolarized(leg, solution, -1.));
   }
