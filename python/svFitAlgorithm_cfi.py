@@ -62,10 +62,10 @@ svFitLikelihoodMEt = cms.PSet(
     # Always fit
     firstFitIteration = cms.uint32(0),
     resolution = cms.PSet(
-        parSigma = cms.string("2.6 + 0.0383*x"),
-        parBias = cms.string("1.45"),
-        perpSigma = cms.string("2.1 + 0.0370*x"),
-        perpBias = cms.string("-0.16"),
+        parSigma = cms.string("7.54*(1 - 0.00542*x)"),
+        parBias = cms.string("-0.96"),
+        perpSigma = cms.string("6.85*(1 - 0.00547*x)"),
+        perpBias = cms.string("0."),
     ),
     srcPFCandidates = cms.InputTag('particleFlow')
 )

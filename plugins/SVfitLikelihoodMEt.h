@@ -8,9 +8,9 @@
  * 
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitLikelihoodMEt.h,v 1.3 2010/09/02 16:39:23 veelken Exp $
+ * $Id: SVfitLikelihoodMEt.h,v 1.4 2010/09/13 12:46:48 veelken Exp $
  *
  */
 
@@ -36,6 +36,7 @@ class SVfitLikelihoodMEt : public SVfitDiTauLikelihoodBase<T1,T2>
   ~SVfitLikelihoodMEt();
 
   void beginEvent(const edm::Event&, const edm::EventSetup&);
+  void beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>&);
 
   bool isFittedParameter(int) const;
 
@@ -47,10 +48,14 @@ class SVfitLikelihoodMEt : public SVfitDiTauLikelihoodBase<T1,T2>
   TFormula* perpSigma_;
   TFormula* perpBias_;
 
+  double qX_;
+  double qY_;
+  double qT_;
+
   edm::InputTag srcPFCandidates_;
   edm::Handle<reco::PFCandidateCollection> pfCandidates_;
 
-  static const int verbosity_ = 0;
+  static const int verbosity_ = 1;
 };
 
 #endif

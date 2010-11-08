@@ -51,6 +51,14 @@ void SVfitLikelihoodMEt<T1,T2>::beginEvent(const edm::Event& evt, const edm::Eve
 }
 
 template <typename T1, typename T2>
+void SVfitLikelihoodMEt<T1,T2>::beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau)
+{
+  qX_ = diTau.leg1()->px() + diTau.leg2()->px() + diTau.met()->px();
+  qY_ = diTau.leg1()->py() + diTau.leg2()->py() + diTau.met()->py();
+  qT_ = TMath::Sqrt(qX_*qX_ + qY_*qY_);
+}
+
+template <typename T1, typename T2>
 bool SVfitLikelihoodMEt<T1,T2>::isFittedParameter(int index) const
 {
   if      ( index == SVfit_namespace::kLeg1thetaRest ) return true;
@@ -74,28 +82,27 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
     std::cout << " sumEt = " << diTau.met()->sumEt() << std::endl;
   }
 
+  double parSigma = parSigma_->Eval(qT_);
+  double parBias = parBias_->Eval(qT_);
+  if ( verbosity_ ) std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
+
+  double perpSigma = perpSigma_->Eval(qT_);
+  double perpBias = perpBias_->Eval(qT_);
+  if ( verbosity_ ) std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
+
+  double projCosPhi,  projSinPhi;
+  if ( qT_ > 0. ) {
+    projCosPhi = (qX_/qT_);
+    projSinPhi = (qY_/qT_);
+  } else {
 //--- make unit vector bisecting tau lepton "legs"
 //    and project difference between "true" generated and reconstructed MET
 //    in direction parallel and perpendicular to that vector
-  TVector2 diTauDirection = getDiTauBisectorDirection(diTau.leg1()->p4(), diTau.leg2()->p4());
-
-  double dummy, metSumP_par, metSumP_perp;
-  computeMEtProjection(*pfCandidates_, diTauDirection, dummy, metSumP_par, metSumP_perp);
-  if ( verbosity_ ) {
-    std::cout << " metSumP_par = " << metSumP_par << std::endl;
-    std::cout << " metSumP_perp = " << metSumP_perp << std::endl;
+    TVector2 diTauDirection = getDiTauBisectorDirection(diTau.leg1()->p4(), diTau.leg2()->p4());
+    
+    projCosPhi = diTauDirection.X();
+    projSinPhi = diTauDirection.Y();
   }
-
-  double parSigma = parSigma_->Eval(metSumP_par);
-  double parBias = parBias_->Eval(metSumP_par);
-  if ( verbosity_ ) std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
-
-  double perpSigma = perpSigma_->Eval(metSumP_perp);
-  double perpBias = perpBias_->Eval(metSumP_perp);
-  if ( verbosity_ ) std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
-
-  double projCosPhi = diTauDirection.X();
-  double projSinPhi = diTauDirection.Y();
 
   double metPx = diTau.met()->px();
   double metPy = diTau.met()->py();
@@ -118,8 +125,8 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
     std::cout << " fittedMET_perp = " << fittedMET_perp << std::endl;
   }
 
-  double parResidual = recoMET_par - fittedMET_par - parBias;
-  double perpResidual = recoMET_perp - fittedMET_perp - perpBias;
+  double parResidual = (recoMET_par - fittedMET_par) - parBias;
+  double perpResidual = (recoMET_perp - fittedMET_perp) - perpBias;
   if ( verbosity_ ) {
     std::cout << " parResidual = " << parResidual << std::endl;
     std::cout << " perpResidual = " << perpResidual << std::endl;
