@@ -18,10 +18,10 @@ SVfitLegLikelihoodBase<T>* createLikelihoodPlugin(const edm::ParameterSet& cfg)
 
   typedef edmplugin::PluginFactory<SVfitLegLikelihoodBase<T>* (const edm::ParameterSet&)> SVfitLegLikelihoodPluginFactory;
   SVfitLegLikelihoodPluginFactory* pluginFactory = SVfitLegLikelihoodPluginFactory::get();
-  
+
 //--- print error message in case plugin of specified type cannot be created
   if ( !pluginFactory->tryToCreate(pluginType, cfg) ) {
-    edm::LogError ("createLikelihoodPlugin") 
+    edm::LogError ("createLikelihoodPlugin")
       << "Failed to create plugin of type = " << pluginType << " !!";
     std::cout << " category = " << pluginFactory->category() << std::endl;
     std::cout << " available plugins = { ";
@@ -106,26 +106,27 @@ bool SVfitLikelihoodDiTauTrackInfo<T1,T2>::isFittedParameter(int index) const
 
   if      ( index == SVfit_namespace::kPrimaryVertexShiftX      ||
 	    index == SVfit_namespace::kPrimaryVertexShiftY      ||
-	    index == SVfit_namespace::kPrimaryVertexShiftZ      ) 
+	    index == SVfit_namespace::kPrimaryVertexShiftZ      )
     return (isLeg1TrackInfo || isLeg2TrackInfo);
-  else if ( index == SVfit_namespace::kLeg1thetaRest            || 
+  else if ( index == SVfit_namespace::kLeg1thetaRest            ||
             index == SVfit_namespace::kLeg1phiLab               ||
             index == SVfit_namespace::kLeg1sqrtDecayDistanceLab ||
             index == SVfit_namespace::kLeg1nuInvMass            ||
 	    index == SVfit_namespace::kLeg1thetaVMrho           ||
 	    index == SVfit_namespace::kLeg1thetaVMa1            ||
 	    index == SVfit_namespace::kLeg1thetaVMa1r           ||
-	    index == SVfit_namespace::kLeg1phiVMa1r             ) 
+	    index == SVfit_namespace::kLeg1phiVMa1r             )
     return leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, index);
-  else if ( index == SVfit_namespace::kLeg2thetaRest            || 
+  else if ( index == SVfit_namespace::kLeg2thetaRest            ||
             index == SVfit_namespace::kLeg2phiLab               ||
             index == SVfit_namespace::kLeg2sqrtDecayDistanceLab ||
             index == SVfit_namespace::kLeg2nuInvMass            ||
 	    index == SVfit_namespace::kLeg2thetaVMrho           ||
 	    index == SVfit_namespace::kLeg2thetaVMa1            ||
 	    index == SVfit_namespace::kLeg2thetaVMa1r           ||
-	    index == SVfit_namespace::kLeg2phiVMa1r             ) 
-    return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
+	    index == SVfit_namespace::kLeg2phiVMa1r             )
+    //return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
+    return false;
   else return false;
 }
 
@@ -145,8 +146,8 @@ double logExponentialDecay(double tauFlightPath, double p)
 //    NOTE: the probability for a particle of lifetime c*tau and momentum p
 //          to decay after a distance x0 is taken from the PDG:
 //          K. Nakamura et al. (Particle Data Group), J. Phys. G 37, 075021 (2010);
-//          formula 38.14, differentiated by d/dx0 in order to get the probability 
-//          for the tau lepton to decay **at** distance x0 
+//          formula 38.14, differentiated by d/dx0 in order to get the probability
+//          for the tau lepton to decay **at** distance x0
 //         (rather than the probability to decay at distance x0 or greater)
 //
   double a = (p/tauLeptonMass)*cTauLifetime;
@@ -155,37 +156,38 @@ double logExponentialDecay(double tauFlightPath, double p)
 }
 
 template <typename T1, typename T2>
-double SVfitLikelihoodDiTauTrackInfo<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau, 
+double SVfitLikelihoodDiTauTrackInfo<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau,
 							 const SVfitDiTauSolution& solution) const
 {
-  //std::cout << "<SVfitLikelihoodDiTauTrackInfo::operator()>:" << std::endl;
+  std::cout << "<SVfitLikelihoodDiTauTrackInfo::operator()>:" << std::endl;
 
-//--- compute negative log-likelihood for shift 
+//--- compute negative log-likelihood for shift
 //    of primary event (tau lepton production) vertex position
 //    to be compatible with estimated covariance matrix,
 //    determined by vertex refit
-  double negLogLikelihood = -logGaussianNd(solution.eventVertexShiftSVrefitted(), solution.eventVertexErrSVrefitted());
-  //std::cout << " eventVertex: -log(likelihood) = " << negLogLikelihood << std::endl;
+  double negLogLikelihood = 0;
+  negLogLikelihood += -logGaussianNd(solution.eventVertexShiftSVrefitted(), solution.eventVertexErrSVrefitted());
+  std::cout << " eventVertex: -log(likelihood) = " << negLogLikelihood << std::endl;
 
 //--- compute negative log-likelihoods for tracks
-//    of the two tau lepton decay "legs" to be compatible 
+//    of the two tau lepton decay "legs" to be compatible
 //    with secondary (tau lepton decay) vertex positions
   AlgebraicVector3 pvPosition = solution.eventVertexPosSVrefitted() - solution.eventVertexShiftSVrefitted();
   dynamic_cast<SVfitLegLikelihoodTrackInfo<T1>*>(leg1Likelihood_)->setEventVertexPos(pvPosition);
   negLogLikelihood += (*leg1Likelihood_)(*diTau.leg1(), solution.leg1());
   dynamic_cast<SVfitLegLikelihoodTrackInfo<T2>*>(leg2Likelihood_)->setEventVertexPos(pvPosition);
   negLogLikelihood += (*leg2Likelihood_)(*diTau.leg2(), solution.leg2());
-  
+
   if ( useLifetimeConstraint_ ) {
     negLogLikelihood -= logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P());
-    //std::cout << " leg1DecayDistance: -log(likelihood) = " 
-    //	        << -logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P()) << std::endl;
+    std::cout << " leg1DecayDistance: " << solution.leg1DecayDistance() << " -log(likelihood) = "
+    	        << -logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P()) << std::endl;
     negLogLikelihood -= logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P());
-    //std::cout << " leg2DecayDistance: -log(likelihood) = " 
-    //	        << -logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P()) << std::endl;
+    std::cout << " leg2DecayDistance: " << solution.leg2DecayDistance() << " -log(likelihood) = "
+    	        << -logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P()) << std::endl;
   }
 
-  //std::cout << "--> -log(likelihood) = " << negLogLikelihood << std::endl;
+  std::cout << "--> -log(likelihood) = " << negLogLikelihood << std::endl;
 
   return negLogLikelihood;
 }

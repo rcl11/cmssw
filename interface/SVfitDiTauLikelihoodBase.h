@@ -5,12 +5,12 @@
  *
  * Abstract base-class for plugins computing likelihood for tau lepton pair;
  * used by SVfit algorithm
- * 
+ *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.9 $
+ * \version $Revision: 1.10 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.9 2010/09/21 08:57:06 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.10 2010/10/16 14:04:21 veelken Exp $
  *
  */
 
@@ -32,6 +32,7 @@ class SVfitDiTauLikelihoodBase
   {
     pluginType_ = cfg.getParameter<std::string>("pluginType");
     pluginName_ = cfg.getParameter<std::string>("pluginName");
+    firstFit_ = cfg.getParameter<unsigned int>("firstFitIteration");
   }
   virtual ~SVfitDiTauLikelihoodBase() {}
 
@@ -47,20 +48,29 @@ class SVfitDiTauLikelihoodBase
     stream << " pluginType = " << pluginType_ << std::endl;
   }
 
-  virtual bool isFittedParameter(int) const
-  {
+  virtual bool isFittedParameter(int parNo) const {
     return false;
   }
 
-  virtual bool supportsPolarization() const
-  {
+  virtual bool supportsPolarization() const {
     return false;
+  }
+
+  // Check if this likelihood should be used in this fit iteration.
+  bool isFitted(unsigned int fitIter) const {
+    return fitIter >= firstFit_;
+  }
+
+  // Get the first fit iteration this is valid
+  unsigned int firstFit() const {
+    return firstFit_;
   }
 
   virtual double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const = 0;
  protected:
   std::string pluginType_;
   std::string pluginName_;
+  unsigned int firstFit_;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
