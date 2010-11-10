@@ -62,9 +62,9 @@ template <typename T1, typename T2>
 bool SVfitLikelihoodMEt<T1,T2>::isFittedParameter(int index) const
 {
   if      ( index == SVfit_namespace::kLeg1thetaRest ) return true;
-  //else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
+  else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
   else if ( index == SVfit_namespace::kLeg2thetaRest ) return true;
-  //else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
+  else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
   else return false;
 }
 
@@ -99,7 +99,7 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 //    and project difference between "true" generated and reconstructed MET
 //    in direction parallel and perpendicular to that vector
     TVector2 diTauDirection = getDiTauBisectorDirection(diTau.leg1()->p4(), diTau.leg2()->p4());
-    
+
     projCosPhi = diTauDirection.X();
     projSinPhi = diTauDirection.Y();
   }
