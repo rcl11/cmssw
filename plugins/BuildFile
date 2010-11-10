@@ -9,9 +9,9 @@
   <use name=FWCore/ParameterSet>
   <use name=FWCore/PluginManager>
   <use name=FWCore/Utilities>
-  <use name=TrackingTools/Records>
   <use name=TrackingTools/TrajectoryState> 
   <use name=TrackingTools/TransientTrack>
+  <use name=TrackingTools/Records>
   <use name=AnalysisDataFormats/TauAnalysis>
   <use name=TauAnalysis/CandidateTools>
   <use name=lhapdf>
