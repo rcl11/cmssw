@@ -5,12 +5,12 @@
  *
  * Plugin for computing likelihood for neutrinos produced in tau lepton decays
  * to match missing transverse momentum reconstructed in the event
- * 
+ *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.5 $
+ * \version $Revision: 1.6 $
  *
- * $Id: SVfitLikelihoodMEt.h,v 1.5 2010/11/08 14:50:27 veelken Exp $
+ * $Id: SVfitLikelihoodMEt.h,v 1.6 2010/11/10 08:29:55 veelken Exp $
  *
  */
 
