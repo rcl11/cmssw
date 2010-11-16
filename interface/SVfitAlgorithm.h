@@ -14,9 +14,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.22 $
+ * \version $Revision: 1.23 $
  *
- * $Id: SVfitAlgorithm.h,v 1.22 2010/11/10 17:08:23 friis Exp $
+ * $Id: SVfitAlgorithm.h,v 1.23 2010/11/16 09:30:54 veelken Exp $
  *
  */
 
@@ -309,11 +309,6 @@ class SVfitAlgorithm
       if ( TMath::Abs(leg1phiLab) > TMath::Pi() ) penalty += SVfit_namespace::square(TMath::Abs(leg1phiLab) - TMath::Pi());
       double leg2phiLab = x[SVfit_namespace::kLeg2phiLab];
       if ( TMath::Abs(leg2phiLab) > TMath::Pi() ) penalty += SVfit_namespace::square(TMath::Abs(leg2phiLab) - TMath::Pi());
-      
-//--- add penalty term to disfavor large masses
-//   (sometimes, the fit drifts-off very slowly into high mass region,
-//    with almost no change in value of likelihood-function)
-      penalty += 0.10*currentDiTauSolution_.p4().mass();
 
       return negLogLikelihood + penalty;
     }
