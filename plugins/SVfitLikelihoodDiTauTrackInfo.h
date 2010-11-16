@@ -10,9 +10,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitLikelihoodDiTauTrackInfo.h,v 1.2 2010/09/24 10:14:57 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauTrackInfo.h,v 1.3 2010/11/10 17:08:24 friis Exp $
  *
  */
 
@@ -48,6 +48,8 @@ template <typename T1, typename T2>
   SVfitLegLikelihoodBase<T1>* leg1Likelihood_;
   SVfitLegLikelihoodBase<T2>* leg2Likelihood_;
   bool useLifetimeConstraint_;
+
+  static const int verbosity_ = 0;
 };
 
 #endif

@@ -91,23 +91,23 @@ void SVfitLikelihoodDiTauKinematics<T1,T2>::print(std::ostream& stream) const
 template <typename T1, typename T2>
 bool SVfitLikelihoodDiTauKinematics<T1,T2>::isFittedParameter(int index) const
 {
-  if      ( index == SVfit_namespace::kLeg1thetaRest            || 
-            index == SVfit_namespace::kLeg1phiLab               ||
-            index == SVfit_namespace::kLeg1sqrtDecayDistanceLab ||
-            index == SVfit_namespace::kLeg1nuInvMass            ||
-	    index == SVfit_namespace::kLeg1thetaVMrho           ||
-	    index == SVfit_namespace::kLeg1thetaVMa1            ||
-	    index == SVfit_namespace::kLeg1thetaVMa1r           ||
-	    index == SVfit_namespace::kLeg1phiVMa1r             ) 
+  if      ( index == SVfit_namespace::kLeg1thetaRest        || 
+            index == SVfit_namespace::kLeg1phiLab           ||
+            index == SVfit_namespace::kLeg1decayDistanceLab ||
+            index == SVfit_namespace::kLeg1nuInvMass        ||
+	    index == SVfit_namespace::kLeg1thetaVMrho       ||
+	    index == SVfit_namespace::kLeg1thetaVMa1        ||
+	    index == SVfit_namespace::kLeg1thetaVMa1r       ||
+	    index == SVfit_namespace::kLeg1phiVMa1r         ) 
     return leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, index);
-  else if ( index == SVfit_namespace::kLeg2thetaRest            || 
-            index == SVfit_namespace::kLeg2phiLab               ||
-            index == SVfit_namespace::kLeg2sqrtDecayDistanceLab ||
-            index == SVfit_namespace::kLeg2nuInvMass            ||
-	    index == SVfit_namespace::kLeg2thetaVMrho           ||
-	    index == SVfit_namespace::kLeg2thetaVMa1            ||
-	    index == SVfit_namespace::kLeg2thetaVMa1r           ||
-	    index == SVfit_namespace::kLeg2phiVMa1r             ) 
+  else if ( index == SVfit_namespace::kLeg2thetaRest        || 
+            index == SVfit_namespace::kLeg2phiLab           ||
+            index == SVfit_namespace::kLeg2decayDistanceLab ||
+            index == SVfit_namespace::kLeg2nuInvMass        ||
+	    index == SVfit_namespace::kLeg2thetaVMrho       ||
+	    index == SVfit_namespace::kLeg2thetaVMa1        ||
+	    index == SVfit_namespace::kLeg2thetaVMa1r       ||
+	    index == SVfit_namespace::kLeg2phiVMa1r         ) 
     return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
   else return false;
 }

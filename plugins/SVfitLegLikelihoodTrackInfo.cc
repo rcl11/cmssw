@@ -7,7 +7,6 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 #include "DataFormats/CLHEP/interface/AlgebraicObjects.h"
 
-
 using namespace SVfit_namespace;
 
 unsigned defaultMinNumHits = 5;
@@ -82,14 +81,13 @@ void SVfitLegLikelihoodTrackInfo<T>::beginCandidate(const T& leg)
 }
 
 template <typename T>
-bool SVfitLegLikelihoodTrackInfo<T>::isFittedParameter(
-    int legIndex, int parIndex) const
+bool SVfitLegLikelihoodTrackInfo<T>::isFittedParameter(int legIndex, int parIndex) const
 {
-  if ( selectedTracks_.size() > 0 && (
-         //(legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1phiLab              ) ||
-          (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1sqrtDecayDistanceLab) ||
-          //(legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2phiLab              ) ||
-          (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2sqrtDecayDistanceLab)) )
+  if ( selectedTracks_.size() > 0 && 
+       (//(legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1phiLab              ) ||
+	(legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1decayDistanceLab) ||
+	//(legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2phiLab              ) ||
+	(legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2decayDistanceLab)) )
     return true;
   else
     return SVfitLegLikelihoodBase<T>::isFittedParameter(legIndex, parIndex);
@@ -115,7 +113,8 @@ double SVfitLegLikelihoodTrackInfo<T>::operator()(const T& leg, const SVfitLegSo
   //    to be compatible with the hypothetic secondary vertex of the tau lepton decay
   //   (distance of closest approach of track to secondary vertex divided by estimated uncertainties of track extrapolation)
 
-  std::cout << "<SVfitLegLikelihoodTrackInfo::operator()>:" << std::endl;
+  if ( verbosity_ ) 
+    std::cout << "<SVfitLegLikelihoodTrackInfo::operator()>:" << std::endl;
 
   double logLikelihood = 0.;
 
@@ -132,7 +131,8 @@ double SVfitLegLikelihoodTrackInfo<T>::operator()(const T& leg, const SVfitLegSo
     //     primaryVertex + trackVector*scalarProduct(trackVector, secondaryVertex)/(|trackVector|*|secondaryVertex|)
     //
     if ( isNewCandidate_ ) {
-      std::cout << "--> computing linear approximation of helix track extrapolation..." << std::endl;
+      if ( verbosity_ ) 
+	std::cout << "--> computing linear approximation of helix track extrapolation..." << std::endl;
 
       AlgebraicVector3 direction;
       direction(0) = leg.px()/leg.p();
@@ -153,15 +153,18 @@ double SVfitLegLikelihoodTrackInfo<T>::operator()(const T& leg, const SVfitLegSo
       isNewCandidate_ = false;
     }
 
-    std::cout << "--> computing distance between extrapolated track and (hypothetic) tau decay vertex..." << std::endl;
+    if ( verbosity_ ) 
+      std::cout << "--> computing distance between extrapolated track and (hypothetic) tau decay vertex..." << std::endl;
     for ( std::vector<SVfit::track::TrackExtrapolation>::const_iterator selectedTrackInfo = selectedTrackInfo_.begin();
          selectedTrackInfo != selectedTrackInfo_.end(); ++selectedTrackInfo ) {
 
-      std::cout << "--> SV is: " << solution.decayVertexPos() << std::endl;
+      if ( verbosity_ ) 
+	std::cout << "--> SV is: " << solution.decayVertexPos() << std::endl;
       logLikelihood += selectedTrackInfo->logLikelihood(solution.decayVertexPos());
     }
   } else {
-    //std::cout << "--> computing distance to (hypothetic) tau decay vertex using full helix extrapolation of track..." << std::endl;
+    if ( verbosity_ ) 
+      std::cout << "--> computing distance to (hypothetic) tau decay vertex using full helix extrapolation of track..." << std::endl;
     for ( std::vector<reco::TransientTrack>::const_iterator selectedTrack = selectedTracks_.begin();
          selectedTrack != selectedTracks_.end(); ++selectedTrack ) {
       SVfit::track::TrackExtrapolation selectedTrackInfo(*selectedTrack, solution.decayVertexPos());
@@ -172,7 +175,8 @@ double SVfitLegLikelihoodTrackInfo<T>::operator()(const T& leg, const SVfitLegSo
     }
   }
 
-  std::cout << "--> -log(likelihood) = " << -logLikelihood << std::endl;
+  if ( verbosity_ ) 
+    std::cout << "--> -log(likelihood) = " << -logLikelihood << std::endl;
 
   return -logLikelihood;
 }

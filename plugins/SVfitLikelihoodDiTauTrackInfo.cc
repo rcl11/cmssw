@@ -101,32 +101,31 @@ bool SVfitLikelihoodDiTauTrackInfo<T1,T2>::isFittedParameter(int index) const
 //--- check if tau decay leg1, leg2 has tracks passing the track selection;
 //    do not include primary event (tau production) vertex position in fit parameters
 //    in case none of the tau decay "legs" add track constraints
-  bool isLeg1TrackInfo = leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, SVfit_namespace::kLeg1sqrtDecayDistanceLab);
-  bool isLeg2TrackInfo = leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, SVfit_namespace::kLeg2sqrtDecayDistanceLab);
+  bool isLeg1TrackInfo = leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, SVfit_namespace::kLeg1decayDistanceLab);
+  bool isLeg2TrackInfo = leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, SVfit_namespace::kLeg2decayDistanceLab);
 
-  if      ( index == SVfit_namespace::kPrimaryVertexShiftX      ||
-	    index == SVfit_namespace::kPrimaryVertexShiftY      ||
-	    index == SVfit_namespace::kPrimaryVertexShiftZ      )
+  if      ( index == SVfit_namespace::kPrimaryVertexShiftX  ||
+	    index == SVfit_namespace::kPrimaryVertexShiftY  ||
+	    index == SVfit_namespace::kPrimaryVertexShiftZ  )
     return (isLeg1TrackInfo || isLeg2TrackInfo);
-  else if ( index == SVfit_namespace::kLeg1thetaRest            ||
-            index == SVfit_namespace::kLeg1phiLab               ||
-            index == SVfit_namespace::kLeg1sqrtDecayDistanceLab ||
-            index == SVfit_namespace::kLeg1nuInvMass            ||
-	    index == SVfit_namespace::kLeg1thetaVMrho           ||
-	    index == SVfit_namespace::kLeg1thetaVMa1            ||
-	    index == SVfit_namespace::kLeg1thetaVMa1r           ||
-	    index == SVfit_namespace::kLeg1phiVMa1r             )
+  else if ( index == SVfit_namespace::kLeg1thetaRest        ||
+            index == SVfit_namespace::kLeg1phiLab           ||
+            index == SVfit_namespace::kLeg1decayDistanceLab ||
+            index == SVfit_namespace::kLeg1nuInvMass        ||
+	    index == SVfit_namespace::kLeg1thetaVMrho       ||
+	    index == SVfit_namespace::kLeg1thetaVMa1        ||
+	    index == SVfit_namespace::kLeg1thetaVMa1r       ||
+	    index == SVfit_namespace::kLeg1phiVMa1r         )
     return leg1Likelihood_->isFittedParameter(SVfit_namespace::kLeg1, index);
-  else if ( index == SVfit_namespace::kLeg2thetaRest            ||
-            index == SVfit_namespace::kLeg2phiLab               ||
-            index == SVfit_namespace::kLeg2sqrtDecayDistanceLab ||
-            index == SVfit_namespace::kLeg2nuInvMass            ||
-	    index == SVfit_namespace::kLeg2thetaVMrho           ||
-	    index == SVfit_namespace::kLeg2thetaVMa1            ||
-	    index == SVfit_namespace::kLeg2thetaVMa1r           ||
-	    index == SVfit_namespace::kLeg2phiVMa1r             )
-    //return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
-    return false;
+  else if ( index == SVfit_namespace::kLeg2thetaRest        ||
+            index == SVfit_namespace::kLeg2phiLab           ||
+            index == SVfit_namespace::kLeg2decayDistanceLab ||
+            index == SVfit_namespace::kLeg2nuInvMass        ||
+	    index == SVfit_namespace::kLeg2thetaVMrho       ||
+	    index == SVfit_namespace::kLeg2thetaVMa1        ||
+	    index == SVfit_namespace::kLeg2thetaVMa1r       ||
+	    index == SVfit_namespace::kLeg2phiVMa1r         )
+    return leg2Likelihood_->isFittedParameter(SVfit_namespace::kLeg2, index);
   else return false;
 }
 
@@ -157,9 +156,10 @@ double logExponentialDecay(double tauFlightPath, double p)
 
 template <typename T1, typename T2>
 double SVfitLikelihoodDiTauTrackInfo<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau,
-							 const SVfitDiTauSolution& solution) const
+							const SVfitDiTauSolution& solution) const
 {
-  std::cout << "<SVfitLikelihoodDiTauTrackInfo::operator()>:" << std::endl;
+  if ( verbosity_ ) 
+    std::cout << "<SVfitLikelihoodDiTauTrackInfo::operator()>:" << std::endl;
 
 //--- compute negative log-likelihood for shift
 //    of primary event (tau lepton production) vertex position
@@ -167,7 +167,8 @@ double SVfitLikelihoodDiTauTrackInfo<T1,T2>::operator()(const CompositePtrCandid
 //    determined by vertex refit
   double negLogLikelihood = 0;
   negLogLikelihood += -logGaussianNd(solution.eventVertexShiftSVrefitted(), solution.eventVertexErrSVrefitted());
-  std::cout << " eventVertex: -log(likelihood) = " << negLogLikelihood << std::endl;
+  if ( verbosity_ ) 
+    std::cout << " eventVertex: -log(likelihood) = " << negLogLikelihood << std::endl;
 
 //--- compute negative log-likelihoods for tracks
 //    of the two tau lepton decay "legs" to be compatible
@@ -180,15 +181,18 @@ double SVfitLikelihoodDiTauTrackInfo<T1,T2>::operator()(const CompositePtrCandid
 
   if ( useLifetimeConstraint_ ) {
     negLogLikelihood -= logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P());
-    std::cout << " leg1DecayDistance: " << solution.leg1DecayDistance() << " -log(likelihood) = "
-    	        << -logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P()) << std::endl;
+    if ( verbosity_ ) 
+      std::cout << " leg1DecayDistance = " << solution.leg1DecayDistance() << ": -log(likelihood) = "
+		<< -logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P()) << std::endl;
     negLogLikelihood -= logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P());
-    std::cout << " leg2DecayDistance: " << solution.leg2DecayDistance() << " -log(likelihood) = "
-    	        << -logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P()) << std::endl;
+    if ( verbosity_ ) 
+      std::cout << " leg2DecayDistance = " << solution.leg2DecayDistance() << ": -log(likelihood) = "
+		<< -logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P()) << std::endl;
   }
-
-  std::cout << "--> -log(likelihood) = " << negLogLikelihood << std::endl;
-
+  
+  if ( verbosity_ ) 
+    std::cout << "--> -log(likelihood) = " << negLogLikelihood << std::endl;
+  
   return negLogLikelihood;
 }
 

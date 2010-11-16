@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitLegLikelihoodTrackInfo.h,v 1.2 2010/09/24 10:18:13 veelken Exp $
+ * $Id: SVfitLegLikelihoodTrackInfo.h,v 1.3 2010/11/10 17:08:23 friis Exp $
  *
  */
 
@@ -62,6 +62,8 @@ class SVfitLegLikelihoodTrackInfo : public SVfitLegLikelihoodBase<T>
   AlgebraicVector3 pvPosition_;
   mutable std::vector<SVfit::track::TrackExtrapolation> selectedTrackInfo_;
   mutable bool isNewCandidate_;
+
+  static const int verbosity_ = 0;
 };
 
 #endif
