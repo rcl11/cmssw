@@ -13,6 +13,9 @@
 
 using namespace SVfit_namespace;
 
+const double parSigmaMin = 5.0;
+const double perpSigmaMin = 5.0;
+
 template <typename T1, typename T2>
 SVfitLikelihoodMEt<T1,T2>::SVfitLikelihoodMEt(const edm::ParameterSet& cfg)
   : SVfitDiTauLikelihoodBase<T1,T2>(cfg),
@@ -83,10 +86,12 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
   }
 
   double parSigma = parSigma_->Eval(qT_);
+  if ( parSigma < parSigmaMin ) parSigma = parSigmaMin;
   double parBias = parBias_->Eval(qT_);
   if ( verbosity_ ) std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
-
+  
   double perpSigma = perpSigma_->Eval(qT_);
+  if ( perpSigma < perpSigmaMin ) perpSigma = perpSigmaMin;
   double perpBias = perpBias_->Eval(qT_);
   if ( verbosity_ ) std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
 
