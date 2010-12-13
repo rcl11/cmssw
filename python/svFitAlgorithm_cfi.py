@@ -94,6 +94,35 @@ svFitLikelihoodDiTauPtBalance = cms.PSet(
     firstFitIteration = cms.uint32(0),
 )
 
+svFitLikelihoodDiTauPtBalance2 = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodDiTauPtBalance2"),
+    pluginType = cms.string("SVfitLikelihoodDiTauPtBalance2"),
+    # Always fit
+    firstFitIteration = cms.uint32(0),
+    # Leptonic leg
+    leg1 = cms.PSet(
+        smear = cms.string("4.4 + 0.036*[0]"),
+        gaussFrac = cms.string("0.93"),
+        turnOnWidth = cms.string(
+            "0.19 + (-0.0016*[0]) + (5.27e-6*[0]*[0]) + (-6.0e-9*[0]*[0]*[0])"),
+        turnOnThreshold = cms.string("1.355 + 0.379*[0]"),
+        gammaShape = cms.string("2"),
+        gammaScale = cms.string("[0]/4"),
+        overallNorm = cms.string("2"),
+    ),
+    # Tau leg
+    leg2 = cms.PSet(
+        smear = cms.string("6.3 + 0.019*[0]"),
+        gaussFrac = cms.string("0.93"),
+        turnOnWidth = cms.string(
+            "0.23 + (-0.0022*[0]) + (7.91e-6*[0]*[0]) + (-9.4e-9*[0]*[0]*[0])"),
+        turnOnThreshold = cms.string("2.2 + 0.365*[0]"),
+        gammaShape = cms.string("2"),
+        gammaScale = cms.string("[0]/4"),
+        overallNorm = cms.string("2"),
+    ),
+)
+
 svFitLikelihoodDiTauPt = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauPt"),
     pluginType = cms.string("SVfitLikelihoodDiTauPt"),
