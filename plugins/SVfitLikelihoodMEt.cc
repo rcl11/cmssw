@@ -152,6 +152,8 @@ typedef SVfitLikelihoodMEt<pat::Electron, pat::Tau> SVfitLikelihoodMEtElecTau;
 typedef SVfitLikelihoodMEt<pat::Muon, pat::Tau> SVfitLikelihoodMEtMuTau;
 typedef SVfitLikelihoodMEt<pat::Tau, pat::Tau> SVfitLikelihoodMEtDiTau;
 typedef SVfitLikelihoodMEt<pat::Electron, pat::Muon> SVfitLikelihoodMEtElecMu;
+typedef SVfitLikelihoodMEt<pat::Electron, pat::Electron> SVfitLikelihoodMEtDiElec;
+typedef SVfitLikelihoodMEt<pat::Muon, pat::Muon> SVfitLikelihoodMEtDiMu;
 typedef SVfitLikelihoodMEt<reco::Candidate, reco::Candidate> SVfitLikelihoodMEtDiCandidate;
 
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -160,4 +162,6 @@ DEFINE_EDM_PLUGIN(SVfitElecTauPairLikelihoodBasePluginFactory, SVfitLikelihoodME
 DEFINE_EDM_PLUGIN(SVfitMuTauPairLikelihoodBasePluginFactory, SVfitLikelihoodMEtMuTau, "SVfitLikelihoodMEtMuTau");
 DEFINE_EDM_PLUGIN(SVfitDiTauPairLikelihoodBasePluginFactory, SVfitLikelihoodMEtDiTau, "SVfitLikelihoodMEtDiTau");
 DEFINE_EDM_PLUGIN(SVfitElecMuPairLikelihoodBasePluginFactory, SVfitLikelihoodMEtElecMu, "SVfitLikelihoodMEtElecMu");
+DEFINE_EDM_PLUGIN(SVfitDiElecPairLikelihoodBasePluginFactory, SVfitLikelihoodMEtDiElec, "SVfitLikelihoodMEtDiElec");
+DEFINE_EDM_PLUGIN(SVfitDiMuPairLikelihoodBasePluginFactory, SVfitLikelihoodMEtDiMu, "SVfitLikelihoodMEtDiMu");
 DEFINE_EDM_PLUGIN(SVfitDiCandidatePairLikelihoodBasePluginFactory, SVfitLikelihoodMEtDiCandidate, "SVfitLikelihoodMEtDiCandidate");
