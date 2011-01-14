@@ -232,6 +232,8 @@ typedef SVfitLikelihoodDiTauProd<pat::Electron, pat::Tau> SVfitLikelihoodElecTau
 typedef SVfitLikelihoodDiTauProd<pat::Muon, pat::Tau> SVfitLikelihoodMuTauPairProd;
 typedef SVfitLikelihoodDiTauProd<pat::Tau, pat::Tau> SVfitLikelihoodDiTauPairProd;
 typedef SVfitLikelihoodDiTauProd<pat::Electron, pat::Muon> SVfitLikelihoodElecMuPairProd;
+typedef SVfitLikelihoodDiTauProd<pat::Electron, pat::Electron> SVfitLikelihoodDiElecPairProd;
+typedef SVfitLikelihoodDiTauProd<pat::Muon, pat::Muon> SVfitLikelihoodDiMuPairProd;
 typedef SVfitLikelihoodDiTauProd<reco::Candidate, reco::Candidate> SVfitLikelihoodDiCandidatePairProd;
 
 #include "FWCore/Framework/interface/MakerMacros.h"
@@ -240,4 +242,6 @@ DEFINE_EDM_PLUGIN(SVfitElecTauPairLikelihoodBasePluginFactory, SVfitLikelihoodEl
 DEFINE_EDM_PLUGIN(SVfitMuTauPairLikelihoodBasePluginFactory, SVfitLikelihoodMuTauPairProd, "SVfitLikelihoodMuTauPairProd");
 DEFINE_EDM_PLUGIN(SVfitDiTauPairLikelihoodBasePluginFactory, SVfitLikelihoodDiTauPairProd, "SVfitLikelihoodDiTauPairProd");
 DEFINE_EDM_PLUGIN(SVfitElecMuPairLikelihoodBasePluginFactory, SVfitLikelihoodElecMuPairProd, "SVfitLikelihoodElecMuPairProd");
+DEFINE_EDM_PLUGIN(SVfitDiElecPairLikelihoodBasePluginFactory, SVfitLikelihoodDiElecPairProd, "SVfitLikelihoodDiElecPairProd");
+DEFINE_EDM_PLUGIN(SVfitDiMuPairLikelihoodBasePluginFactory, SVfitLikelihoodDiMuPairProd, "SVfitLikelihoodDiMuPairProd");
 DEFINE_EDM_PLUGIN(SVfitDiCandidatePairLikelihoodBasePluginFactory, SVfitLikelihoodDiCandidatePairProd, "SVfitLikelihoodDiCandidatePairProd");
