@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.10 $
+ * \version $Revision: 1.11 $
  *
- * $Id: SVfitDiTauLikelihoodBase.h,v 1.10 2010/10/16 14:04:21 veelken Exp $
+ * $Id: SVfitDiTauLikelihoodBase.h,v 1.11 2010/11/10 17:08:23 friis Exp $
  *
  */
 
@@ -30,6 +30,8 @@ class SVfitDiTauLikelihoodBase
  public:
   SVfitDiTauLikelihoodBase(const edm::ParameterSet& cfg)
   {
+    verbosity_ = cfg.exists("verbosity") ?
+      cfg.getParameter<int>("verbosity") : 0;
     pluginType_ = cfg.getParameter<std::string>("pluginType");
     pluginName_ = cfg.getParameter<std::string>("pluginName");
     firstFit_ = cfg.getParameter<unsigned int>("firstFitIteration");
@@ -71,6 +73,7 @@ class SVfitDiTauLikelihoodBase
   std::string pluginType_;
   std::string pluginName_;
   unsigned int firstFit_;
+  int verbosity_;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
