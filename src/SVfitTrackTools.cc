@@ -8,8 +8,7 @@ using namespace TMath;
 namespace SVfit { namespace track {
 
 GlobalPoint propagateLine(const GlobalPoint& origin,
-                           const GlobalVector& tangent,
-                           double pathLength) {
+    const GlobalVector& tangent, double pathLength) {
   return origin + tangent*pathLength;
 }
 
@@ -19,7 +18,7 @@ GlobalPoint propagateLine(const GlobalPoint& origin,
 // the cone vertex.
 double solveQuadraticForPathLength(double a, double b, double c, int& status) {
   // Check if solutions are real and finite.
-  if ( b*b - 4*a*c < 0 || c == 0 ) {
+  if ( b*b - 4*a*c < 0 || a == 0 ) {
     //std::cout << "imaginary solutions!" << std::endl;
     status = 0;
     return 0;
@@ -28,25 +27,26 @@ double solveQuadraticForPathLength(double a, double b, double c, int& status) {
   double firstSolution =  (-b + Sqrt(b*b - 4*a*c))/(2*a);
   double secondSolution =  (-b - Sqrt(b*b - 4*a*c))/(2*a);
   bool oppositeSignSolutions = ((firstSolution * secondSolution) < 0);
-//  std::cout << "first soln: " << firstSolution <<
-//      "second soln: " << secondSolution << std::endl;
+
+  //std::cout << "first soln: " << firstSolution <<
+    //"second soln: " << secondSolution << std::endl;
   // If one is negative, and one is positive, return the positive one.
   if (oppositeSignSolutions) {
     status = 1;
     double output = std::max(firstSolution, secondSolution);
-//    std::cout << "opp sign-returning: " << output << std::endl;
+    //    std::cout << "opp sign-returning: " << output << std::endl;
     return output;
   }
   // Check if the solutions are both negative, that's an error.
   if (firstSolution < 0) {
     status = 0;
-//    std::cout << "both negative!" << std::endl;
+    //    std::cout << "both negative!" << std::endl;
     return 0;
   }
   // The solutions are both positive.  Take the one that is closer to the origin
   status = 1;
   double output = std::min(firstSolution, secondSolution);
-//  std::cout << "returning: " << output << std::endl;
+  //  std::cout << "returning: " << output << std::endl;
   return output;
 }
 
