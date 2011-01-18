@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.6 $
+ * \version $Revision: 1.7 $
  *
- * $Id: SVfitLikelihoodMEt.h,v 1.6 2010/11/10 08:29:55 veelken Exp $
+ * $Id: SVfitLikelihoodMEt.h,v 1.7 2010/11/10 16:02:31 friis Exp $
  *
  */
 
@@ -52,10 +52,11 @@ class SVfitLikelihoodMEt : public SVfitDiTauLikelihoodBase<T1,T2>
   double qY_;
   double qT_;
 
+  // Whether or not to allow the phi variable to vary
+  bool varyPhi_;
+
   edm::InputTag srcPFCandidates_;
   edm::Handle<reco::PFCandidateCollection> pfCandidates_;
-
-  static const int verbosity_ = 0;
 };
 
 #endif

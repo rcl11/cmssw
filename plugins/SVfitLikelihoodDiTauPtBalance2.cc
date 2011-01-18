@@ -108,14 +108,14 @@ double SVfitLikelihoodDiTauPtBalance2<T1,T2>::operator()(const CompositePtrCandi
 //--- compute negative log-likelihood for two tau leptons
 //    to have transverse momenta leg1Pt, leg2Pt
 
-  if ( verbosity_ ) std::cout << "<SVfitLikelihoodDiTauPtBalance2::operator()>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<SVfitLikelihoodDiTauPtBalance2::operator()>:" << std::endl;
 
   double diTauMass = solution.p4().mass();
-  if ( verbosity_ ) std::cout << " diTauMass = " << diTauMass << std::endl;
+  if ( this->verbosity_ ) std::cout << " diTauMass = " << diTauMass << std::endl;
 
   double leg1Pt = solution.leg1().p4().pt();
   double leg2Pt = solution.leg2().p4().pt();
-  if ( verbosity_ ) {
+  if ( this->verbosity_ ) {
     std::cout << " leg1Pt = " << leg1Pt << std::endl;
     std::cout << " leg2Pt = " << leg2Pt << std::endl;
   }
@@ -123,8 +123,8 @@ double SVfitLikelihoodDiTauPtBalance2<T1,T2>::operator()(const CompositePtrCandi
   double leg1Prob = leg1PDF_.evaluate(leg1Pt, diTauMass);
   double leg2Prob = leg2PDF_.evaluate(leg2Pt, diTauMass);
 
-  if ( verbosity_ ) std::cout << "--> leg1prob = " << leg1Prob << std::endl;
-  if ( verbosity_ ) std::cout << "--> leg2prob = " << leg2Prob << std::endl;
+  if ( this->verbosity_ ) std::cout << "--> leg1prob = " << leg1Prob << std::endl;
+  if ( this->verbosity_ ) std::cout << "--> leg2prob = " << leg2Prob << std::endl;
 
   if ( !(leg1Prob > 0.) || !(leg2Prob > 0.) ) {
 //    edm::LogWarning ("SVfitLikelihoodDiTauPtBalance2::operator()")
@@ -134,7 +134,7 @@ double SVfitLikelihoodDiTauPtBalance2<T1,T2>::operator()(const CompositePtrCandi
   }
 
   double logLikelihood = TMath::Log(leg1Prob) + TMath::Log(leg2Prob);
-  if ( verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
+  if ( this->verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
 
   return -logLikelihood;
 }

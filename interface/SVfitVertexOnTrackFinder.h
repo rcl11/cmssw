@@ -26,16 +26,22 @@ class VertexOnTrackFinder {
                             double angleVisLabFrame);
 
     // Version with corrections applied.
+    // The direction object is updated to point a long the reconstructed tau
+    // direction. Note that this direction will still point in the intended
+    // direction even if the flight correction is 'backwards' and larger than
+    // the total flight distance of the tau.
     GlobalPoint decayVertex(const GlobalPoint& pv,
                             double angleVisLabFrame,
                             double phiCorrection,
-                            double flightCorrection);
+                            double flightCorrection,
+                            reco::Candidate::Vector *direction);
 
     // hate all these different types!
     GlobalPoint decayVertex(const AlgebraicVector3& pv,
                             double angleVisLabFrame,
                             double phiCorrection,
-                            double flightCorrection);
+                            double flightCorrection,
+                            reco::Candidate::Vector *direction);
 
     static void setEventSetup(const edm::EventSetup& es) {
       edm::ESHandle<TransientTrackBuilder> trackBuilderHandle;

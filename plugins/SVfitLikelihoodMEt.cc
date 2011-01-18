@@ -33,6 +33,8 @@ SVfitLikelihoodMEt<T1,T2>::SVfitLikelihoodMEt(const edm::ParameterSet& cfg)
   perpBias_ = new TFormula("perpBias", cfgResolution.getParameter<std::string>("perpBias").data());
 
   srcPFCandidates_ = cfg.getParameter<edm::InputTag>("srcPFCandidates");
+
+  varyPhi_ = cfg.exists("varyPhi") ? cfg.getParameter<bool>("varyPhi") : true;
 }
 
 template <typename T1, typename T2>
@@ -65,9 +67,9 @@ template <typename T1, typename T2>
 bool SVfitLikelihoodMEt<T1,T2>::isFittedParameter(int index) const
 {
   if      ( index == SVfit_namespace::kLeg1thetaRest ) return true;
-  else if ( index == SVfit_namespace::kLeg1phiLab    ) return true;
+  else if ( varyPhi_ && index == SVfit_namespace::kLeg1phiLab    ) return true;
   else if ( index == SVfit_namespace::kLeg2thetaRest ) return true;
-  else if ( index == SVfit_namespace::kLeg2phiLab    ) return true;
+  else if ( varyPhi_ && index == SVfit_namespace::kLeg2phiLab    ) return true;
   else return false;
 }
 
@@ -80,7 +82,7 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 //
 //    NB: MET likelihood is split into perp/par components along (leptonic) leg1 of the diTau object
 //
-  if ( verbosity_ ) {
+  if ( this->verbosity_ ) {
     std::cout << "SVfitLikelihoodMEt::operator()>:" << std::endl;
     std::cout << " sumEt = " << diTau.met()->sumEt() << std::endl;
   }
@@ -88,12 +90,12 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
   double parSigma = parSigma_->Eval(qT_);
   if ( parSigma < parSigmaMin ) parSigma = parSigmaMin;
   double parBias = parBias_->Eval(qT_);
-  if ( verbosity_ ) std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
-  
+  if ( this->verbosity_ ) std::cout << " parSigma = " << parSigma << ", parBias = " << parBias << std::endl;
+
   double perpSigma = perpSigma_->Eval(qT_);
   if ( perpSigma < perpSigmaMin ) perpSigma = perpSigmaMin;
   double perpBias = perpBias_->Eval(qT_);
-  if ( verbosity_ ) std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
+  if ( this->verbosity_ ) std::cout << " perpSigma = " << perpSigma << ", perpBias = " << perpBias << std::endl;
 
   double projCosPhi,  projSinPhi;
   if ( qT_ > 0. ) {
@@ -114,7 +116,7 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 
   double recoMET_par = (metPx*projCosPhi + metPy*projSinPhi);
   double recoMET_perp = (metPx*projSinPhi - metPy*projCosPhi);
-  if ( verbosity_ ) {
+  if ( this->verbosity_ ) {
     std::cout << " recoMET_par = " << recoMET_par << std::endl;
     std::cout << " recoMET_perp = " << recoMET_perp << std::endl;
   }
@@ -125,20 +127,20 @@ double SVfitLikelihoodMEt<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<
 
   double fittedMET_par = (nuPx*projCosPhi + nuPy*projSinPhi);
   double fittedMET_perp = (nuPx*projSinPhi - nuPy*projCosPhi);
-  if ( verbosity_ ) {
+  if ( this->verbosity_ ) {
     std::cout << " fittedMET_par = " << fittedMET_par << std::endl;
     std::cout << " fittedMET_perp = " << fittedMET_perp << std::endl;
   }
 
   double parResidual = (recoMET_par - fittedMET_par) - parBias;
   double perpResidual = (recoMET_perp - fittedMET_perp) - perpBias;
-  if ( verbosity_ ) {
+  if ( this->verbosity_ ) {
     std::cout << " parResidual = " << parResidual << std::endl;
     std::cout << " perpResidual = " << perpResidual << std::endl;
   }
 
   double negLogLikelihood = -(logGaussian(parResidual, parSigma) + logGaussian(perpResidual, perpSigma));
-  if ( verbosity_ ) std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
+  if ( this->verbosity_ ) std::cout << "--> negLogLikelihood = " << negLogLikelihood << std::endl;
 
   return negLogLikelihood;
 }

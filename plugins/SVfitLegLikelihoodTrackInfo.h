@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitLegLikelihoodTrackInfo.h,v 1.3 2010/11/10 17:08:23 friis Exp $
+ * $Id: SVfitLegLikelihoodTrackInfo.h,v 1.4 2010/11/16 09:30:55 veelken Exp $
  *
  */
 
@@ -38,8 +38,7 @@ class SVfitLegLikelihoodTrackInfo : public SVfitLegLikelihoodBase<T>
 
   bool isFittedParameter(int, int) const;
 
-  void setEventVertexPos(const AlgebraicVector3& pvPosition)
-  {
+  void setEventVertexPos(const AlgebraicVector3& pvPosition) {
     // "original" (unshifted) position of primary event (tau production) vertex
     pvPosition_ = pvPosition;
   }
@@ -51,6 +50,10 @@ class SVfitLegLikelihoodTrackInfo : public SVfitLegLikelihoodBase<T>
   const TransientTrackBuilder* trackBuilder_;
 
   mutable std::vector<reco::TransientTrack> selectedTracks_;
+  // To determine if there is neutral stuff associated to leg (i.e. pizeros)
+  SVfitLegHasNeutralsExtractor<T> hasNeutralActivity_;
+  bool hasNeutrals_;
+  bool allowNeutrals_;
 
   unsigned minNumHits_;
   unsigned minNumPixelHits_;
@@ -59,11 +62,12 @@ class SVfitLegLikelihoodTrackInfo : public SVfitLegLikelihoodBase<T>
   double minPt_;
 
   bool useLinearApprox_;
+  bool varyPhi_;
+  bool varyR_;
+
   AlgebraicVector3 pvPosition_;
   mutable std::vector<SVfit::track::TrackExtrapolation> selectedTrackInfo_;
   mutable bool isNewCandidate_;
-
-  static const int verbosity_ = 0;
 };
 
 #endif

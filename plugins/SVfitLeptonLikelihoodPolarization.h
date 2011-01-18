@@ -7,12 +7,12 @@
  * to be compatible with decay tau- --> e- nu nu (tau- --> mu- nu nu)
  * of polarized tau lepton into electron (muon),
  * assuming  matrix element of V-A electroweak decay
- * 
+ *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: SVfitLeptonLikelihoodPolarization.h,v 1.1 2010/09/05 13:39:30 veelken Exp $
+ * $Id: SVfitLeptonLikelihoodPolarization.h,v 1.2 2010/09/13 12:49:28 veelken Exp $
  *
  */
 
@@ -29,10 +29,7 @@ class SVfitLeptonLikelihoodPolarization : public SVfitLegLikelihoodPolarizationB
 
  private:
   double negLogLikelihoodPolarized(const T&, const SVfitLegSolution&, double) const;
-
   bool useCollApproxFormulas_;
-
-  static const int verbosity_ = 0;
 };
 
 #endif

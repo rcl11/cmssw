@@ -26,10 +26,10 @@ GlobalPoint VertexOnTrackFinder::decayVertex(const GlobalPoint& pv,
                                              double angleVisLabFrame) {
   GlobalVector visibleDirection(soln_.p4Vis().px(), soln_.p4Vis().py(),
                                 soln_.p4Vis().pz());
-//  std::cout << "Finding point on trk for " << pv << " visdir: " << visibleDirection << " angle: " << angleVisLabFrame << std::endl;
+  std::cout << "Finding point on trk for " << pv << " visdir: " << visibleDirection << " angle: " << angleVisLabFrame << std::endl;
   // Linearize our track, then find the intersection of the cone and the line.
   if (soln_.tracks().size() == 1) {
-//    std::cout << "Finding intersection of line and cone" << std::endl;
+   std::cout << "Finding intersection of line and cone" << std::endl;
     AlgebraicVector3 refPoint(pv.x(), pv.y(), pv.z());
     TrackExtrapolation extrapolation(track_, refPoint);
 
@@ -40,7 +40,11 @@ GlobalPoint VertexOnTrackFinder::decayVertex(const GlobalPoint& pv,
     GlobalVector lineDirection(extrapolation.tangent().At(0),
                                extrapolation.tangent().At(1),
                                extrapolation.tangent().At(2));
-//    std::cout << "line offset: " << lineOffset << " dir: " << lineDirection << std::endl;
+    std::cout << "line offset: " << lineOffset << " dir: "
+      << lineDirection
+      << " track.vis.angle: " << TMath::ACos(
+          visibleDirection.unit().dot(lineDirection.unit()))
+      << std::endl;
 
     int status = 0;
     GlobalPoint output;
@@ -48,7 +52,7 @@ GlobalPoint VertexOnTrackFinder::decayVertex(const GlobalPoint& pv,
     output = intersectionOfLineAndCone(lineOffset, lineDirection,
                                        pv, visibleDirection,
                                        angleVisLabFrame, status);
-//    std::cout << "found intersection? " << status << " " << output << std::endl;
+   std::cout << "found intersection? " << status << " " << output << std::endl;
     if (status)
       return output;
 
@@ -58,11 +62,11 @@ GlobalPoint VertexOnTrackFinder::decayVertex(const GlobalPoint& pv,
                              angleVisLabFrame, status);
     // Okay, we found the point on the line closest to the cone.  Now we return
     // the point on the *cone* closest to this point.
-//    std::cout << "found pca? " << status << " " << output << std::endl;
+   std::cout << "found pca? " << status << " " << output << std::endl;
     if (status) {
       output = pcaOfConeToPoint(output, pv, visibleDirection,
                                 angleVisLabFrame, status);
-//      std::cout << "found final? " << status << " " << output << std::endl;
+     std::cout << "found final? " << status << " " << output << std::endl;
       if (status) {
         return output;
       }
@@ -71,7 +75,7 @@ GlobalPoint VertexOnTrackFinder::decayVertex(const GlobalPoint& pv,
     // Otherwise, this is a three prong and we've fitted a vertex for this leg.
     // Just take PCA of the cone to the fitted vertex.
     // How could this fail
-//    std::cout << "Finding intersection of line and vertex" << std::endl;
+   std::cout << "Finding intersection of line and vertex" << std::endl;
     int status = 1;
     reco::Candidate::Point fittedPoint = soln_.recoDecayVertex().position();
     GlobalPoint fittedGlobalPoint(fittedPoint.x(), fittedPoint.y(),
@@ -79,26 +83,28 @@ GlobalPoint VertexOnTrackFinder::decayVertex(const GlobalPoint& pv,
     GlobalPoint output = pcaOfConeToPoint(fittedGlobalPoint,
                                           pv, visibleDirection,
                                           angleVisLabFrame, status);
-//    std::cout << "found point? " << status << " " << output << std::endl;
+   std::cout << "found point? " << status << " " << output << std::endl;
     if (status) {
       return output;
     }
   }
   // If we didn't find a solution by now, we are in trouble!!
-//  std::cout << "ERROR: no solutions found in SVfitVertexOnTrackFinder::decayVertex"
-//      << ", returning the PV!" << std::endl;
+ std::cout << "ERROR: no solutions found in SVfitVertexOnTrackFinder::decayVertex"
+     << ", returning the PV!" << std::endl;
   return pv;
 }
 
 // Version where a correction is applied on the the phi and flight path.
 GlobalPoint VertexOnTrackFinder::decayVertex(
     const GlobalPoint& pv, double angleVisLabFrame,
-    double phiCorrection, double flightCorrection) {
+    double phiCorrection, double flightCorrection,
+    reco::Candidate::Vector* direction) {
   GlobalPoint uncorrected = decayVertex(pv, angleVisLabFrame);
   // Get the relative offset to the PV
   TVector3 outputTVector(uncorrected.x() - pv.x(),
                          uncorrected.y() - pv.y(),
                          uncorrected.z() - pv.z());
+  // FIXME what is the direction then???
   if (outputTVector.Mag() == 0)
     return uncorrected;
   // Rotate by phiCorrection about the visible momentum
@@ -108,6 +114,11 @@ GlobalPoint VertexOnTrackFinder::decayVertex(
                                visDirection.z());
   rot.Rotate(phiCorrection, visDirectionTVector);
   outputTVector = rot * outputTVector;
+  // Write the direction as a unit vector
+  *direction = reco::Candidate::Vector(
+      outputTVector.x(),
+      outputTVector.y(),
+      outputTVector.z());
   // Apply the flight path correction
   outputTVector.SetMag(outputTVector.Mag() + flightCorrection);
   return GlobalPoint(outputTVector.x() + pv.x(),
@@ -118,11 +129,13 @@ GlobalPoint VertexOnTrackFinder::decayVertex(
 
 GlobalPoint VertexOnTrackFinder::decayVertex(
     const AlgebraicVector3& pv, double angleVisLabFrame,
-    double phiCorrection, double flightCorrection) {
+    double phiCorrection, double flightCorrection,
+    reco::Candidate::Vector* direction) {
   return decayVertex(GlobalPoint(pv.At(0), pv.At(1), pv.At(2)),
                      angleVisLabFrame,
                      phiCorrection,
-                     flightCorrection);
+                     flightCorrection,
+                     direction);
 }
 
 

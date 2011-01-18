@@ -28,11 +28,11 @@ SVfitLikelihoodDiTauProd<T1,T2>::SVfitLikelihoodDiTauProd(const edm::ParameterSe
   if      ( process_string == "Z0"    ) process_ = kZ0;
   else if ( process_string == "Higgs" ) process_ = kHiggs;
   else {
-    edm::LogError ("SVfitLikelihoodDiTauProd") 
+    edm::LogError ("SVfitLikelihoodDiTauProd")
       << " Invalid Configuration Parameter process = " << process_string << " !!";
     cfgError_ = 1;
   }
-  
+
   pdfSet_ = cfg.getParameter<std::string>("pdfSet");
 
   sqrtS_ = cfg.getParameter<double>("sqrtS");
@@ -50,11 +50,11 @@ void SVfitLikelihoodDiTauProd<T1,T2>::beginJob()
   LHAPDF::initPDFSet(0, pdfSet_, 0); // use "best-fit" PDF values
 }
 
-double getPDFprob(int flavor, double xPlus, double xMinus, double Q) 
+double getPDFprob(int flavor, double xPlus, double xMinus, double Q)
 {
-//--- compute probability to find either to gluons or two quarks of flavor q and qBar in pp system 
+//--- compute probability to find either to gluons or two quarks of flavor q and qBar in pp system
 //
-//    NOTE: 
+//    NOTE:
 //        (1) the Z0 can be produced by annihilation of q + qBar "opposite flavor" quark pairs only;
 //            the (MSSM) Higgs is produced by gluon-gluon fusion
 //        (2) the flavors are encoded as:
@@ -88,12 +88,12 @@ double getPDFprob(int flavor, double xPlus, double xMinus, double Q)
   } else if ( flavor == LHAPDF::GLUON ) {
     prob = 2.*(LHAPDF::xfx(0, xPlus, Q, flavor)/xPlus)*(LHAPDF::xfx(0, xMinus, Q, flavor)/xMinus);
   } else {
-    edm::LogError ("getPDFprob") 
+    edm::LogError ("getPDFprob")
       << " Invalid flavor type = " << flavor << " !!";
   }
 
   //std::cout << "--> prob = " << prob << std::endl;
-  
+
   return prob;
 }
 
@@ -151,24 +151,24 @@ double compHiggsCrossSection()
 
 double compTheta(const reco::Candidate::LorentzVector& p4DiTau, const reco::Candidate::LorentzVector& p4TauLepton)
 {
-//--- compute production angle of tau lepton in rest-frame of tau+ tau- pair 
+//--- compute production angle of tau lepton in rest-frame of tau+ tau- pair
 //    (i.e. either the Z0 or the Higgs rest-frame)
 
   return boostToCOM(p4DiTau, p4TauLepton).theta();
 }
 
 template <typename T1, typename T2>
-double SVfitLikelihoodDiTauProd<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau, 
+double SVfitLikelihoodDiTauProd<T1,T2>::operator()(const CompositePtrCandidateT1T2MEt<T1,T2>& diTau,
 						   const SVfitDiTauSolution& solution) const
 {
   //std::cout << "<SVfitLikelihoodDiTauProd::operator()>:" << std::endl;
 
   if ( cfgError_ ) {
-    edm::LogError ("SVfitLikelihoodDiTauProd<T1,T2>::operator()") 
+    edm::LogError ("SVfitLikelihoodDiTauProd<T1,T2>::operator()")
       << " Error in Configuration ParameterSet --> -log(likelihood) value will NOT be computed !!";
     return std::numeric_limits<float>::min();
   }
-  
+
   double mass = solution.p4().mass();
 
   double eta = solution.p4().eta();
@@ -178,20 +178,20 @@ double SVfitLikelihoodDiTauProd<T1,T2>::operator()(const CompositePtrCandidateT1
   double xMinus = (mass/sqrtS_)*TMath::Exp(-eta);
   //std::cout << " xMinus = " << xMinus << std::endl;
 
-  double upTypePdfSum   = getPDFprob(LHAPDF::UP, xPlus, xMinus, mass) 
+  double upTypePdfSum   = getPDFprob(LHAPDF::UP, xPlus, xMinus, mass)
                          + getPDFprob(LHAPDF::CHARM, xPlus, xMinus, mass) + getPDFprob(LHAPDF::TOP, xPlus, xMinus, mass);
-  double downTypePdfSum = getPDFprob(LHAPDF::DOWN, xPlus, xMinus, mass) 
+  double downTypePdfSum = getPDFprob(LHAPDF::DOWN, xPlus, xMinus, mass)
                          + getPDFprob(LHAPDF::STRANGE, xPlus, xMinus, mass) + getPDFprob(LHAPDF::BOTTOM, xPlus, xMinus, mass);
 
   double upTypeCrossSection = 0.;
   double downTypeCrossSection = 0.;
   if ( process_ == kZ0    ) {
     double sHat = square(mass);
-    
+
     const SVfitLegSolution* tauMinusSolution = 0;
     if      ( diTau.leg1()->charge() < 0. ) tauMinusSolution = &solution.leg1();
     else if ( diTau.leg2()->charge() < 0. ) tauMinusSolution = &solution.leg2();
-   
+
     if ( tauMinusSolution ) {
       double tauMinusPol = getTauLeptonPolarization(tauMinusSolution->polarizationHypothesis(), qTau);
       double tauMinusTheta = compTheta(solution.p4(), tauMinusSolution->p4());
@@ -208,18 +208,18 @@ double SVfitLikelihoodDiTauProd<T1,T2>::operator()(const CompositePtrCandidateT1
     downTypeCrossSection = compHiggsCrossSection();
   }
 
-  double prob = upTypeCrossSection*upTypePdfSum + downTypeCrossSection*downTypePdfSum; 
-  if ( verbosity_ ) std::cout << "--> prob = " << prob << std::endl;
+  double prob = upTypeCrossSection*upTypePdfSum + downTypeCrossSection*downTypePdfSum;
+  if ( this->verbosity_ ) std::cout << "--> prob = " << prob << std::endl;
 
   if ( !(prob > 0.) ) {
-    edm::LogWarning ("SVfitLikelihoodDiTauProd::operator()") 
+    edm::LogWarning ("SVfitLikelihoodDiTauProd::operator()")
       << " Unphysical solution --> returning very large negative number !!";
     return std::numeric_limits<float>::min();
   }
-  
+
   double logLikelihood = TMath::Log(prob);
-  if ( verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
-  
+  if ( this->verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
+
   return -logLikelihood;
 }
 

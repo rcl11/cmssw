@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: SVfitLikelihoodDiTauPtBalance.h,v 1.3 2010/09/21 08:59:57 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauPtBalance.h,v 1.4 2010/12/13 15:56:13 friis Exp $
  *
  */
 
@@ -30,9 +30,6 @@ class SVfitLikelihoodDiTauPtBalance : public SVfitDiTauLikelihoodBase<T1,T2>
   ~SVfitLikelihoodDiTauPtBalance();
 
   double operator()(const CompositePtrCandidateT1T2MEt<T1,T2>&, const SVfitDiTauSolution&) const;
-
- private:
-  static const int verbosity_ = 0;
 };
 
 #endif

@@ -28,7 +28,7 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
 {
 //--- compute negative log-likelihood for tau lepton decay "leg"
 //    to be compatible with three-body decay,
-//    assuming constant matrix element, 
+//    assuming constant matrix element,
 //    so that energy and angular distribution of decay products is solely determined by phase-space
 //
 //    NOTE: the parametrization of the three-body decay phase-space is taken from the PDG:
@@ -38,7 +38,7 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
   //std::cout << "<SVfitLegLikelihoodPhaseSpace::operator()>:" << std::endl;
 
   reco::Candidate::LorentzVector legP4 = solution.p4();
-  
+
   double thetaRestFrame = solution.thetaRest();
   double nuMass = solution.p4InvisRestFrame().mass();
   double visMass = solution.p4VisRestFrame().mass();
@@ -55,8 +55,10 @@ double SVfitLegLikelihoodPhaseSpace<T>::operator()(const T& leg, const SVfitLegS
                     - TMath::Log(2*tauLeptonMass);
       logLikelihood += (logP1 + logP3);
     } else {
-      edm::LogWarning ("SVfitLegLikelihoodPhaseSpace::operator()") 
-	<< " Unphysical solution --> returning very large negative number !!";
+      edm::LogWarning ("SVfitLegLikelihoodPhaseSpace::operator()")
+	<< " Unphysical solution due to nuMass: " << nuMass
+        << " visMass: " << visMass << " (nu+vis): " << nuMass + visMass
+        << " --> returning very large negative number !!";
       logLikelihood = std::numeric_limits<float>::min();
     }
   }

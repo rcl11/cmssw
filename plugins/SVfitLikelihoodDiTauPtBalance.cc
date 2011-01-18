@@ -82,20 +82,20 @@ double SVfitLikelihoodDiTauPtBalance<T1,T2>::operator()(const CompositePtrCandid
 //--- compute negative log-likelihood for two tau leptons
 //    to have transverse momenta leg1Pt, leg2Pt
 
-  if ( verbosity_ ) std::cout << "<SVfitLikelihoodDiTauPtBalance::operator()>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<SVfitLikelihoodDiTauPtBalance::operator()>:" << std::endl;
 
   double diTauMass = solution.p4().mass();
-  if ( verbosity_ ) std::cout << " diTauMass = " << diTauMass << std::endl;
+  if ( this->verbosity_ ) std::cout << " diTauMass = " << diTauMass << std::endl;
 
   double leg1Pt = solution.leg1().p4().pt();
   double leg2Pt = solution.leg2().p4().pt();
-  if ( verbosity_ ) {
+  if ( this->verbosity_ ) {
     std::cout << " leg1Pt = " << leg1Pt << std::endl;
     std::cout << " leg2Pt = " << leg2Pt << std::endl;
   }
 
   double prob = movingTauLeptonPtPDF(leg1Pt, diTauMass)*movingTauLeptonPtPDF(leg2Pt, diTauMass);
-  if ( verbosity_ ) std::cout << "--> prob = " << prob << std::endl;
+  if ( this->verbosity_ ) std::cout << "--> prob = " << prob << std::endl;
 
   if ( !(prob > 0.) ) {
     //edm::LogWarning ("SVfitLikelihoodDiTauPtBalance::operator()")
@@ -104,7 +104,7 @@ double SVfitLikelihoodDiTauPtBalance<T1,T2>::operator()(const CompositePtrCandid
   }
 
   double logLikelihood = TMath::Log(prob);
-  if ( verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
+  if ( this->verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
 
   return -logLikelihood;
 }

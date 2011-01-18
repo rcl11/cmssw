@@ -14,9 +14,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.23 $
+ * \version $Revision: 1.24 $
  *
- * $Id: SVfitAlgorithm.h,v 1.23 2010/11/16 09:30:54 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.24 2010/11/16 19:37:01 veelken Exp $
  *
  */
 
@@ -41,6 +41,12 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
+// DQM Instrumentation includes
+#include "DataFormats/Provenance/interface/EventID.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "DQMServices/Core/interface/DQMStore.h"
+#include "DQMServices/Core/interface/MonitorElement.h"
+
 #include <TFitterMinuit.h>
 #include <Minuit2/FCNBase.h>
 #include <TMath.h>
@@ -51,6 +57,8 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+
+#include <boost/foreach.hpp>
 
 // forward declaration of SVfitAlgorithm class
 template<typename T1, typename T2> class SVfitAlgorithm;
@@ -79,8 +87,8 @@ class SVfitMinuitFCNadapter : public ROOT::Minuit2::FCNBase
     void setSVfitAlgorithm(const SVfitAlgorithm<T1,T2>* svFitAlgorithm) { svFitAlgorithm_ = svFitAlgorithm; }
 
     /// define "objective" function called by Minuit
-    double operator()(const std::vector<double>& x) const { 
-      return svFitAlgorithm_->negLogLikelihood(x); 
+    double operator()(const std::vector<double>& x) const {
+      return svFitAlgorithm_->negLogLikelihood(x);
     }
 
     /// define increase in "objective" function used by Minuit to determine one-sigma error contours;
@@ -94,9 +102,22 @@ template<typename T1, typename T2>
 class SVfitAlgorithm
 {
   public:
-    SVfitAlgorithm(const edm::ParameterSet& cfg)
-        : currentDiTau_(0)
-    {
+    SVfitAlgorithm(const edm::ParameterSet& cfg) :currentDiTau_(0) {
+      verbosity_ = cfg.exists("verbosity") ? cfg.getParameter<int>("verbosity") : 0;
+      // Check if we want to use the DQM monitors
+      dqmStore_ = NULL;
+      if (cfg.exists("monitor")) {
+        std::cout << "Enabling DQM monitoring of SV fit" << std::endl;
+        monitorCfg_ = cfg.getParameter<edm::ParameterSet>("monitor");
+        // Load DQM store
+        if (edm::Service<DQMStore>().isAvailable()) {
+          dqmStore_ = &(*edm::Service<DQMStore>());
+          enableLikelihoodMonitoring_ = true;
+        } else {
+          edm::LogError ("SVfitAlgorithm") <<
+            " Failed to access dqmStore --> histograms will NOT be booked !!";
+        }
+      }
       name_ = cfg.getParameter<std::string>("name");
       if ( verbosity_ ) std::cout << "initializing SVfit algorithm with name = " << name_ << std::endl;
 
@@ -134,18 +155,27 @@ class SVfitAlgorithm
       //std::cout << " disabling MINUIT output..." << std::endl;
       //minuit_->SetPrintLevel(1);
       minuit_->SetPrintLevel(-1);
+      if (verbosity_)
+        minuit_->SetPrintLevel(0);
       minuit_->SetErrorDef(0.5);
 
       minuit_->CreateMinimizer();
 
       minuitFittedParameterValues_.resize(minuitNumParameters_);
 
-      if ( cfg.exists("parameterizeVertexAlongTrack") ) {
-	if ( verbosity_ ) std::cout << "--> enabling parameterizeVertexAlongTrack" << std::endl;
-        parameterizeVertexAlongTrack_ = cfg.getParameter<bool>("parameterizeVertexAlongTrack");
+      if ( cfg.exists("parameterizeVertexAlongTrackLeg1") ) {
+	if ( verbosity_ ) std::cout << "--> enabling parameterizeVertexAlongTrackLeg1" << std::endl;
+        parameterizeVertexAlongTrackLeg1_ = cfg.getParameter<bool>("parameterizeVertexAlongTrackLeg1");
       } else {
-	if ( verbosity_ ) std::cout << "--> disabling parameterizeVertexAlongTrack" << std::endl;
-        parameterizeVertexAlongTrack_ = false;
+	if ( verbosity_ ) std::cout << "--> disabling parameterizeVertexAlongTrackLeg1" << std::endl;
+        parameterizeVertexAlongTrackLeg1_ = false;
+      }
+      if ( cfg.exists("parameterizeVertexAlongTrackLeg2") ) {
+	if ( verbosity_ ) std::cout << "--> enabling parameterizeVertexAlongTrackLeg2" << std::endl;
+        parameterizeVertexAlongTrackLeg2_ = cfg.getParameter<bool>("parameterizeVertexAlongTrackLeg2");
+      } else {
+	if ( verbosity_ ) std::cout << "--> disabling parameterizeVertexAlongTrackLeg2" << std::endl;
+        parameterizeVertexAlongTrackLeg2_ = false;
       }
 
       if ( cfg.exists("estUncertainties") ) {
@@ -160,8 +190,7 @@ class SVfitAlgorithm
       //print(std::cout);
     }
 
-    ~SVfitAlgorithm()
-    {
+    ~SVfitAlgorithm() {
       delete eventVertexRefitAlgorithm_;
 
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::iterator it = likelihoodFunctions_.begin();
@@ -170,16 +199,16 @@ class SVfitAlgorithm
       }
     }
 
-    void beginJob()
-    {
+    void beginJob() {
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
            likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
         (*likelihoodFunction)->beginJob();
       }
     }
 
-    void beginEvent(edm::Event& evt, const edm::EventSetup& es)
-    {
+    void beginEvent(edm::Event& evt, const edm::EventSetup& es) {
+      currentEvent_ = evt.id();
+      tauPairIndex_ = 0;
       //std::cout << "<SVfitAlgorithm::beginEvent>:" << std::endl;
       SVfit::track::VertexOnTrackFinder::setEventSetup(es);
 
@@ -191,8 +220,7 @@ class SVfitAlgorithm
       }
     }
 
-    void print(std::ostream& stream) const
-    {
+    void print(std::ostream& stream) const {
       stream << "<SVfitAlgorithm::print>" << std::endl;
       stream << " name = " << name_ << std::endl;
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
@@ -207,6 +235,9 @@ class SVfitAlgorithm
 
     std::vector<SVfitDiTauSolution> fit(const CompositePtrCandidateT1T2MEt<T1,T2>& diTauCandidate)
     {
+      // Increment tau pair counter
+      tauPairIndex_++;
+
       if ( verbosity_ ) {
         std::cout << "<SVfitAlgorithm::fit>:" << std::endl;
         std::cout << " name = " << name_ << std::endl;
@@ -267,8 +298,7 @@ class SVfitAlgorithm
       return solutions;
     }
 
-    double negLogLikelihood(const std::vector<double>& x) const
-    {
+    double negLogLikelihood(const std::vector<double>& x) const {
       ++indexFitFunctionCall_;
 
       if ( verbosity_ ) {
@@ -277,7 +307,9 @@ class SVfitAlgorithm
         for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
           // only print unfixed parameters
           if ( !minuit_->IsFixed(iParameter) )
-	    std::cout << " Parameter #" << iParameter << " " << minuit_->GetParName(iParameter) << " = " << x[iParameter] << std::endl;
+	    std::cout << " Parameter #" << iParameter << " "
+              << minuit_->GetParName(iParameter) << " = "
+              << x[iParameter] << std::endl;
         }
       }
 
@@ -286,6 +318,7 @@ class SVfitAlgorithm
 	  << " Pointer to currentDiTau has not been initialized --> skipping !!";
         return 0.;
       }
+
 
       applyParameters(currentDiTauSolution_, x);
 
@@ -297,10 +330,10 @@ class SVfitAlgorithm
           negLogLikelihood += (**likelihoodFunction)(*currentDiTau_, currentDiTauSolution_);
         }
       }
-      
-      if ( verbosity_ ) std::cout << "--> negLogLikelihood = " << negLogLikelihood << "," 
+
+      if ( verbosity_ ) std::cout << "--> negLogLikelihood = " << negLogLikelihood << ","
 				  << " SVfit mass = " << currentDiTauSolution_.p4().mass() << std::endl;
-      
+
 //-- in order to resolve ambiguities and improve convergence of the fit,
 //   add "penalty" terms in case leg1phiLab, leg2phiLab parameters
 //   are outside of the "physical" interval -pi..+pi
@@ -310,6 +343,42 @@ class SVfitAlgorithm
       double leg2phiLab = x[SVfit_namespace::kLeg2phiLab];
       if ( TMath::Abs(leg2phiLab) > TMath::Pi() ) penalty += SVfit_namespace::square(TMath::Abs(leg2phiLab) - TMath::Pi());
 
+      // Check if we want to monitor the fit progress
+      if (dqmStore_ && enableLikelihoodMonitoring_) {
+        for (unsigned iParameter = 0; iParameter < minuitNumParameters_;
+            ++iParameter ) {
+          // Check if we are monitoring this parameter
+          MEMap::const_iterator paramMonitorIter = monitors_.find(
+              minuit_->GetParName(iParameter));
+          if (paramMonitorIter != monitors_.end()) {
+            MonitorElement* monitor = paramMonitorIter->second;
+            if (!monitor) {
+              edm::LogError("SVfitAlgorith::monitor")
+                << " parameter " << iParameter << " has a null monitor element!"
+                << " monitor will not be filled!";
+              continue;
+            }
+            monitor->getTH1F()->SetBinContent(
+                indexFitFunctionCall_ + 1, x[iParameter]);
+          }
+        }
+        // Check if we want to monitor NLL & mass, and current fit iteration.
+        MEMap::const_iterator nllMonitorIter = monitors_.find("nll");
+        if (nllMonitorIter != monitors_.end()) {
+          nllMonitorIter->second->getTH1F()->SetBinContent(
+              indexFitFunctionCall_ + 1, negLogLikelihood + penalty);
+        }
+        MEMap::const_iterator massMonitorIter = monitors_.find("mass");
+        if (massMonitorIter != monitors_.end()) {
+          massMonitorIter->second->getTH1F()->SetBinContent(
+              indexFitFunctionCall_ + 1, currentDiTauSolution_.p4().mass());
+        }
+        MEMap::const_iterator iterMonitorIter = monitors_.find("iter");
+        if (iterMonitorIter != monitors_.end()) {
+          iterMonitorIter->second->getTH1F()->SetBinContent(
+              indexFitFunctionCall_ + 1, fitIteration_);
+        }
+      }
       return negLogLikelihood + penalty;
     }
 
@@ -338,6 +407,21 @@ class SVfitAlgorithm
       currentDiTauSolution_.leg1_.p4Vis_ = diTauCandidate.leg1()->p4();
       currentDiTauSolution_.leg2_.p4Vis_ = diTauCandidate.leg2()->p4();
 
+      // Turn off vertex parameterization in case neutrals are present - leads
+      // to situations with non-existent solutions.
+      if (leg1NeutralActivity_(*diTauCandidate.leg1())) {
+        if (verbosity_)
+          std::cout << "Disabling vertex parameterization by leg 1, it has neutrals."
+            << std::endl;
+        parameterizeVertexAlongTrackLeg1_ = false;
+      }
+      if (leg2NeutralActivity_(*diTauCandidate.leg2())) {
+        if (verbosity_)
+          std::cout << "Disabling vertex parameterization by leg 2, it has neutrals."
+            << std::endl;
+        parameterizeVertexAlongTrackLeg2_ = false;
+      }
+
 //--- initialize start-values of Minuit fit parameters
 //
 //    CV: how to deal with measurement errors in the visible momenta of the two tau decay "legs"
@@ -359,12 +443,12 @@ class SVfitAlgorithm
       minuit_->SetParameter(SVfit_namespace::kPrimaryVertexShiftY, "pv_dy", 0., pvPositionYerr,  -1.,  +1.);
       minuit_->SetParameter(SVfit_namespace::kPrimaryVertexShiftZ, "pv_dz", 0., pvPositionZerr, -50., +50.);
       minuit_->SetParameter(SVfit_namespace::kLeg1thetaRest, "sv1_thetaRest", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-      double leg1PhiLabStepSize = ( parameterizeVertexAlongTrack_ ) ? 
+      double leg1PhiLabStepSize = ( parameterizeVertexAlongTrackLeg1_ ) ?
 	TMath::Pi()/100. : TMath::Pi();
       minuit_->SetParameter(SVfit_namespace::kLeg1phiLab, "sv1_phiLab", 0., leg1PhiLabStepSize, 0., 0.); // do not set limits for phiLab
 
       double leg1decayDistanceLab0, leg1decayDistanceLabStepSize;
-      if ( parameterizeVertexAlongTrack_ ) {
+      if ( parameterizeVertexAlongTrackLeg1_ ) {
 	leg1decayDistanceLab0 = 0.;
 	leg1decayDistanceLabStepSize = 0.0100; // 100 microns
       } else {
@@ -379,7 +463,7 @@ class SVfitAlgorithm
 	leg1decayDistanceLab0 = TMath::Sqrt(gamma_cTauLifetime);
 	leg1decayDistanceLabStepSize = 0.1*leg1decayDistanceLab0;
       }
-      minuit_->SetParameter(SVfit_namespace::kLeg1decayDistanceLab, "sv1_decayDistanceLab", 
+      minuit_->SetParameter(SVfit_namespace::kLeg1decayDistanceLab, "sv1_decayDistanceLab",
 			    leg1decayDistanceLab0, leg1decayDistanceLabStepSize, 0., 0.);
 
       double leg1NuMass0, leg1NuMassErr, leg1NuMassMax;
@@ -399,11 +483,11 @@ class SVfitAlgorithm
       minuit_->SetParameter(SVfit_namespace::kLeg1thetaVMa1r, "sv1_thetaVMa1r", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
       minuit_->SetParameter(SVfit_namespace::kLeg1phiVMa1r, "sv1_phiVMa1r", 0., TMath::Pi(), 0., 0.); // do not set limits for phiVMa1r
       minuit_->SetParameter(SVfit_namespace::kLeg2thetaRest, "sv2_thetaRest", 0.25*TMath::Pi(), 0.5*TMath::Pi(), 0., TMath::Pi());
-      double leg2PhiLabStepSize = ( parameterizeVertexAlongTrack_ ) ? TMath::Pi()/100. : TMath::Pi();
+      double leg2PhiLabStepSize = ( parameterizeVertexAlongTrackLeg2_ ) ? TMath::Pi()/100. : TMath::Pi();
       minuit_->SetParameter(SVfit_namespace::kLeg2phiLab, "sv2_phiLab", 0., leg2PhiLabStepSize, 0., 0.); // do not set limits for phiLab
 
       double leg2decayDistanceLab0, leg2decayDistanceLabStepSize;
-      if ( parameterizeVertexAlongTrack_ ) {
+      if ( parameterizeVertexAlongTrackLeg2_ ) {
 	leg2decayDistanceLab0 = 0.;
 	leg2decayDistanceLabStepSize = 0.0100; // 100 microns
       } else {
@@ -418,7 +502,7 @@ class SVfitAlgorithm
 	leg2decayDistanceLab0 = TMath::Sqrt(gamma_cTauLifetime);
 	leg2decayDistanceLabStepSize = 0.1*leg2decayDistanceLab0;
       }
-      minuit_->SetParameter(SVfit_namespace::kLeg2decayDistanceLab, "sv2_decayDistanceLab", 
+      minuit_->SetParameter(SVfit_namespace::kLeg2decayDistanceLab, "sv2_decayDistanceLab",
 			    leg2decayDistanceLab0, leg2decayDistanceLabStepSize, 0., 0.);
 
       double leg2NuMass0, leg2NuMassErr, leg2NuMassMax;
@@ -439,20 +523,75 @@ class SVfitAlgorithm
       minuit_->SetParameter(SVfit_namespace::kLeg2phiVMa1r, "sv2_phiVMa1r", 0., TMath::Pi(), 0., 0.); // do not set limits for phiVMa1r
 
       unsigned int fitIterations = 0;
+
+      // Clear out the old DQM monitors
+      monitors_.clear();
+
+      // The list of all parameters that will be fitted.
+      std::set<std::string> fittedParameterNames;
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
 	    likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
+        // Load information about the candidate
         (*likelihoodFunction)->beginCandidate(diTauCandidate);
         // Figure out how many fit iterations our selected likelihoods need
         if ((*likelihoodFunction)->firstFit() > fitIterations) {
           fitIterations = (*likelihoodFunction)->firstFit();
         }
+        // Get the list of all fitted parameters names (for all iterations)
+        // We use this to book our monitoring histograms.
+        for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
+          if ((*likelihoodFunction)->isFittedParameter(iParameter)) {
+            fittedParameterNames.insert(minuit_->GetParName(iParameter));
+          }
+        }
       }
 
-      int minuitStatus = -20;
+      // Build the basic prefix for DQM stuff for this event.
+      stringstream meNameBase;
+      meNameBase << name_ << "_evt_"
+        << currentEvent_.event() << "_"
+        << currentEvent_.luminosityBlock() << "_"
+        << currentEvent_.run() << "_"
+        << tauPairIndex_  << "_";
+      // Book monitoring histograms for all of our variables
+      if (dqmStore_) {
+        dqmStore_->setCurrentFolder(
+            monitorCfg_.getParameter<std::string>("dqmDirectory"));
+        unsigned int maxFunctionCalls = monitorCfg_.getParameter<unsigned int>(
+            "maxFunctionCalls");
+        BOOST_FOREACH(const std::string& parName, fittedParameterNames) {
+          // Build the name
+          std::string meName = meNameBase.str() + parName;
+          monitors_[parName] = dqmStore_->book1D(
+              meName, meName, maxFunctionCalls, 0, maxFunctionCalls);
+          // Check if we want to do scans of each variable at the end of the run
+        }
+        // Add NLL and mass tracking
+        std::string meName = meNameBase.str() + "mass";
+        monitors_["mass"] = dqmStore_->book1D(
+            meName, meName, maxFunctionCalls, 0, maxFunctionCalls);
+        meName = meNameBase.str() + "nll";
+        monitors_["nll"] = dqmStore_->book1D(
+            meName, meName, maxFunctionCalls, 0, maxFunctionCalls);
+        // Track fit iteration & minuit status
+        meName = meNameBase.str() + "iter";
+        monitors_["iter"] = dqmStore_->book1D(
+            meName, meName, maxFunctionCalls, 0, maxFunctionCalls);
+        meName = meNameBase.str() + "mstatus";
+        monitors_["mstatus"] = dqmStore_->book1D(
+            meName, meName, maxFunctionCalls, 0, maxFunctionCalls);
+        meName = meNameBase.str() + "edm";
+        monitors_["edm"] = dqmStore_->book1D(
+            meName, meName, maxFunctionCalls, 0, maxFunctionCalls);
+      }
+
+      minuitStatus_ = -20;
+      minuitEdm_ = 0;
       // Loop over the desired number of fit iterations.
+      indexFitFunctionCall_ = 0;
       for ( fitIteration_ = 0; fitIteration_ < (fitIterations + 1); ++fitIteration_ ) {
 //--- lock (i.e. set to fixed values) Minuit parameters
-//    which are not constrained by any likelihood function
+//    which are not constrained by any likelihood function (in this iteration)
         for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
           bool minuitLockParameter = true;
           for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
@@ -463,18 +602,18 @@ class SVfitAlgorithm
               break;
             }
           }
-	  
+
           if (  minuitLockParameter && !minuit_->IsFixed(iParameter) ) minuit_->FixParameter(iParameter);
           if ( !minuitLockParameter &&  minuit_->IsFixed(iParameter) ) minuit_->ReleaseParameter(iParameter);
 
-	  if ( verbosity_ ) { 
+	  if ( verbosity_ ) {
             std::cout << " Parameter #" << iParameter << " (" << minuit_->GetParName(iParameter) << "): ";
             if ( minuit_->IsFixed(iParameter) ) std::cout << "LOCKED";
             else std::cout << "FITTED";
             std::cout << std::endl;
           }
         }
-	
+
         minuitNumFreeParameters_ = minuit_->GetNumberFreeParameters();
         minuitNumFixedParameters_ = minuit_->GetNumberTotalParameters() - minuitNumFreeParameters_;
 
@@ -484,17 +623,36 @@ class SVfitAlgorithm
         }
         assert((minuitNumFreeParameters_ + minuitNumFixedParameters_) == minuitNumParameters_);
 
-        indexFitFunctionCall_ = 0;
-
         if ( verbosity_ ) std::cout << " BEGINNING FIT ITERATION #" << fitIteration_ << std::endl;
 
-        minuitStatus = minuit_->Minimize();
+        minuitStatus_ = minuit_->Minimize();
 
-        if ( verbosity_ ) std::cout << " DONE WITH FIT ITERATION #" << fitIteration_
-				    << " FIT RESULT: " << minuitStatus << std::endl;
+        // Get stats about the minimizer;
+        Double_t dummyErrDef;
+        Int_t dummyNpvar, dummyNparx;
+        minuit_->GetStats(minuitNll_, minuitEdm_, dummyErrDef, dummyNpvar, dummyNparx);
+
+        if ( verbosity_ ) {
+          std::cout << " DONE WITH FIT ITERATION #" << fitIteration_
+            << " FIT RESULT: " << minuitStatus_
+            << " NLL: " << minuitNll_ << " EDM: " << minuitEdm_ << std::endl;
+          std::cout << " COVARIANCE MATRIX:" << std::endl;
+        }
+        if (dqmStore_) {
+          MEMap::const_iterator statMonitorIter = monitors_.find("mstatus");
+          if (statMonitorIter != monitors_.end()) {
+            statMonitorIter->second->getTH1F()->SetBinContent(
+                indexFitFunctionCall_ + 1, minuitStatus_);
+          }
+          MEMap::const_iterator edmMonitorIter = monitors_.find("edm");
+          if (edmMonitorIter != monitors_.end()) {
+            edmMonitorIter->second->getTH1F()->SetBinContent(
+                indexFitFunctionCall_ + 1, minuitEdm_);
+          }
+        }
       }
 
-      edm::LogInfo("SVfitAlgorithm::fit") << " Minuit fit Status = " << minuitStatus << std::endl;
+      edm::LogInfo("SVfitAlgorithm::fit") << " Minuit fit Status = " << minuitStatus_ << std::endl;
 
       for ( unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter ) {
         minuitFittedParameterValues_[iParameter] = minuit_->GetParameter(iParameter);
@@ -505,6 +663,49 @@ class SVfitAlgorithm
         }
       }
 
+      char dummyToGetName[100];
+      // Do scans of each parameter that was fitted.
+      if (dqmStore_ && monitorCfg_.getParameter<bool>("doScan")) {
+        // We dont' want to monitor calls to the likelihood while we are messing
+        // around with the scans.
+        enableLikelihoodMonitoring_ = false;
+        for (unsigned iParameter = 0; iParameter < minuitNumParameters_; ++iParameter) {
+          // Check if we fitted this parameter
+          std::string parName = minuit_->GetParName(iParameter);
+          if (fittedParameterNames.count(parName)) {
+            // book our scan of this parameter
+            Double_t parValue, parErr, vLow, vHigh;
+            minuit_->GetParameter(iParameter, dummyToGetName,
+                parValue, parErr, vLow, vHigh);
+            double xlow, xhigh;
+            if (vLow == 0. && vHigh == 0.) {
+              // Unbounded, define using errors
+              xlow = parValue - 5*parErr;
+              xhigh = parValue + 5*parErr;
+            } else {
+              xlow = vLow;
+              xhigh = vHigh;
+            }
+            std::string meName = meNameBase.str() + parName + "_scan" ;
+            unsigned int steps = 500;
+            MonitorElement* monitor = dqmStore_->book1D(
+              meName, meName, steps, xlow, xhigh);
+            double stepsize = (xhigh - xlow)/steps;
+            // Make a copy of the paramters
+            vector<double> myxs = minuitFittedParameterValues_;
+            // Scan over the parameter
+            for(size_t ix = 0; ix < steps; ++ix) {
+              double newx = (ix + 0.5)*stepsize;
+              myxs[iParameter] = newx;
+              double nll = negLogLikelihood(myxs);
+              monitor->Fill(newx, nll);
+            }
+          }
+        }
+        // renable likelihood monitoring for next fit.
+        enableLikelihoodMonitoring_ = true;
+      } // end monitor scan
+
       applyParameters(currentDiTauSolution_, minuitFittedParameterValues_);
 
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
@@ -513,7 +714,7 @@ class SVfitAlgorithm
         currentDiTauSolution_.negLogLikelihoods_.insert(std::make_pair((*likelihoodFunction)->name(), likelihoodFunctionValue));
       }
 
-      currentDiTauSolution_.minuitStatus_ = minuitStatus;
+      currentDiTauSolution_.minuitStatus_ = minuitStatus_;
 
       if ( numSamplings_ > 0 ) compErrorEstimates();
     }
@@ -526,14 +727,20 @@ class SVfitAlgorithm
       diTauSolution.eventVertexPositionShift_(2) = x[SVfit_namespace::kPrimaryVertexShiftZ];
 
 //--- build first tau decay "leg"
-      applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, diTauSolution.leg1_, x, diTauSolution.eventVertexPosSVrefitted());
+      applyParametersToLeg(SVfit_namespace::kLeg1thetaRest, diTauSolution.leg1_,
+          x, diTauSolution.eventVertexPosSVrefitted(),
+          parameterizeVertexAlongTrackLeg1_);
 
 //--- build second tau decay "leg"
-      applyParametersToLeg(SVfit_namespace::kLeg2thetaRest, diTauSolution.leg2_, x, diTauSolution.eventVertexPosSVrefitted());
+      applyParametersToLeg(SVfit_namespace::kLeg2thetaRest, diTauSolution.leg2_,
+          x, diTauSolution.eventVertexPosSVrefitted(),
+          parameterizeVertexAlongTrackLeg2_);
     }
 
-    void applyParametersToLeg(int index0, SVfitLegSolution& legSolution, const std::vector<double>& x,
-                              const AlgebraicVector3& eventVertexPos) const
+    void applyParametersToLeg(int index0, SVfitLegSolution& legSolution,
+        const std::vector<double>& x,
+        const AlgebraicVector3& eventVertexPos,
+        bool parameterizeVertexAlongTrack) const
     {
       int legOffset = index0 - SVfit_namespace::kLeg1thetaRest;
 
@@ -552,11 +759,11 @@ class SVfitAlgorithm
 
       reco::Candidate::Vector direction;
 
-//--- if parameterizeVertexAlongTrack is enabled, compute approximate position 
-//    of tau lepton decay vertex as intersection of tau momentum vector with track 
-//    and take phiLab and decayDistanceToTrack parameters as corrections relative to that position, 
+//--- if parameterizeVertexAlongTrack is enabled, compute approximate position
+//    of tau lepton decay vertex as intersection of tau momentum vector with track
+//    and take phiLab and decayDistanceToTrack parameters as corrections relative to that position,
 //    else compute tau lepton decay vertex from thetaRest, phiLab and decayDistanceLab parameters directly
-      if ( !parameterizeVertexAlongTrack_ ) {
+      if ( !parameterizeVertexAlongTrack ) {
 	double flightDistance = SVfit_namespace::square(x[legOffset + SVfit_namespace::kLeg1decayDistanceLab]);
 	//std::cout << " flightDistance = " << flightDistance << std::endl;
 
@@ -573,23 +780,29 @@ class SVfitAlgorithm
 	double flightDistanceCorr = x[legOffset + SVfit_namespace::kLeg1decayDistanceLab];
 
         SVfit::track::VertexOnTrackFinder svFinder(legSolution);
-        GlobalPoint secondaryVertexOnTrack = svFinder.decayVertex(eventVertexPos, angleVisLabFrame, phiLab, flightDistanceCorr);
-	
-	direction = reco::Candidate::Vector(
-	  secondaryVertexOnTrack.x() - eventVertexPos(0),
-          secondaryVertexOnTrack.y() - eventVertexPos(1),
-          secondaryVertexOnTrack.z() - eventVertexPos(2));
-	
+        // Get the reconstructed vertex and the direction
+        GlobalPoint secondaryVertexOnTrack = svFinder.decayVertex(
+            eventVertexPos, angleVisLabFrame,
+            phiLab, flightDistanceCorr, &direction);
+
         legSolution.decayVertexPos_(0) = secondaryVertexOnTrack.x();
         legSolution.decayVertexPos_(1) = secondaryVertexOnTrack.y();
         legSolution.decayVertexPos_(2) = secondaryVertexOnTrack.z();
-	
+
         if ( verbosity_ ) std::cout << "Found vertex via track @ " << secondaryVertexOnTrack << std::endl;
+      }
+
+      // Throw a warning if the tau direction is opposite to that of the visible
+      // momentum.
+      if (direction.Unit().Dot(p4Vis.Vect().Unit()) < 0) {
+        edm::LogWarning("BadTauDirection")
+          << "The computed tau direction points opposite to the vis momentum!"
+          << " tau: " << direction.Unit() << " vis: " << p4Vis.Vect().Unit();
       }
 
       // Compute the tau P4
       reco::Candidate::LorentzVector tauP4 = SVfit_namespace::tauP4(direction.Unit(), momentumLabFrame);
-      if ( verbosity_ ) std::cout << "tauP4: p = " << tauP4.P() << "," 
+      if ( verbosity_ ) std::cout << "tauP4: p = " << tauP4.P() << ","
 				  << " eta = " << tauP4.eta() << ", phi = " << tauP4.phi() << std::endl;
 
       // Build the tau four vector. By construction, the neutrino is tauP4 - visP4
@@ -724,11 +937,14 @@ class SVfitAlgorithm
     }
 
     std::string name_;
-    bool parameterizeVertexAlongTrack_;
+    bool parameterizeVertexAlongTrackLeg1_;
+    bool parameterizeVertexAlongTrackLeg2_;
 
     SVfitEventVertexRefitter* eventVertexRefitAlgorithm_;
     SVfitLegTrackExtractor<T1> leg1TrackExtractor_;
     SVfitLegTrackExtractor<T2> leg2TrackExtractor_;
+    SVfitLegHasNeutralsExtractor<T1> leg1NeutralActivity_;
+    SVfitLegHasNeutralsExtractor<T2> leg2NeutralActivity_;
 
     std::vector<SVfitDiTauLikelihoodBase<T1,T2>*> likelihoodFunctions_;
     bool likelihoodsSupportPolarization_;
@@ -749,7 +965,24 @@ class SVfitAlgorithm
 
     mutable long indexFitFunctionCall_;
 
-    static const int verbosity_ = 0;
+    // Class level variables for extracting monitoring from minuit.
+    int minuitStatus_;
+    Double_t minuitEdm_, minuitNll_;
+
+    int verbosity_;
+
+    // Instrumentation
+    // flag to enable monitoring in negLogLikelihood()
+    bool enableLikelihoodMonitoring_;
+    DQMStore* dqmStore_;
+    // Keep track of the current event and how many tau pairs we have processed.
+    mutable edm::EventID currentEvent_;
+    mutable unsigned int tauPairIndex_;
+    edm::ParameterSet monitorCfg_;
+
+    typedef std::map<std::string, MonitorElement*> MEMap;
+    // Monitors for the current fit
+    MEMap monitors_;
 };
 
 #endif

@@ -5,12 +5,12 @@
  *
  * Plugin for computing likelihood for production of tau lepton pair
  * via Z --> tau+ tau- or (MSSM) Higgs --> tau+ tau- processes
- * 
+ *
  * \author Christian Veelken; UC Davis
  *
  * \version $Revision: 1.1 $
  *
- * $Id: SVfitLikelihoodDiTauProd.h,v 1.1 2010/08/28 13:18:03 veelken Exp $
+ * $Id: SVfitLikelihoodDiTauProd.h,v 1.1 2010/09/21 09:03:00 veelken Exp $
  *
  */
 
@@ -39,10 +39,8 @@ class SVfitLikelihoodDiTauProd : public SVfitDiTauLikelihoodBase<T1,T2>
   int process_;
 
   std::string pdfSet_;
-  
-  double sqrtS_; // center-of-mass energy (in units of GeV)
 
-  static const int verbosity_ = 0;
+  double sqrtS_; // center-of-mass energy (in units of GeV)
 
   int cfgError_;
 };

@@ -6,16 +6,16 @@
  * Plugin for computing likelihood for tau lepton decay "leg"
  * to be compatible with decay tau- --> X nu of polarized tau lepton into hadrons,
  * assuming  matrix element of V-A electroweak decay
- * 
- * NOTE: the system of hadrons X can either be pi-, rho- --> pi- pi0, 
+ *
+ * NOTE: the system of hadrons X can either be pi-, rho- --> pi- pi0,
  *       a1- --> pi- pi0 pi0 or a1- --> pi- pi+ pi-;
  *       tau decays into pi- pi+ pi- pi0 are **not** supported
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.5 $
+ * \version $Revision: 1.6 $
  *
- * $Id: SVfitTauLikelihoodPolarization.h,v 1.5 2010/09/09 14:11:01 veelken Exp $
+ * $Id: SVfitTauLikelihoodPolarization.h,v 1.6 2010/09/13 12:46:30 veelken Exp $
  *
  */
 
@@ -49,8 +49,8 @@ class SVfitTauLikelihoodPolarization : public SVfitLegLikelihoodPolarizationBase
   double probThreeProngZeroPi0s(const pat::Tau&, const SVfitLegSolution&, double) const;
   double probOtherDecayMode(const pat::Tau&, const SVfitLegSolution&, double) const;
 
-//--- auxiliary functions needed for computation of likelihood 
-//    for tau- --> a1- nu --> pi- pi0 pi0 nu, tau- --> a1- nu --> pi- pi+ pi- nu decays 
+//--- auxiliary functions needed for computation of likelihood
+//    for tau- --> a1- nu --> pi- pi0 pi0 nu, tau- --> a1- nu --> pi- pi+ pi- nu decays
   double compVMa1x(double, double, double, double, double) const;
   double compVMa1DecayProbL(double, double, double, double, double) const;
   double compVMa1DecayProbT(double, double, double, double, double, double) const;
@@ -93,8 +93,6 @@ class SVfitTauLikelihoodPolarization : public SVfitLegLikelihoodPolarizationBase
   double a1q_;
   double a1_8piDiv9_;
   double a1_16piDiv9_;
-
-  static const int verbosity_ = 0;
 };
 
 #endif
