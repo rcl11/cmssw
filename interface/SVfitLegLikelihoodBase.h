@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.9 $
+ * \version $Revision: 1.10 $
  *
- * $Id: SVfitLegLikelihoodBase.h,v 1.9 2010/09/21 08:56:48 veelken Exp $
+ * $Id: SVfitLegLikelihoodBase.h,v 1.10 2010/11/08 16:08:39 friis Exp $
  *
  */
 
@@ -27,11 +27,11 @@
 #include <iostream>
 
 template <typename T>
-class SVfitLegLikelihoodBase
-{
+class SVfitLegLikelihoodBase {
  public:
-  SVfitLegLikelihoodBase(const edm::ParameterSet& cfg)
-  {
+  SVfitLegLikelihoodBase(const edm::ParameterSet& cfg) {
+    verbosity_ = cfg.exists("verbosity") ?
+      cfg.getParameter<int>("verbosity") : 0;
     pluginType_ = cfg.getParameter<std::string>("pluginType");
   }
   virtual ~SVfitLegLikelihoodBase() {}
@@ -40,19 +40,17 @@ class SVfitLegLikelihoodBase
   virtual void beginEvent(const edm::Event&, const edm::EventSetup&) {}
   virtual void beginCandidate(const T&) {}
 
-  virtual void print(std::ostream& stream) const
-  {
+  virtual void print(std::ostream& stream) const {
     stream << "<SVfitLegLikelihoodBase::print>:" << std::endl;
     stream << " pluginType = " << pluginType_ << std::endl;
   }
 
-  virtual bool isFittedParameter(int legIndex, int parIndex) const
-  {
+  virtual bool isFittedParameter(int legIndex, int parIndex) const {
     if ( (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1thetaRest) ||
-	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2thetaRest) )
+        (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2thetaRest) )
       return true;
     else if ( (legIndex == SVfit_namespace::kLeg1 && parIndex == SVfit_namespace::kLeg1nuInvMass) ||
-	      (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2nuInvMass) )
+        (legIndex == SVfit_namespace::kLeg2 && parIndex == SVfit_namespace::kLeg2nuInvMass) )
       return !SVfit_namespace::isMasslessNuSystem<T>();
     else
       return false;
@@ -66,6 +64,7 @@ class SVfitLegLikelihoodBase
   virtual double operator()(const T&, const SVfitLegSolution&) const = 0;
  protected:
   std::string pluginType_;
+  int verbosity_;
 };
 
 #include "DataFormats/PatCandidates/interface/Electron.h"
