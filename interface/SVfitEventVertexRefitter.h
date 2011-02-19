@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: SVfitEventVertexRefitter.h,v 1.2 2010/09/21 08:55:39 veelken Exp $
+ * $Id: SVfitEventVertexRefitter.h,v 1.3 2010/11/08 09:59:52 friis Exp $
  *
  */
 
@@ -41,8 +41,7 @@ class SVfitEventVertexRefitter
 			const std::vector<reco::TrackBaseRef>& leg2Tracks);
 
   /// Refit a three prong tau.
-  TransientVertex fitSecondaryVertex(
-      const std::vector<reco::TrackBaseRef>& tracks) const;
+  TransientVertex fitSecondaryVertex(const std::vector<reco::TrackBaseRef>& tracks) const;
 
  private:
   edm::InputTag srcPrimaryEventVertex_;
