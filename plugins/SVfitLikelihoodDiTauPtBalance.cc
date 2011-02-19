@@ -36,43 +36,43 @@ SVfitLikelihoodDiTauPtBalance<T1,T2>::~SVfitLikelihoodDiTauPtBalance()
 //
 //-------------------------------------------------------------------------------
 namespace {
-double smearedKinematicDistribution(double x, double M, double s)
-{
-  double num_first_term = TMath::Exp(-0.5*square(x)/square(s))
-                         *8*s*(fourth(M) + 2*square(M)*(2*square(s) + square(x)) + 6*(square(s) + square(x))*(8*square(s) + square(x)));
+  double smearedKinematicDistribution(double x, double M, double s)
+  {
+    double num_first_term = TMath::Exp(-0.5*square(x)/square(s))
+                           *8*s*(fourth(M) + 2*square(M)*(2*square(s) + square(x)) + 6*(square(s) + square(x))*(8*square(s) + square(x)));
 
-  double num_second_term = TMath::Exp(-square(M - 2*x)/(8*square(s)))
-                          *s*(15*fourth(M) + 14*cube(M) + 48*(square(s)+square(x))*(8*square(s)+square(x))
-                             + 4*square(M)*(20*square(s) + 7*square(x)) + 24*M*(7*square(s)*x + cube(x)));
+    double num_second_term = TMath::Exp(-square(M - 2*x)/(8*square(s)))
+                            *s*(15*fourth(M) + 14*cube(M) + 48*(square(s)+square(x))*(8*square(s)+square(x))
+                               + 4*square(M)*(20*square(s) + 7*square(x)) + 24*M*(7*square(s)*x + cube(x)));
 
-  double num_third_term = 4*TMath::Sqrt(TMath::TwoPi())
-                         *x*(fourth(M) + 6*square(M)*square(s) + 90*fourth(s) + 2*(square(M) + 30*square(s))*square(x) + 6*fourth(x))
-                         *(TMath::Erf((M - 2*x)/(2*TMath::Sqrt2()*s)) + TMath::Erf(x/(TMath::Sqrt2()*s)));
-  double num_factor = 1/(2*TMath::Sqrt(TMath::TwoPi()));
-  double numerator = num_factor*(num_first_term - num_second_term + num_third_term);
+    double num_third_term = 4*TMath::Sqrt(TMath::TwoPi())
+                           *x*(fourth(M) + 6*square(M)*square(s) + 90*fourth(s) + 2*(square(M) + 30*square(s))*square(x) + 6*fourth(x))
+                           *(TMath::Erf((M - 2*x)/(2*TMath::Sqrt2()*s)) + TMath::Erf(x/(TMath::Sqrt2()*s)));
+    double num_factor = 1/(2*TMath::Sqrt(TMath::TwoPi()));
+    double numerator = num_factor*(num_first_term - num_second_term + num_third_term);
 
-  // now compute normalization factor
-  double den_first_term = (2*TMath::Sqrt(1.0/TMath::PiOver2())
-                         *TMath::Exp(-square(M)/(8*square(s)))
-                         *M*s*(11*fourth(M) + 44*square(M)*square(s) + 240*fourth(s)));
-  double den_second_term = TMath::Erf(M/(2*TMath::Sqrt2()*s))
-                          *(11*fourth(M)*square(M) - 32*fourth(M)*square(s) - 96*square(M)*fourth(s) - 960*fourth(s)*square(s));
-  double denominator = (1./16)*(den_first_term + den_second_term);
+    // now compute normalization factor
+    double den_first_term = (2*TMath::Sqrt(1.0/TMath::PiOver2())
+                           *TMath::Exp(-square(M)/(8*square(s)))
+                           *M*s*(11*fourth(M) + 44*square(M)*square(s) + 240*fourth(s)));
+    double den_second_term = TMath::Erf(M/(2*TMath::Sqrt2()*s))
+                            *(11*fourth(M)*square(M) - 32*fourth(M)*square(s) - 96*square(M)*fourth(s) - 960*fourth(s)*square(s));
+    double denominator = (1./16)*(den_first_term + den_second_term);
 
-  return numerator/denominator;
-}
-}
+    return numerator/denominator;
+  }
 
-double movingTauLeptonPtPDF(double tauPt, double diTauMass)
-{
-  double smearNorm = 0.52 + 0.000658*diTauMass;
-  double smearWidth = 1.8 + 0.018*diTauMass;
-  double M = 2.3 + 1.04*diTauMass;
-  double gammaScale = 6.74 + 0.020*diTauMass;
-  double gammaShape = 2.2 + 0.0364*diTauMass;
+  double movingTauLeptonPtPDF(double tauPt, double diTauMass)
+  {
+    double smearNorm = 0.52 + 0.000658*diTauMass;
+    double smearWidth = 1.8 + 0.018*diTauMass;
+    double M = 2.3 + 1.04*diTauMass;
+    double gammaScale = 6.74 + 0.020*diTauMass;
+    double gammaShape = 2.2 + 0.0364*diTauMass;
 
-  return smearNorm*smearedKinematicDistribution(tauPt, M, smearWidth)
-        + (1 - smearNorm)*TMath::GammaDist(tauPt, gammaShape, 0., gammaScale);
+    return smearNorm*smearedKinematicDistribution(tauPt, M, smearWidth)
+          + (1 - smearNorm)*TMath::GammaDist(tauPt, gammaShape, 0., gammaScale);
+  }
 }
 
 template <typename T1, typename T2>

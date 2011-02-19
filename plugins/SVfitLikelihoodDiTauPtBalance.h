@@ -1,16 +1,16 @@
-#ifndef TauAnalysis_CandidateTools_SVfitLikelihoodPtBalance_h
-#define TauAnalysis_CandidateTools_SVfitLikelihoodPtBalance_h
+#ifndef TauAnalysis_CandidateTools_SVfitLikelihoodDiTauPtBalance_h
+#define TauAnalysis_CandidateTools_SVfitLikelihoodDiTauPtBalance_h
 
-/** \class SVfitLikelihoodPtBalance
+/** \class SVfitLikelihoodDiTauPtBalance
  *
  * Plugin for computing likelihood for two tau leptons
  * to balance each other in transverse momentum
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.5 $
  *
- * $Id: SVfitLikelihoodDiTauPtBalance.h,v 1.4 2010/12/13 15:56:13 friis Exp $
+ * $Id: SVfitLikelihoodDiTauPtBalance.h,v 1.5 2011/01/18 16:47:16 friis Exp $
  *
  */
 
