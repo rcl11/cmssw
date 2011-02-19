@@ -14,9 +14,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.24 $
+ * \version $Revision: 1.25 $
  *
- * $Id: SVfitAlgorithm.h,v 1.24 2010/11/16 19:37:01 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.25 2011/01/18 16:47:16 friis Exp $
  *
  */
 
@@ -102,7 +102,9 @@ template<typename T1, typename T2>
 class SVfitAlgorithm
 {
   public:
-    SVfitAlgorithm(const edm::ParameterSet& cfg) :currentDiTau_(0) {
+    SVfitAlgorithm(const edm::ParameterSet& cfg) 
+      : currentDiTau_(0) 
+    {
       verbosity_ = cfg.exists("verbosity") ? cfg.getParameter<int>("verbosity") : 0;
       // Check if we want to use the DQM monitors
       dqmStore_ = NULL;
@@ -190,7 +192,8 @@ class SVfitAlgorithm
       //print(std::cout);
     }
 
-    ~SVfitAlgorithm() {
+    ~SVfitAlgorithm() 
+    {
       delete eventVertexRefitAlgorithm_;
 
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::iterator it = likelihoodFunctions_.begin();
@@ -199,14 +202,16 @@ class SVfitAlgorithm
       }
     }
 
-    void beginJob() {
+    void beginJob() 
+    {
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
            likelihoodFunction != likelihoodFunctions_.end(); ++likelihoodFunction ) {
         (*likelihoodFunction)->beginJob();
       }
     }
 
-    void beginEvent(edm::Event& evt, const edm::EventSetup& es) {
+    void beginEvent(edm::Event& evt, const edm::EventSetup& es) 
+    {
       currentEvent_ = evt.id();
       tauPairIndex_ = 0;
       //std::cout << "<SVfitAlgorithm::beginEvent>:" << std::endl;
@@ -220,7 +225,8 @@ class SVfitAlgorithm
       }
     }
 
-    void print(std::ostream& stream) const {
+    void print(std::ostream& stream) const 
+    {
       stream << "<SVfitAlgorithm::print>" << std::endl;
       stream << " name = " << name_ << std::endl;
       for ( typename std::vector<SVfitDiTauLikelihoodBase<T1,T2>*>::const_iterator likelihoodFunction = likelihoodFunctions_.begin();
@@ -298,7 +304,8 @@ class SVfitAlgorithm
       return solutions;
     }
 
-    double negLogLikelihood(const std::vector<double>& x) const {
+    double negLogLikelihood(const std::vector<double>& x) const 
+    {
       ++indexFitFunctionCall_;
 
       if ( verbosity_ ) {
@@ -392,7 +399,7 @@ class SVfitAlgorithm
     {
       if ( verbosity_ ) std::cout << "<SVfitAlgorithm::fitPolarizationHypothesis>:" << std::endl;
 
-      //--- initialize pointer to current diTau object
+//--- initialize pointer to current diTau object
       currentDiTau_ = &diTauCandidate;
 
 //--- initialize data-members of diTauSolution object
@@ -409,16 +416,16 @@ class SVfitAlgorithm
 
       // Turn off vertex parameterization in case neutrals are present - leads
       // to situations with non-existent solutions.
-      if (leg1NeutralActivity_(*diTauCandidate.leg1())) {
-        if (verbosity_)
+      if ( leg1NeutralActivity_(*diTauCandidate.leg1()) ) {
+        if ( verbosity_ )
           std::cout << "Disabling vertex parameterization by leg 1, it has neutrals."
-            << std::endl;
+		    << std::endl;
         parameterizeVertexAlongTrackLeg1_ = false;
       }
-      if (leg2NeutralActivity_(*diTauCandidate.leg2())) {
-        if (verbosity_)
+      if ( leg2NeutralActivity_(*diTauCandidate.leg2()) ) {
+        if ( verbosity_ )
           std::cout << "Disabling vertex parameterization by leg 2, it has neutrals."
-            << std::endl;
+		    << std::endl;
         parameterizeVertexAlongTrackLeg2_ = false;
       }
 
@@ -634,8 +641,8 @@ class SVfitAlgorithm
 
         if ( verbosity_ ) {
           std::cout << " DONE WITH FIT ITERATION #" << fitIteration_
-            << " FIT RESULT: " << minuitStatus_
-            << " NLL: " << minuitNll_ << " EDM: " << minuitEdm_ << std::endl;
+		    << " FIT RESULT: " << minuitStatus_
+		    << " NLL: " << minuitNll_ << " EDM: " << minuitEdm_ << std::endl;
           std::cout << " COVARIANCE MATRIX:" << std::endl;
         }
         if (dqmStore_) {
