@@ -56,9 +56,9 @@ svFitLikelihoodDiTauKinematicsPolarized = cms.PSet(
     )
 )
 
-svFitLikelihoodMEt = cms.PSet(
-    pluginName = cms.string("svFitLikelihoodMEt"),
-    pluginType = cms.string("SVfitLikelihoodMEt"),
+svFitLikelihoodDiTauMEt = cms.PSet(
+    pluginName = cms.string("svFitLikelihoodDiTauMEt"),
+    pluginType = cms.string("SVfitLikelihoodDiTauMEt"),
     # Always fit
     firstFitIteration = cms.uint32(0),
     resolution = cms.PSet(

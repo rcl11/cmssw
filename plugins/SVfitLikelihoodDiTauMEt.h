@@ -1,16 +1,16 @@
-#ifndef TauAnalysis_CandidateTools_SVfitLikelihoodMEt_h
-#define TauAnalysis_CandidateTools_SVfitLikelihoodMEt_h
+#ifndef TauAnalysis_CandidateTools_SVfitLikelihoodDiTauMEt_h
+#define TauAnalysis_CandidateTools_SVfitLikelihoodDiTauMEt_h
 
-/** \class SVfitLikelihoodMEt
+/** \class SVfitLikelihoodDiTauMEt
  *
  * Plugin for computing likelihood for neutrinos produced in tau lepton decays
  * to match missing transverse momentum reconstructed in the event
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.7 $
+ * \version $Revision: 1.8 $
  *
- * $Id: SVfitLikelihoodMEt.h,v 1.7 2010/11/10 16:02:31 friis Exp $
+ * $Id: SVfitLikelihoodDiTauMEt.h,v 1.8 2011/01/18 16:47:16 friis Exp $
  *
  */
 
@@ -29,11 +29,11 @@
 #include <TFormula.h>
 
 template <typename T1, typename T2>
-class SVfitLikelihoodMEt : public SVfitDiTauLikelihoodBase<T1,T2>
+class SVfitLikelihoodDiTauMEt : public SVfitDiTauLikelihoodBase<T1,T2>
 {
  public:
-  SVfitLikelihoodMEt(const edm::ParameterSet&);
-  ~SVfitLikelihoodMEt();
+  SVfitLikelihoodDiTauMEt(const edm::ParameterSet&);
+  ~SVfitLikelihoodDiTauMEt();
 
   void beginEvent(const edm::Event&, const edm::EventSetup&);
   void beginCandidate(const CompositePtrCandidateT1T2MEt<T1,T2>&);
