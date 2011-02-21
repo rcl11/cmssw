@@ -14,9 +14,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.25 $
+ * \version $Revision: 1.26 $
  *
- * $Id: SVfitAlgorithm.h,v 1.25 2011/01/18 16:47:16 friis Exp $
+ * $Id: SVfitAlgorithm.h,v 1.26 2011/02/19 13:35:39 veelken Exp $
  *
  */
 
@@ -255,7 +255,7 @@ class SVfitAlgorithm
 //    excluding tracks associated to tau decay products
       std::vector<reco::TrackBaseRef> leg1Tracks = leg1TrackExtractor_(*diTauCandidate.leg1());
       std::vector<reco::TrackBaseRef> leg2Tracks = leg2TrackExtractor_(*diTauCandidate.leg2());
-      TransientVertex pv = eventVertexRefitAlgorithm_->refit(leg1Tracks, leg2Tracks);
+      TransientVertex pv = eventVertexRefitAlgorithm_->refit(&leg1Tracks, &leg2Tracks);
       if ( verbosity_ ) {
         std::cout << " refitted event vertex (#tracks = " << pv.originalTracks().size() << "):"
 		  << " x = " << pv.position().x() << " +/- " << TMath::Sqrt(pv.positionError().cxx()) << ","

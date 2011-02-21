@@ -102,8 +102,8 @@ void removeTracks(TransientTrackMap& pvTracks_toRefit, const std::vector<reco::T
 }
 //-------------------------------------------------------------------------------
 
-TransientVertex SVfitEventVertexRefitter::refit(const std::vector<reco::TrackBaseRef>& leg1Tracks,
-						const std::vector<reco::TrackBaseRef>& leg2Tracks)
+TransientVertex SVfitEventVertexRefitter::refit(const std::vector<reco::TrackBaseRef>* leg1Tracks,
+						const std::vector<reco::TrackBaseRef>* leg2Tracks)
 {
 //--- return (invalid) dummy vertex in case primary event vertex cannot be refitted,
 //    due to insufficient information
@@ -120,8 +120,8 @@ TransientVertex SVfitEventVertexRefitter::refit(const std::vector<reco::TrackBas
 
 //--- exclude tracks associated to any one of the two tau lepton decay "legs"
 //    from the primary event vertex refit
-  removeTracks(pvTrackMap_refit, leg1Tracks);
-  removeTracks(pvTrackMap_refit, leg2Tracks);
+  if ( leg1Tracks ) removeTracks(pvTrackMap_refit, *leg1Tracks);
+  if ( leg2Tracks ) removeTracks(pvTrackMap_refit, *leg2Tracks);
 
   std::vector<reco::TransientTrack> pvTracks_refit;
   for ( TransientTrackMap::iterator pvTrack = pvTrackMap_refit.begin();
@@ -145,18 +145,18 @@ TransientVertex SVfitEventVertexRefitter::refit(const std::vector<reco::TrackBas
   }
 }
 
-TransientVertex SVfitEventVertexRefitter::fitSecondaryVertex(
-      const std::vector<reco::TrackBaseRef>& tracks) const {
+TransientVertex SVfitEventVertexRefitter::fitSecondaryVertex(const std::vector<reco::TrackBaseRef>& tracks) const 
+{
   // Return a null vertex if this is not a refittable tau.
-  if (tracks.size() < 2)
-    return TransientVertex();
-
+  if ( tracks.size() < 2 || trackBuilder_ == 0 ) return TransientVertex();
+  
   // Build the transient tracks
   std::vector<reco::TransientTrack> transTracks;
-  for(size_t trk = 0; trk < tracks.size(); ++trk) {
-    transTracks.push_back(trackBuilder_->build(
-            tracks[trk].castTo<reco::TrackRef>()));
+  for ( std::vector<reco::TrackBaseRef>::const_iterator track = tracks.begin();
+	track != tracks.end(); ++track ) {
+    transTracks.push_back(trackBuilder_->build(track->castTo<reco::TrackRef>()));
   }
+  
   // Fit the vertex.
   return vertexFitAlgorithm_->vertex(transTracks);
 }

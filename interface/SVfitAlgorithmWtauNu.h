@@ -15,9 +15,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.25 $
+ * \version $Revision: 1.1 $
  *
- * $Id: SVfitAlgorithmWtauNu.h,v 1.25 2011/01/18 16:47:16 friis Exp $
+ * $Id: SVfitAlgorithmWtauNu.h,v 1.1 2011/02/19 13:36:27 veelken Exp $
  *
  */
 
@@ -205,7 +205,7 @@ class SVfitAlgorithmWtauNu
 //--- refit primary event vertex
 //    excluding tracks associated to tau decay products
       std::vector<reco::TrackBaseRef> leg1Tracks = leg1TrackExtractor_(*candidate.visDecayProducts());
-      TransientVertex pv = eventVertexRefitAlgorithm_->refit(leg1Tracks, leg1Tracks);
+      TransientVertex pv = eventVertexRefitAlgorithm_->refit(&leg1Tracks);
       if ( verbosity_ ) {
         std::cout << " refitted event vertex (#tracks = " << pv.originalTracks().size() << "):"
 		  << " x = " << pv.position().x() << " +/- " << TMath::Sqrt(pv.positionError().cxx()) << ","
@@ -217,8 +217,8 @@ class SVfitAlgorithmWtauNu
       // Associate the tracks
       currentWtauNuSolution_.leg1_.tracks_ = leg1Tracks;
       // Refit the vertices if possible
-      currentWtauNuSolution_.leg1_.recoVertex_ =
-	eventVertexRefitAlgorithm_->fitSecondaryVertex(leg1Tracks);
+      currentWtauNuSolution_.leg1_.recoVertex_ = eventVertexRefitAlgorithm_->fitSecondaryVertex(leg1Tracks);
+
       fitHypothesis(candidate, currentWtauNuSolution_, pv);
       solutions.push_back(currentWtauNuSolution_);
 
@@ -278,11 +278,11 @@ class SVfitAlgorithmWtauNu
 
     unsigned int fitIteration_;
 
-    void fitPolarizationHypothesis(const CompositePtrCandidateTMEt<T>& candidate,
-                                   SVfitWtauNuSolution& solution,
-                                   const TransientVertex& pv)
+    void fitHypothesis(const CompositePtrCandidateTMEt<T>& candidate,
+		       SVfitWtauNuSolution& solution,
+		       const TransientVertex& pv)
     {
-      if ( verbosity_ ) std::cout << "<SVfitAlgorithmWtauNu::fitPolarizationHypothesis>:" << std::endl;
+      if ( verbosity_ ) std::cout << "<SVfitAlgorithmWtauNu::fitHypothesis>:" << std::endl;
 
 //--- initialize pointer to current candidate object
       currentWtauNuCandidate_ = &candidate;
@@ -356,7 +356,7 @@ class SVfitAlgorithmWtauNu
       if ( !SVfit_namespace::isMasslessNuSystem<T>() ) {
         leg1NuMass0 = 0.8;
         leg1NuMassErr = 0.4;
-        leg1NuMassMax = SVfit_namespace::tauLeptonMass - candidate.leg1()->mass();
+        leg1NuMassMax = SVfit_namespace::tauLeptonMass - candidate.visDecayProducts()->mass();
       } else {
         leg1NuMass0 = 0.;
         leg1NuMassErr = 1.;
@@ -483,7 +483,7 @@ class SVfitAlgorithmWtauNu
 			   parameterizeVertexAlongTrackLeg1_);
 
 //--- build neutrino
-      applyParametersToNeutrino(SVfitWtauNu_namespace::kNuPtLab, solution.nu_, x);
+      applyParametersToNeutrino(solution.nu_, x);
     }
 
     void applyParametersToLeg(SVfitLegSolution& legSolution,
@@ -570,7 +570,7 @@ class SVfitAlgorithmWtauNu
 
     void applyParametersToNeutrino(
         reco::Candidate::LorentzVector& nuSolution,
-	const std::vector<double>& x)
+	const std::vector<double>& x) const
     {
       double pt  = x[SVfitWtauNu_namespace::kNuPtLab];
       double phi = x[SVfitWtauNu_namespace::kNuPhiLab];
@@ -596,7 +596,7 @@ class SVfitAlgorithmWtauNu
     mutable TFitterMinuit* minuit_;
     SVfitMinuitFCNadapterWtauNu<T> minuitFCNadapter_;
     unsigned minuitMaxInterations_;
-    const static unsigned minuitNumParameters_ = 19;
+    const static unsigned minuitNumParameters_ = 13;
     mutable unsigned minuitNumFreeParameters_;
     mutable unsigned minuitNumFixedParameters_;
     mutable std::vector<double> minuitFittedParameterValues_;

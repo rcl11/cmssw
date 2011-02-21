@@ -83,7 +83,6 @@ svFitLikelihoodTrackInfo = cms.PSet(
         pluginType = cms.string("SVfitLegLikelihoodTrackInfo"),
         useLinearApprox = cms.bool(True)
     ),
-
     useLifetimeConstraint = cms.bool(True)
 )
 
@@ -91,7 +90,7 @@ svFitLikelihoodDiTauPtBalance = cms.PSet(
     pluginName = cms.string("svFitLikelihoodDiTauPtBalance"),
     pluginType = cms.string("SVfitLikelihoodDiTauPtBalance"),
     # Always fit
-    firstFitIteration = cms.uint32(0),
+    firstFitIteration = cms.uint32(0)
 )
 
 svFitLikelihoodDiTauPtBalance2 = cms.PSet(
@@ -120,7 +119,7 @@ svFitLikelihoodDiTauPtBalance2 = cms.PSet(
         gammaShape = cms.string("2"),
         gammaScale = cms.string("[0]/4"),
         overallNorm = cms.string("2"),
-    ),
+    )
 )
 
 svFitLikelihoodDiTauPt = cms.PSet(
