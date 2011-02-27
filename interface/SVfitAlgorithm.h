@@ -14,9 +14,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.26 $
+ * \version $Revision: 1.27 $
  *
- * $Id: SVfitAlgorithm.h,v 1.26 2011/02/19 13:35:39 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.27 2011/02/21 13:07:09 veelken Exp $
  *
  */
 
@@ -561,7 +561,7 @@ class SVfitAlgorithm
         << currentEvent_.run() << "_"
         << tauPairIndex_  << "_";
       // Book monitoring histograms for all of our variables
-      if (dqmStore_) {
+      if ( dqmStore_ ) {
         dqmStore_->setCurrentFolder(
             monitorCfg_.getParameter<std::string>("dqmDirectory"));
         unsigned int maxFunctionCalls = monitorCfg_.getParameter<unsigned int>(
