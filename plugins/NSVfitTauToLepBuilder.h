@@ -1,17 +1,17 @@
-#ifndef TauAnalysis_CandidateTools_NSVfitTauToHadBuilder_h
-#define TauAnalysis_CandidateTools_NSVfitTauToHadBuilder_h
+#ifndef TauAnalysis_CandidateTools_NSVfitTauToLepBuilder_h
+#define TauAnalysis_CandidateTools_NSVfitTauToLepBuilder_h
 
 /** \class NSVfitSingleParticleBuilderBase
  *
  * Auxiliary class reconstructing tau --> had decays and
- * building NSVfitTauToHadHypothesis objects;
+ * building NSVfitTauToLepHypothesis objects;
  * used by NSVfit algorithm
  *
  * \author Christian Veelken, UC Davis
  *
  * \version $Revision: 1.1 $
  *
- * $Id: NSVfitTauToHadBuilder.h,v 1.1 2011/02/28 10:46:38 veelken Exp $
+ * $Id: NSVfitTauToLepBuilder.h,v 1.1 2011/02/28 10:46:38 veelken Exp $
  *
  */
 
@@ -25,11 +25,12 @@
 #include <string>
 #include <iostream>
 
-class NSVfitTauToHadBuilder : public NSVfitSingleParticleBuilderBase
+template <typename T>
+class NSVfitTauToLepBuilder : public NSVfitSingleParticleBuilderBase
 {
  public:
-  NSVfitTauToHadBuilder(const edm::ParameterSet&);
-  ~NSVfitTauToHadBuilder();
+  NSVfitTauToLepBuilder(const edm::ParameterSet&);
+  ~NSVfitTauToLepBuilder();
 
   void initialize(NSVfitAlgorithmBase*);
 
@@ -39,11 +40,12 @@ class NSVfitTauToHadBuilder : public NSVfitSingleParticleBuilderBase
 
   void print(std::ostream& stream) const;
 
-protected:
+ protected:
   int idxFitParameter_visEnFracX_;
   int idxFitParameter_phi_lab_;
+  int idxFitParameter_nuInvMass_;
 
-  SVfitLegTrackExtractor<pat::Tau> trackExtractor_;
+  SVfitLegTrackExtractor<T> trackExtractor_;
 
   NSVfitAlgorithmBase* algorithm_;
 };
