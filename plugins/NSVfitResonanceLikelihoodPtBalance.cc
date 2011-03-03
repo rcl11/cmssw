@@ -98,7 +98,7 @@ NSVfitResonanceLikelihoodPtBalance::~NSVfitResonanceLikelihoodPtBalance()
 // nothing to be done yet...
 }
 
-void NSVfitResonanceLikelihoodPtBalance::initialize(NSVfitAlgorithmBase* algorithm) const 
+void NSVfitResonanceLikelihoodPtBalance::beginJob(NSVfitAlgorithmBase* algorithm) const 
 {
   algorithm->requestFitParameter("allTauDecays", kTau_visEnFracX, pluginName_);
   algorithm->requestFitParameter("allTauDecays", kTau_phi_lab,    pluginName_);

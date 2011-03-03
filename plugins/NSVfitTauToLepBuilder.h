@@ -11,7 +11,7 @@
  *
  * \version $Revision: 1.1 $
  *
- * $Id: NSVfitTauToLepBuilder.h,v 1.1 2011/02/28 10:46:38 veelken Exp $
+ * $Id: NSVfitTauToLepBuilder.h,v 1.1 2011/02/28 16:49:32 veelken Exp $
  *
  */
 
@@ -32,7 +32,7 @@ class NSVfitTauToLepBuilder : public NSVfitSingleParticleBuilderBase
   NSVfitTauToLepBuilder(const edm::ParameterSet&);
   ~NSVfitTauToLepBuilder();
 
-  void initialize(NSVfitAlgorithmBase*);
+  void beginJob(NSVfitAlgorithmBase*);
 
   virtual NSVfitSingleParticleHypothesisBase* build(const inputParticleMap&) const;
 

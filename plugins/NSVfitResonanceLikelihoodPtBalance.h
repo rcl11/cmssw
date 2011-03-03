@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.1 $
  *
- * $Id: NSVfitResonanceLikelihoodPtBalance.h,v 1.2 2011/01/18 16:47:16 friis Exp $
+ * $Id: NSVfitResonanceLikelihoodPtBalance.h,v 1.1 2011/02/27 16:45:16 veelken Exp $
  *
  */
 
@@ -28,7 +28,7 @@ class NSVfitResonanceLikelihoodPtBalance : public NSVfitResonanceLikelihood
   NSVfitResonanceLikelihoodPtBalance(const edm::ParameterSet&);
   ~NSVfitResonanceLikelihoodPtBalance();
   
-  void initialize(NSVfitAlgorithmBase*) const;
+  void beginJob(NSVfitAlgorithmBase*) const;
 
   double operator()(const NSVfitResonanceHypothesis*) const;
   

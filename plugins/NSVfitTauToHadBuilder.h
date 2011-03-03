@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: NSVfitTauToHadBuilder.h,v 1.1 2011/02/28 10:46:38 veelken Exp $
+ * $Id: NSVfitTauToHadBuilder.h,v 1.2 2011/02/28 16:49:32 veelken Exp $
  *
  */
 
@@ -31,7 +31,7 @@ class NSVfitTauToHadBuilder : public NSVfitSingleParticleBuilderBase
   NSVfitTauToHadBuilder(const edm::ParameterSet&);
   ~NSVfitTauToHadBuilder();
 
-  void initialize(NSVfitAlgorithmBase*);
+  void beginJob(NSVfitAlgorithmBase*);
 
   virtual NSVfitSingleParticleHypothesisBase* build(const inputParticleMap&) const;
 
