@@ -113,7 +113,7 @@ NSVfitResonanceLikelihoodPtBalance::operator()(const NSVfitResonanceHypothesis* 
 //--- compute negative log-likelihood for two tau leptons
 //    to have transverse momenta leg1Pt, leg2Pt
 
-  if ( this->verbosity_ ) std::cout << "<SVfitLikelihoodDiTauPtBalance2::operator()>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<NSVfitLikelihoodDiTauPtBalance::operator()>:" << std::endl;
 
   if ( hypothesis->daughters().size() != 2 ) {
     throw cms::Exception("NSVfitResonanceLikelihoodPtBalance::operator()")
