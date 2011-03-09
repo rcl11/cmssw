@@ -8,6 +8,7 @@
 #include <TMath.h>
 
 #include <string>
+#include <limits>
 
 using namespace SVfit_namespace;
 
