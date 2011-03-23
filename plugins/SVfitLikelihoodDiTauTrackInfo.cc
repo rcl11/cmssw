@@ -135,7 +135,7 @@ bool SVfitLikelihoodDiTauTrackInfo<T1,T2>::supportsPolarization() const
   return ( leg1Likelihood_->supportsPolarization() || leg2Likelihood_->supportsPolarization() );
 }
 
-double logExponentialDecay(double tauFlightPath, double p)
+double logExponentialDecay_old(double tauFlightPath, double p)
 {
 //--- compute negative log-likelihood for tau flight path
 //   (distance between primary event (tau production) vertex and secondary (tau decay) vertex)
@@ -156,7 +156,7 @@ double logExponentialDecay(double tauFlightPath, double p)
 
 // Compute a penalty incase the flight correction moves the SV 'behind' the
 // primary vertex.
-double backwardsPenaltyTerm(const reco::Candidate::Vector &flight,
+double backwardsPenaltyTerm_old(const reco::Candidate::Vector &flight,
     const reco::Candidate::LorentzVector &visP4, bool verbosity) {
   double output = 0.;
   if ( flight.Unit().Dot(visP4.Vect().Unit()) < 0 ) {
@@ -197,20 +197,20 @@ double SVfitLikelihoodDiTauTrackInfo<T1,T2>::operator()(const CompositePtrCandid
   negLogLikelihood += (*leg2Likelihood_)(*diTau.leg2(), solution.leg2());
 
   if ( useLifetimeConstraint_ ) {
-    negLogLikelihood -= logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P());
+    negLogLikelihood -= logExponentialDecay_old(solution.leg1DecayDistance(), solution.leg1().p4().P());
     if ( this->verbosity_ )
       std::cout << " leg1DecayDistance = " << solution.leg1DecayDistance() << ": -log(likelihood) = "
-		<< -logExponentialDecay(solution.leg1DecayDistance(), solution.leg1().p4().P()) << std::endl;
-    negLogLikelihood -= logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P());
+		<< -logExponentialDecay_old(solution.leg1DecayDistance(), solution.leg1().p4().P()) << std::endl;
+    negLogLikelihood -= logExponentialDecay_old(solution.leg2DecayDistance(), solution.leg2().p4().P());
     if ( this->verbosity_ )
       std::cout << " leg2DecayDistance = " << solution.leg2DecayDistance() << ": -log(likelihood) = "
-		<< -logExponentialDecay(solution.leg2DecayDistance(), solution.leg2().p4().P()) << std::endl;
+		<< -logExponentialDecay_old(solution.leg2DecayDistance(), solution.leg2().p4().P()) << std::endl;
   }
 
   // Add a penalty term in case the SV is 'behind' the PV
-  negLogLikelihood += backwardsPenaltyTerm(
+  negLogLikelihood += backwardsPenaltyTerm_old(
       solution.leg1FlightPath(), solution.leg1().p4Vis(), this->verbosity_);
-  negLogLikelihood += backwardsPenaltyTerm(
+  negLogLikelihood += backwardsPenaltyTerm_old(
       solution.leg2FlightPath(), solution.leg2().p4Vis(), this->verbosity_);
 
   if ( this->verbosity_ )

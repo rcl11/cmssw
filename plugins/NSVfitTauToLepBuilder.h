@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: NSVfitTauToLepBuilder.h,v 1.1 2011/02/28 16:49:32 veelken Exp $
+ * $Id: NSVfitTauToLepBuilder.h,v 1.2 2011/03/03 13:04:47 veelken Exp $
  *
  */
 
@@ -44,6 +44,7 @@ class NSVfitTauToLepBuilder : public NSVfitSingleParticleBuilderBase
   int idxFitParameter_visEnFracX_;
   int idxFitParameter_phi_lab_;
   int idxFitParameter_nuInvMass_;
+  int idxFitParameter_pol_;
 
   SVfitLegTrackExtractor<T> trackExtractor_;
 

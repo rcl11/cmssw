@@ -1,10 +1,13 @@
-#include "TauAnalysis/CandidateTools/plugins/SVfitTauLikelihoodPolarization.h"
+#include "TauAnalysis/CandidateTools/plugins/NSVfitTauToHadLikelihoodPolarization.h"
 
 #include "DataFormats/TauReco/interface/PFTauDecayMode.h"
 
 #include "TauAnalysis/CandidateTools/interface/SVfitVMlineShapeIntegrand.h"
 #include "TauAnalysis/CandidateTools/interface/candidateAuxFunctions.h"
+#include "TauAnalysis/CandidateTools/interface/NSVfitAlgorithmBase.h"
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
+
+#include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauToHadHypothesis.h"
 
 #include <TFile.h>
 #include <TH2.h>
@@ -15,7 +18,7 @@
 
 using namespace SVfit_namespace;
 
-SVfitTauLikelihoodPolarization::decayModeEntryType::decayModeEntryType(const edm::ParameterSet& cfg)
+NSVfitTauToHadLikelihoodPolarization::decayModeEntryType::decayModeEntryType(const edm::ParameterSet& cfg)
   : xSigma_(0),
     xBias_(0)
 {
@@ -24,13 +27,13 @@ SVfitTauLikelihoodPolarization::decayModeEntryType::decayModeEntryType(const edm
   pMin_ = cfg.getParameter<double>("pMin");
 }
 
-SVfitTauLikelihoodPolarization::decayModeEntryType::~decayModeEntryType()
+NSVfitTauToHadLikelihoodPolarization::decayModeEntryType::~decayModeEntryType()
 {
   delete xSigma_;
   delete xBias_;
 }
 
-void SVfitTauLikelihoodPolarization::decayModeEntryType::print(std::ostream& stream) const
+void NSVfitTauToHadLikelihoodPolarization::decayModeEntryType::print(std::ostream& stream) const
 {
   stream << "<decayModeEntryType::print>:" << std::endl;
   if ( xSigma_ != 0 ) std::cout << " xSigma = " << xSigma_->GetTitle() << std::endl;
@@ -42,12 +45,12 @@ void SVfitTauLikelihoodPolarization::decayModeEntryType::print(std::ostream& str
 //-------------------------------------------------------------------------------
 //
 
-size_t getSupportedTauDecayModeIndex_old(const std::vector<int>& supportedTauDecayModes, const std::string& tauDecayModeName,
-					 int tauDecayModeOther)
+size_t getSupportedTauDecayModeIndex(
+         const std::vector<int>& supportedTauDecayModes, const std::string& tauDecayModeName, int tauDecayModeOther)
 {
 //--- check if tau decay mode name given as function argument
 //    matches one of the decay modes for which dedicated likelihood functions 
-//    are implemented in the SVfitTauLikelihoodPolarization class
+//    are implemented in the NSVfitTauToHadLikelihoodPolarization class
   size_t numSupportedTauDecayModes = supportedTauDecayModes.size();
   for ( size_t iDecayMode = 0; iDecayMode < numSupportedTauDecayModes; ++iDecayMode ) {
     if ( getTauDecayModeName(supportedTauDecayModes[iDecayMode]) == tauDecayModeName ) return iDecayMode;
@@ -58,7 +61,7 @@ size_t getSupportedTauDecayModeIndex_old(const std::vector<int>& supportedTauDec
   return tauDecayModeOther;
 }
 
-void normalizeMatrixColumns_old(TMatrixD& matrix)
+void normalizeMatrixColumns(TMatrixD& matrix)
 {
   unsigned numRows = matrix.GetNrows();
   unsigned numColumns = matrix.GetNcols();
@@ -81,15 +84,15 @@ void normalizeMatrixColumns_old(TMatrixD& matrix)
   }
 }
 
-SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::ParameterSet& cfg)
-  : SVfitLegLikelihoodPolarizationBase<pat::Tau>(cfg),
+NSVfitTauToHadLikelihoodPolarization::NSVfitTauToHadLikelihoodPolarization(const edm::ParameterSet& cfg)
+  : NSVfitSingleParticleLikelihood(cfg),
     rhoLpolLineShape_(0),
     rhoTpolLineShape_(0),
     a1LpolLineShape_(0),
     a1TpolLineShape_(0),
     likelihoodPhaseSpace_(0)
 {
-  //std::cout << "<SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization>:" << std::endl;
+  //std::cout << "<NSVfitTauToHadLikelihoodPolarization::NSVfitTauToHadLikelihoodPolarization>:" << std::endl;
 
 //--- create list of supported decay modes
 //   o tau- --> pi- nu
@@ -101,7 +104,6 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
   supportedTauDecayModes_[kVMa1Neutral] = reco::PFTauDecayMode::tauDecay1ChargedPion2PiZero;
   supportedTauDecayModes_[kVMa1Charged] = reco::PFTauDecayMode::tauDecay3ChargedPion0PiZero;
   supportedTauDecayModes_[kOther]       = reco::PFTauDecayMode::tauDecayOther;
-
   numSupportedTauDecayModes_ = supportedTauDecayModes_.size();
 
   vRec_.ResizeTo(numSupportedTauDecayModes_);
@@ -144,7 +146,7 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
     try {
       file_mapRecToGenTauDecayModes = TFile::Open(fileName_mapRecToGenTauDecayModes.data());
     } catch (...) { 
-      edm::LogError("SVfitTauLikelihoodPolarization") 
+      edm::LogError("NSVfitTauToHadLikelihoodPolarization") 
 	<< " Failed to open file = " << fileName_mapRecToGenTauDecayModes << " !!";
     }
     
@@ -156,14 +158,14 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
       for ( int binIndex_x = 1; binIndex_x <= numBinsX; ++binIndex_x ) {
 	std::string binLabel_x = histogram_mapRecToGenTauDecayModes->GetXaxis()->GetBinLabel(binIndex_x);
 	
-	size_t tauDecayMode_row = getSupportedTauDecayModeIndex_old(supportedTauDecayModes_, binLabel_x, kOther);
+	size_t tauDecayMode_row = getSupportedTauDecayModeIndex(supportedTauDecayModes_, binLabel_x, kOther);
 	assert(tauDecayMode_row >= 0 && tauDecayMode_row < numSupportedTauDecayModes_);
 	
 	int numBinsY = histogram_mapRecToGenTauDecayModes->GetNbinsY();
 	for ( int binIndex_y = 1; binIndex_y <= numBinsY; ++binIndex_y ) {
 	  std::string binLabel_y = histogram_mapRecToGenTauDecayModes->GetYaxis()->GetBinLabel(binIndex_y);
 	  
-	  size_t tauDecayMode_column = getSupportedTauDecayModeIndex_old(supportedTauDecayModes_, binLabel_y, kOther);
+	  size_t tauDecayMode_column = getSupportedTauDecayModeIndex(supportedTauDecayModes_, binLabel_y, kOther);
 	  assert(tauDecayMode_column >= 0 && tauDecayMode_column < numSupportedTauDecayModes_);
 	  
 	  mapRecToGenTauDecayModes_(tauDecayMode_row, tauDecayMode_column) 
@@ -172,7 +174,7 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
       }
     }
 
-    normalizeMatrixColumns_old(mapRecToGenTauDecayModes_);
+    normalizeMatrixColumns(mapRecToGenTauDecayModes_);
 
 //--- close file from which histogram was loaded
     delete file_mapRecToGenTauDecayModes;
@@ -196,11 +198,9 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
   decayModeParameters_[kVMa1Neutral] = new decayModeEntryType(cfgDecayModes.getParameter<edm::ParameterSet>("oneProngTwoPi0s"));
   decayModeParameters_[kVMa1Charged] = new decayModeEntryType(cfgDecayModes.getParameter<edm::ParameterSet>("threeProngZeroPi0s"));
 
-  fitDecayMode_.resize(numSupportedTauDecayModes_);
-  fitDecayMode_[kOther] = true;
-
 //--- create auxiliary classes for computation of vector meson line-shape integrals
-  useCollApproxFormulas_ = cfg.getParameter<bool>("useCollApproxFormulas");
+  useCollApproxFormulas_ = cfg.exists("useCollApproxFormulas") ?
+    cfg.getParameter<bool>("useCollApproxFormulas") : false;
 
   rhoLpolLineShape_ = new SVfitVMlineShapeIntegral(SVfitVMlineShapeIntegrand::kVMrho, 
 						   SVfitVMlineShapeIntegrand::kVMlongitudinalPol, useCollApproxFormulas_);
@@ -213,12 +213,15 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
 
 //--- generic "phase-space" plugin to be used for computing likelihood 
 //    for hadronic tau decays not in the list of decay modes 
-//    supported by the SVfitTauLikelihoodPolarization plugin
+//    supported by the NSVfitTauToHadLikelihoodPolarization plugin
   edm::ParameterSet cfgLikelihoodPhaseSpace;
-  std::string pluginTypeLikelihoodPhaseSpace = "SVfitTauLikelihoodPhaseSpace";
+  std::string pluginTypeLikelihoodPhaseSpace = "NSVfitTauToHadLikelihoodPhaseSpace";
   cfgLikelihoodPhaseSpace.addParameter<std::string>("pluginType", pluginTypeLikelihoodPhaseSpace);
-  typedef edmplugin::PluginFactory<SVfitLegLikelihoodBase<pat::Tau>* (const edm::ParameterSet&)> SVfitTauLikelihoodPluginFactory;
-  likelihoodPhaseSpace_ = SVfitTauLikelihoodPluginFactory::get()->create(pluginTypeLikelihoodPhaseSpace, cfgLikelihoodPhaseSpace);
+  cfgLikelihoodPhaseSpace.addParameter<std::string>("pluginName", "nSVfitTauToHadLikelihoodPhaseSpace");
+  cfgLikelihoodPhaseSpace.addParameter<std::string>("prodParticleLabel", prodParticleLabel_);
+  cfgLikelihoodPhaseSpace.addParameter<int>("verbosity", verbosity_);
+  likelihoodPhaseSpace_ = 
+    NSVfitSingleParticleLikelihoodPluginFactory::get()->create(pluginTypeLikelihoodPhaseSpace, cfgLikelihoodPhaseSpace);
 
 //--- initialize temporary variables,
 //    defined to speed-up computations
@@ -230,7 +233,7 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
   a1_16piDiv9_ = 2.*a1_8piDiv9_;
 }
 
-SVfitTauLikelihoodPolarization::~SVfitTauLikelihoodPolarization()
+NSVfitTauToHadLikelihoodPolarization::~NSVfitTauToHadLikelihoodPolarization()
 {
   for ( std::vector<decayModeEntryType*>::iterator it = decayModeParameters_.begin();
 	it != decayModeParameters_.end(); ++it ) {
@@ -245,11 +248,25 @@ SVfitTauLikelihoodPolarization::~SVfitTauLikelihoodPolarization()
   delete likelihoodPhaseSpace_;
 }
 
-void SVfitTauLikelihoodPolarization::beginCandidate(const pat::Tau& tau)
+void NSVfitTauToHadLikelihoodPolarization::beginJob(NSVfitAlgorithmBase* algorithm)
 {
-  //std::cout << "<SVfitTauLikelihoodPolarization::beginCandidate>:" << std::endl;
+  algorithm->requestFitParameter(prodParticleLabel_, kTau_visEnFracX,  pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, kTau_phi_lab,     pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, kTau_pol,         pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_theta_rho, pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_theta_a1,  pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_theta_a1r, pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_phi_a1r,   pluginName_);
+}
 
-  int recTauDecayMode = tau.decayMode();
+void NSVfitTauToHadLikelihoodPolarization::beginCandidate(const NSVfitSingleParticleHypothesisBase* hypothesis)
+{
+  const NSVfitTauToHadHypothesis* hypothesis_T = dynamic_cast<const NSVfitTauToHadHypothesis*>(hypothesis);
+  assert(hypothesis_T != 0);
+  
+  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::beginCandidate>:" << std::endl;
+
+  int recTauDecayMode = hypothesis_T->decayMode();
   //std::cout << " recTauDecayMode = " << recTauDecayMode << std::endl;
   
   vRec_.Zero();
@@ -269,36 +286,9 @@ void SVfitTauLikelihoodPolarization::beginCandidate(const pat::Tau& tau)
 
   //std::cout << " vGen:" << std::endl;
   //vGen_.Print();
-
-  for ( size_t iDecayMode = 0; iDecayMode < kOther; ++iDecayMode ) {
-    double pDecayMode = vGen_(iDecayMode);
-    fitDecayMode_[iDecayMode] = ( pDecayMode > decayModeParameters_[iDecayMode]->pMin_ ) ? true : false;
-  }
-  
-  //std::cout << "--> fitPion = " << fitDecayMode_[kPion] << std::endl;
-  //std::cout << "--> fitVMrho = " << fitDecayMode_[kVMrho] << std::endl;
-  //std::cout << "--> fitVMa1Neutral = " << fitDecayMode_[kVMa1Neutral] << std::endl;
-  //std::cout << "--> fitVMa1Charged = " << fitDecayMode_[kVMa1Charged] << std::endl;
 }
 
-bool SVfitTauLikelihoodPolarization::isFittedParameter(int legIndex, int parIndex) const
-{
-  //std::cout << "<SVfitTauLikelihoodPolarization::isFittedParameter>:" << std::endl;
-  //std::cout << " legIndex = " << legIndex << std::endl;
-  //std::cout << " parIndex = " << parIndex << std::endl;
-
-  if      ( (legIndex == kLeg1 &&  parIndex == kLeg1thetaVMrho) ||
-            (legIndex == kLeg2 &&  parIndex == kLeg2thetaVMrho) ) 
-    return fitDecayMode_[kVMrho];
-  else if ( (legIndex == kLeg1 && (parIndex == kLeg1thetaVMa1 || parIndex == kLeg1thetaVMa1r || parIndex == kLeg1phiVMa1r)) ||
-	    (legIndex == kLeg2 && (parIndex == kLeg2thetaVMa1 || parIndex == kLeg2thetaVMa1r || parIndex == kLeg2phiVMa1r)) ) 
-    return (fitDecayMode_[kVMa1Neutral] || fitDecayMode_[kVMa1Charged]);
-  else 
-    return SVfitLegLikelihoodPolarizationBase<pat::Tau>::isFittedParameter(legIndex, parIndex);
-}
-
-double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
-         const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
+double NSVfitTauToHadLikelihoodPolarization::operator()(const NSVfitSingleParticleHypothesisBase* hypothesis) const
 {
 //--- compute negative log-likelihood for tau lepton decay "leg"
 //    to be compatible with decay tau- --> X nu of polarized tau lepton into hadrons,
@@ -312,72 +302,70 @@ double SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized(
 //             S. Raychaudhuri and D.P. Roy,
 //             Phys. Rev.  D52 (1995) 1556.           
 //
-  if ( verbosity_ ) std::cout << "<SVfitTauLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
+  const NSVfitTauToHadHypothesis* hypothesis_T = dynamic_cast<const NSVfitTauToHadHypothesis*>(hypothesis);
+  assert(hypothesis_T != 0);
+
+  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
 
   double normProb = 0.;
   for ( size_t iDecayMode = 0; iDecayMode < numSupportedTauDecayModes_; ++iDecayMode ) {
-    if ( fitDecayMode_[iDecayMode] ) {
-      double probDecayMode = 0.;
-      if      ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay1ChargedPion0PiZero ) 
-	probDecayMode = probOneProngZeroPi0s(tau, solution, tauLeptonPol);
-      else if ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay1ChargedPion1PiZero )
-	probDecayMode = probOneProngOnePi0(tau, solution, tauLeptonPol);
-      else if ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay1ChargedPion2PiZero )
-	probDecayMode = probOneProngTwoPi0s(tau, solution, tauLeptonPol);
-      else if ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay3ChargedPion0PiZero )
-	probDecayMode = probThreeProngZeroPi0s(tau, solution, tauLeptonPol);
-      else 
-	probDecayMode = probOtherDecayMode(tau, solution, tauLeptonPol);
-      vProb_(iDecayMode) = probDecayMode;
-      normProb += vGen_(iDecayMode);
-    }
+    double probDecayMode = 0.;
+    if      ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay1ChargedPion0PiZero ) 
+      probDecayMode = probOneProngZeroPi0s(hypothesis_T);
+    else if ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay1ChargedPion1PiZero )
+      probDecayMode = probOneProngOnePi0(hypothesis_T);
+    else if ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay1ChargedPion2PiZero )
+      probDecayMode = probOneProngTwoPi0s(hypothesis_T);
+    else if ( supportedTauDecayModes_[iDecayMode] == reco::PFTauDecayMode::tauDecay3ChargedPion0PiZero )
+      probDecayMode = probThreeProngZeroPi0s(hypothesis_T);
+    else 
+      probDecayMode = probOtherDecayMode(hypothesis_T);
+    vProb_(iDecayMode) = probDecayMode;
+    normProb += vGen_(iDecayMode);
   }
 
-  if ( verbosity_ ) {
+  if ( this->verbosity_ ) {
     std::cout << " vProb:" << std::endl;
     vProb_.Print();
   }
 
   double prob = (vGen_*vProb_)/normProb;
-  if ( verbosity_ ) {
-    std::cout << " normProb = " << normProb << std::endl;
-    std::cout << "--> prob = " << prob << std::endl;
+
+  double nll = 0.;
+  if ( prob > 0. ) {
+    nll = -TMath::Log(prob);
+  } else {
+    if ( prob < 0. ) 
+      edm::LogWarning ("NSVfitTauToHadLikelihoodPolarization::operator()")
+	<< " Unphysical solution: prob = " << prob << " --> returning very large negative number !!";
+    nll = std::numeric_limits<float>::max();
   }
 
-  if ( !(prob > 0.) ) {
-    //edm::LogWarning ("SVfitTauLikelihoodPolarization::operator()") 
-    //  << " Unphysical solution --> returning very large negative number !!";
-    return std::numeric_limits<float>::min();
-  }
-  
-  double logLikelihood = TMath::Log(prob);
-  if ( verbosity_ ) std::cout << " -logLikelihood = " << -logLikelihood << std::endl;
-  
-  return -logLikelihood;
+  if ( this->verbosity_ ) std::cout << "--> nll = " << nll << std::endl;
+
+  return nll;
 }
 
 //
 //-------------------------------------------------------------------------------
 //
 
-double SVfitTauLikelihoodPolarization::probOneProngZeroPi0s(
-         const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
+double NSVfitTauToHadLikelihoodPolarization::probOneProngZeroPi0s(const NSVfitTauToHadHypothesis* hypothesis_T) const
 {
-  //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngZeroPi0s>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::probOneProngZeroPi0s>:" << std::endl;
           
   double prob = 0.;
-
   if ( !useCollApproxFormulas_ ) {
-    double theta = solution.thetaRest();
+    double theta = hypothesis_T->decay_angle_rf();
     double cosTheta = TMath::Cos(theta);
     double sinTheta = TMath::Sin(theta);
+    double tauLeptonPol = hypothesis_T->polarization();
     prob = 0.5*(1. + tauLeptonPol*cosTheta)*sinTheta; // [1], formula (2.1)
   } else {    
-    double z = solution.x();                          // tau lepton visible momentum fraction
+    double z = hypothesis_T->visEnFracX();            // tau lepton visible momentum fraction
+    double tauLeptonPol = hypothesis_T->polarization();
     prob = (1. + tauLeptonPol*(2*z - 1.));            // [1], formula (2.4)
   }
-
-  //std::cout << "--> prob = " << prob << std::endl;
 
 //--- multiply tau- --> pi- nu decay probability by
 //    average over angles { thetaVMa1, thetaVMa1r, phiVMa1r }
@@ -390,7 +378,7 @@ double SVfitTauLikelihoodPolarization::probOneProngZeroPi0s(
   return decayModeCorrFactor*prob;
 }
 
-double compProbSmear_old(double xResidual, double xSigma)
+double compProbSmear(double xResidual, double xSigma)
 {
 //--- add protection against sigma equals zero case
   const double epsilon = 1.e-6;
@@ -407,15 +395,18 @@ double compProbSmear_old(double xResidual, double xSigma)
   return TMath::Gaus(xResidual, 0., xSigma);
 }
 
-double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
-         const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
+double NSVfitTauToHadLikelihoodPolarization::probOneProngOnePi0(const NSVfitTauToHadHypothesis* hypothesis_T) const
 {
 //--- compute likelihood for tau- --> rho- nu --> pi- pi0 nu decay
 
-  //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngOnePi0>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::probOneProngOnePi0>:" << std::endl;
 
-  double theta = solution.thetaRest();
-  double z = tau.energy()/solution.p4().energy();
+  const pat::Tau* tauPtr = dynamic_cast<const pat::Tau*>(hypothesis_T->particle().get());
+  assert(tauPtr);
+
+  double theta = hypothesis_T->decay_angle_rf();
+  double z = hypothesis_T->visEnFracX();
+  double tauLeptonPol = hypothesis_T->polarization();
   
   double probTauDecayL = (*rhoLpolLineShape_)(theta, tauLeptonPol, z);
   double probTauDecayT = (*rhoTpolLineShape_)(theta, tauLeptonPol, z);
@@ -425,10 +416,10 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
 //    in case "distinguishable" pion cannot be found 
 //   (e.g. in case "wrong" tau decay mode is reconstructed),
 //    assume the "distinguishable" pion to be very soft
-  const reco::Candidate* distPion = getDistPion(tau);
-  double xMeasured = ( distPion != 0 ) ? distPion->energy()/tau.energy() : 0.;
+  const reco::Candidate* distPion = getDistPion(*tauPtr);
+  double xMeasured = ( distPion != 0 ) ? (distPion->energy()/tauPtr->energy()) : 0.;
   //std::cout << " xMeasured = " << xMeasured << std::endl;
-  double thetaVMrho = solution.thetaVMrho();
+  double thetaVMrho = hypothesis_T->decay_angle_VMrho();
   double cosThetaVMrho = TMath::Cos(thetaVMrho);
   double sinThetaVMrho = TMath::Sin(thetaVMrho);
   double xFitted = 0.5*(1. + TMath::Sqrt(1 - 4.*(chargedPionMass2/rhoMesonMass2))*cosThetaVMrho); // [2], formula (41)
@@ -445,14 +436,14 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
 
   //std::cout << " probVMrhoDecayL = " << probVMrhoDecayL << ", probVMrhoDecayT = " << probVMrhoDecayT << std::endl;
 
-  double xSigma = decayModeParameters_[kVMrho]->xSigma_->Eval(tau.pt());
-  double xBias = decayModeParameters_[kVMrho]->xBias_->Eval(tau.pt());
+  double xSigma = decayModeParameters_[kVMrho]->xSigma_->Eval(tauPtr->pt());
+  double xBias = decayModeParameters_[kVMrho]->xBias_->Eval(tauPtr->pt());
   //std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
 
   double xResidual = xMeasured - xFitted - xBias;
   //std::cout << " xResidual = " << xResidual << std::endl;
 
-  double probSmear = compProbSmear_old(xResidual, xSigma);
+  double probSmear = compProbSmear(xResidual, xSigma);
   //std::cout << " probSmear = " << probSmear << std::endl;
 
   double probL = probTauDecayL*probVMrhoDecayL*probSmear;
@@ -470,7 +461,7 @@ double SVfitTauLikelihoodPolarization::probOneProngOnePi0(
   return decayModeCorrFactor*(probL + probT);
 }
 
-double SVfitTauLikelihoodPolarization::compVMa1x(
+double NSVfitTauToHadLikelihoodPolarization::compVMa1x(
          double cosThetaVMa1, double sinThetaVMa1, double cosThetaVMa1r, double sinThetaVMa1r, double cosPhiVMa1r) const
 {
   return (1./a1MesonMass)*(0.25*rhoMesonMass*(a1posMassTerm_ + a1negMassTerm_*cosThetaVMa1) 
@@ -478,14 +469,14 @@ double SVfitTauLikelihoodPolarization::compVMa1x(
 				     - 2.*sinThetaVMa1*sinThetaVMa1r*cosPhiVMa1r)); // [2], formula (48)
 }
 
-double SVfitTauLikelihoodPolarization::compVMa1DecayProbL(
+double NSVfitTauToHadLikelihoodPolarization::compVMa1DecayProbL(
 	 double cosThetaVMa1, double sinThetaVMa1, double cosThetaVMa1r, double sinThetaVMa1r, double cosPhiVMa1r) const
 {
   return (square(a1posMassTerm_*cosThetaVMa1*cosThetaVMa1r - 2.*sinThetaVMa1*sinThetaVMa1r*cosPhiVMa1r)/
 	  (a1_8piDiv9_*(a1posMassTerm2_ + 8.)))*sinThetaVMa1*sinThetaVMa1r; // [2], formula (46)
 }
 
-double SVfitTauLikelihoodPolarization::compVMa1DecayProbT(
+double NSVfitTauToHadLikelihoodPolarization::compVMa1DecayProbT(
 	 double cosThetaVMa1, double sinThetaVMa1, 
 	 double cosThetaVMa1r, double sinThetaVMa1r, double cosPhiVMa1r, double sinPhiVMa1r) const
 {
@@ -494,15 +485,18 @@ double SVfitTauLikelihoodPolarization::compVMa1DecayProbT(
 	  (a1_16piDiv9_*(a1posMassTerm2_ + 8.)))*sinThetaVMa1*sinThetaVMa1r; // [2], formula (47)
 }
 
-double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
-         const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
+double NSVfitTauToHadLikelihoodPolarization::probOneProngTwoPi0s(const NSVfitTauToHadHypothesis* hypothesis_T) const
 {
 //--- compute likelihood for tau- --> a1- nu --> pi- pi0 pi0 nu decay
 
-  //std::cout << "<SVfitTauLikelihoodPolarization::probOneProngTwoPi0s>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::probOneProngTwoPi0s>:" << std::endl;
 
-  double theta = solution.thetaRest();
-  double z = tau.energy()/solution.p4().energy();
+  const pat::Tau* tauPtr = dynamic_cast<const pat::Tau*>(hypothesis_T->particle().get());
+  assert(tauPtr);
+
+  double theta = hypothesis_T->decay_angle_rf();
+  double z = hypothesis_T->visEnFracX();
+  double tauLeptonPol = hypothesis_T->polarization();
   
   double probTauDecayL = (*a1LpolLineShape_)(theta, tauLeptonPol, z);
   double probTauDecayT = (*a1TpolLineShape_)(theta, tauLeptonPol, z);
@@ -512,16 +506,16 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
 //    in case "distinguishable" pion cannot be found 
 //   (e.g. in case "wrong" tau decay mode is reconstructed),
 //    assume the "distinguishable" pion to be very soft
-  const reco::Candidate* distPion = getDistPion(tau);
-  double xMeasured = ( distPion != 0 ) ? distPion->energy()/tau.energy() : 0.;
+  const reco::Candidate* distPion = getDistPion(*tauPtr);
+  double xMeasured = ( distPion != 0 ) ? (distPion->energy()/tauPtr->energy()) : 0.;
   //std::cout << " xMeasured = " << xMeasured << std::endl;
-  double thetaVMa1 = solution.thetaVMa1();
+  double thetaVMa1 = hypothesis_T->decay_angle_VMa1();
   double cosThetaVMa1  = TMath::Cos(thetaVMa1);
   double sinThetaVMa1  = TMath::Sin(thetaVMa1);
-  double thetaVMa1r = solution.thetaVMa1r();
+  double thetaVMa1r = hypothesis_T->decay_angle_VMa1r_theta();
   double cosThetaVMa1r = TMath::Cos(thetaVMa1r);
   double sinThetaVMa1r = TMath::Sin(thetaVMa1r);
-  double phiVMa1r = solution.phiVMa1r();
+  double phiVMa1r = hypothesis_T->decay_angle_VMa1r_phi();
   double cosPhiVMa1r   = TMath::Cos(phiVMa1r);
   double sinPhiVMa1r   = TMath::Sin(phiVMa1r);
   double xFitted = compVMa1x(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r);
@@ -533,14 +527,14 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
   double probVMa1DecayT = compVMa1DecayProbT(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r, sinPhiVMa1r);
   //std::cout << " probVMa1DecayL = " << probVMa1DecayL << ", probVMa1DecayT = " << probVMa1DecayT << std::endl;
 
-  double xSigma = decayModeParameters_[kVMa1Neutral]->xSigma_->Eval(tau.pt());
-  double xBias = decayModeParameters_[kVMa1Neutral]->xBias_->Eval(tau.pt());
+  double xSigma = decayModeParameters_[kVMa1Neutral]->xSigma_->Eval(tauPtr->pt());
+  double xBias = decayModeParameters_[kVMa1Neutral]->xBias_->Eval(tauPtr->pt());
   //std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
 
   double xResidual = xMeasured - xFitted - xBias;
   //std::cout << " xResidual = " << xResidual << std::endl;
 
-  double probSmear = compProbSmear_old(xResidual, xSigma);
+  double probSmear = compProbSmear(xResidual, xSigma);
   //std::cout << " probSmear = " << probSmear << std::endl;
 
   double probL = probTauDecayL*probVMa1DecayL*probSmear;
@@ -550,15 +544,18 @@ double SVfitTauLikelihoodPolarization::probOneProngTwoPi0s(
   return (probL + probT);
 }
 
-double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
-         const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
+double NSVfitTauToHadLikelihoodPolarization::probThreeProngZeroPi0s(const NSVfitTauToHadHypothesis* hypothesis_T) const
 {
 //--- compute likelihood for tau- --> a1- nu --> pi- pi+ pi- nu decay
 
-  //std::cout << "<SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::probThreeProngZeroPi0s>:" << std::endl;
 
-  double theta = solution.thetaRest();
-  double z = tau.energy()/solution.p4().energy();
+  const pat::Tau* tauPtr = dynamic_cast<const pat::Tau*>(hypothesis_T->particle().get());
+  assert(tauPtr);
+
+  double theta = hypothesis_T->decay_angle_rf();
+  double z = hypothesis_T->visEnFracX();
+  double tauLeptonPol = hypothesis_T->polarization();
   
   double probTauDecayL = (*a1LpolLineShape_)(theta, tauLeptonPol, z);
   double probTauDecayT = (*a1TpolLineShape_)(theta, tauLeptonPol, z);
@@ -568,16 +565,16 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
 //    in case "distinguishable" pion cannot be found 
 //   (e.g. in case "wrong" tau decay mode is reconstructed),
 //    assume the "distinguishable" pion to be very soft
-  const reco::Candidate* distPion = getDistPion(tau);
-  double xMeasured = ( distPion != 0 ) ? distPion->energy()/tau.energy() : 0.;
+  const reco::Candidate* distPion = getDistPion(*tauPtr);
+  double xMeasured = ( distPion != 0 ) ? (distPion->energy()/tauPtr->energy()) : 0.;
   //std::cout << " xMeasured = " << xMeasured << std::endl;
-  double thetaVMa1 = solution.thetaVMa1();
+  double thetaVMa1 = hypothesis_T->decay_angle_VMa1();
   double cosThetaVMa1  = TMath::Cos(thetaVMa1);
   double sinThetaVMa1  = TMath::Sin(thetaVMa1);
-  double thetaVMa1r = solution.thetaVMa1r();
+  double thetaVMa1r = hypothesis_T->decay_angle_VMa1r_theta();
   double cosThetaVMa1r = TMath::Cos(thetaVMa1r);
   double sinThetaVMa1r = TMath::Sin(thetaVMa1r);
-  double phiVMa1r = solution.phiVMa1r();
+  double phiVMa1r = hypothesis_T->decay_angle_VMa1r_phi();
   double cosPhiVMa1r   = TMath::Cos(phiVMa1r);
   double sinPhiVMa1r   = TMath::Sin(phiVMa1r);
   double xFitted = compVMa1x(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r);
@@ -589,14 +586,14 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
   double probVMa1DecayT = compVMa1DecayProbT(cosThetaVMa1, sinThetaVMa1, cosThetaVMa1r, sinThetaVMa1r, cosPhiVMa1r, sinPhiVMa1r);
   //std::cout << " probVMa1DecayL = " << probVMa1DecayL << ", probVMa1DecayT = " << probVMa1DecayT << std::endl;
 
-  double xSigma = decayModeParameters_[kVMa1Charged]->xSigma_->Eval(tau.pt());
-  double xBias = decayModeParameters_[kVMa1Charged]->xBias_->Eval(tau.pt());
+  double xSigma = decayModeParameters_[kVMa1Charged]->xSigma_->Eval(tauPtr->pt());
+  double xBias = decayModeParameters_[kVMa1Charged]->xBias_->Eval(tauPtr->pt());
   //std::cout << " xSigma = " << xSigma << ", xBias = " << xBias << std::endl;
 
   double xResidual = xMeasured - xFitted - xBias;
   //std::cout << " xResidual = " << xResidual << std::endl;
 
-  double probSmear = compProbSmear_old(xResidual, xSigma);
+  double probSmear = compProbSmear(xResidual, xSigma);
   //std::cout << " probSmear = " << probSmear << std::endl;
 
   double probL = probTauDecayL*probVMa1DecayL*probSmear;
@@ -606,12 +603,11 @@ double SVfitTauLikelihoodPolarization::probThreeProngZeroPi0s(
   return (probL + probT);
 }
 
-double SVfitTauLikelihoodPolarization::probOtherDecayMode(
-         const pat::Tau& tau, const SVfitLegSolution& solution, double tauLeptonPol) const
+double NSVfitTauToHadLikelihoodPolarization::probOtherDecayMode(const NSVfitTauToHadHypothesis* hypothesis_T) const
 {
-  return (*likelihoodPhaseSpace_)(tau, solution);
+  return (*likelihoodPhaseSpace_)(hypothesis_T);
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 
-DEFINE_EDM_PLUGIN(SVfitTauLikelihoodBasePluginFactory, SVfitTauLikelihoodPolarization, "SVfitTauLikelihoodPolarization");
+DEFINE_EDM_PLUGIN(NSVfitSingleParticleLikelihoodPluginFactory, NSVfitTauToHadLikelihoodPolarization, "NSVfitTauToHadLikelihoodPolarization");

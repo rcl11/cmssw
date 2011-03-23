@@ -9,11 +9,11 @@
 
 using namespace SVfit_namespace;
 
-unsigned defaultMinNumHits = 5;
-unsigned defaultMinNumPixelHits = 1;
-double defaultMaxChi2DoF = 10.;
-unsigned defaultMaxDeltaPoverP = 1.e+3;
-double defaultMinPt = 5.;
+unsigned defaultMinNumHits_old = 5;
+unsigned defaultMinNumPixelHits_old = 1;
+double defaultMaxChi2DoF_old = 10.;
+unsigned defaultMaxDeltaPoverP_old = 1.e+3;
+double defaultMinPt_old = 5.;
 
 //
 //-------------------------------------------------------------------------------
@@ -26,11 +26,11 @@ SVfitLegLikelihoodTrackInfo<T>::SVfitLegLikelihoodTrackInfo(const edm::Parameter
 {
   //std::cout << "<SVfitLegLikelihoodTrackInfo::SVfitLegLikelihoodTrackInfo>:" << std::endl;
 
-  minNumHits_ = ( cfg.exists("minNumHits") ) ? cfg.getParameter<unsigned>("minNumHits") : defaultMinNumHits;
-  minNumPixelHits_ = ( cfg.exists("minNumPixelHits") ) ? cfg.getParameter<unsigned>("minNumPixelHits") : defaultMinNumPixelHits;
-  maxChi2DoF_ = ( cfg.exists("maxChi2DoF") ) ? cfg.getParameter<double>("maxChi2DoF") : defaultMaxChi2DoF;
-  maxDeltaPoverP_ = ( cfg.exists("maxDeltaPoverP") ) ? cfg.getParameter<double>("maxDeltaPoverP") : defaultMaxDeltaPoverP;
-  minPt_ = ( cfg.exists("minPt") ) ? cfg.getParameter<double>("minPt") : defaultMinPt;
+  minNumHits_ = ( cfg.exists("minNumHits") ) ? cfg.getParameter<unsigned>("minNumHits") : defaultMinNumHits_old;
+  minNumPixelHits_ = ( cfg.exists("minNumPixelHits") ) ? cfg.getParameter<unsigned>("minNumPixelHits") : defaultMinNumPixelHits_old;
+  maxChi2DoF_ = ( cfg.exists("maxChi2DoF") ) ? cfg.getParameter<double>("maxChi2DoF") : defaultMaxChi2DoF_old;
+  maxDeltaPoverP_ = ( cfg.exists("maxDeltaPoverP") ) ? cfg.getParameter<double>("maxDeltaPoverP") : defaultMaxDeltaPoverP_old;
+  minPt_ = ( cfg.exists("minPt") ) ? cfg.getParameter<double>("minPt") : defaultMinPt_old;
 
   varyPhi_ = cfg.exists("varyPhi") ? cfg.getParameter<bool>("varyPhi") : true;
   varyR_ = cfg.exists("varyR") ? cfg.getParameter<bool>("varyR") : true;

@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.3 $
  *
- * $Id: NSVfitTauToHadBuilder.h,v 1.2 2011/02/28 16:49:32 veelken Exp $
+ * $Id: NSVfitTauToHadBuilder.h,v 1.3 2011/03/03 13:04:47 veelken Exp $
  *
  */
 
@@ -42,6 +42,11 @@ class NSVfitTauToHadBuilder : public NSVfitSingleParticleBuilderBase
 protected:
   int idxFitParameter_visEnFracX_;
   int idxFitParameter_phi_lab_;
+  int idxFitParameter_pol_;
+  int idxFitParameter_thetaVMrho_;
+  int idxFitParameter_thetaVMa1_;
+  int idxFitParameter_thetaVMa1r_;
+  int idxFitParameter_phiVMa1r_;
 
   SVfitLegTrackExtractor<pat::Tau> trackExtractor_;
 
