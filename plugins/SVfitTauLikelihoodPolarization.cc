@@ -206,9 +206,9 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
 						   SVfitVMlineShapeIntegrand::kVMlongitudinalPol, useCollApproxFormulas_);
   rhoTpolLineShape_ = new SVfitVMlineShapeIntegral(SVfitVMlineShapeIntegrand::kVMrho, 
 						   SVfitVMlineShapeIntegrand::kVMtransversePol, useCollApproxFormulas_);
-  a1LpolLineShape_  = new SVfitVMlineShapeIntegral(SVfitVMlineShapeIntegrand::kVMa1, 
+  a1LpolLineShape_  = new SVfitVMlineShapeIntegral(SVfitVMlineShapeIntegrand::kVMa1Charged, 
 						   SVfitVMlineShapeIntegrand::kVMlongitudinalPol, useCollApproxFormulas_);
-  a1TpolLineShape_  = new SVfitVMlineShapeIntegral(SVfitVMlineShapeIntegrand::kVMa1, 
+  a1TpolLineShape_  = new SVfitVMlineShapeIntegral(SVfitVMlineShapeIntegrand::kVMa1Charged, 
 						   SVfitVMlineShapeIntegrand::kVMtransversePol, useCollApproxFormulas_);
 
 //--- generic "phase-space" plugin to be used for computing likelihood 

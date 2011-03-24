@@ -16,9 +16,6 @@ NSVfitTauToLepLikelihoodPolarization<T>::NSVfitTauToLepLikelihoodPolarization(co
   : NSVfitSingleParticleLikelihood(cfg)
 {
   if ( this->verbosity_ ) std::cout << "<NSVfitTauToLepLikelihoodPolarization::NSVfitTauToLepLikelihoodPolarization>:" << std::endl;
-
-  useCollApproxFormulas_ = cfg.exists("useCollApproxFormulas") ?
-    cfg.getParameter<bool>("useCollApproxFormulas") : false;
 }
 
 template <typename T>
@@ -53,36 +50,27 @@ double NSVfitTauToLepLikelihoodPolarization<T>::operator()(const NSVfitSinglePar
 
   if ( this->verbosity_ ) std::cout << "<NSVfitTauToLepLikelihoodPolarization::operator()>:" << std::endl;
   
-  double prob = 0.;
-  if ( !useCollApproxFormulas_ ) {
-    double chargedLepMass2 = square(hypothesis_T->p4().mass());              // electron/muon mass
-    double Emax = (tauLeptonMass2 + chargedLepMass2)/(2*tauLeptonMass);      // formula (2.6)
-    double E = hypothesis_T->p4vis_rf().energy();                            // electron/muon energy (in tau lepton rest-frame)
-    double p = hypothesis_T->p4vis_rf().P();                                 // electron/muon momentum (in tau lepton rest-frame)
-    double theta = hypothesis_T->decay_angle_rf();
-    double cosTheta = TMath::Cos(theta);
-    double sinTheta = TMath::Sin(theta);
-    double nuMass = hypothesis_T->p4invis_rf().mass();
-    double tauLeptonPol = hypothesis_T->polarization();
-
-    if ( this->verbosity_ ) {
-      std::cout << " chargedLepMass2 = " << chargedLepMass2 << std::endl;
-      std::cout << " Emax = " << Emax << std::endl;
-      std::cout << " E = " << E << std::endl;
-      std::cout << " p = " << p << std::endl;
-      std::cout << " theta = " << theta << std::endl;
-      std::cout << " nuMass = " << nuMass << std::endl;
-    }
-
-    prob = p*E*(3*Emax - 2*E - chargedLepMass2/E
-               + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + chargedLepMass2/tauLeptonMass))
-          *sinTheta*(nuMass/tauLeptonMass);                                  // formula (2.5)
-  } else {
-    double z = hypothesis_T->visEnFracX();                                   // tau lepton visible momentum fraction (in laboratory frame)
-    double z2 = square(z);
-    double tauLeptonPol = hypothesis_T->polarization();
-    prob = (1./3.)*(1 - z)*((5 + 5*z - 4*z2) + tauLeptonPol*(1 + z - 8*z2)); // formula (2.8)
+  double chargedLepMass2 = square(hypothesis_T->p4().mass());         // electron/muon mass
+  double Emax = (tauLeptonMass2 + chargedLepMass2)/(2*tauLeptonMass); // formula (2.6)
+  double E = hypothesis_T->p4vis_rf().energy();                       // electron/muon energy (in tau lepton rest-frame)
+  double p = hypothesis_T->p4vis_rf().P();                            // electron/muon momentum (in tau lepton rest-frame)
+  double theta = hypothesis_T->decay_angle_rf();
+  double cosTheta = TMath::Cos(theta);
+  double sinTheta = TMath::Sin(theta);
+  double nuMass = hypothesis_T->p4invis_rf().mass();
+  double tauLeptonPol = hypothesis_T->polarization();
+  
+  if ( this->verbosity_ ) {
+    std::cout << " chargedLepMass2 = " << chargedLepMass2 << std::endl;
+    std::cout << " Emax = " << Emax << std::endl;
+    std::cout << " E = " << E << std::endl;
+    std::cout << " p = " << p << std::endl;
+    std::cout << " theta = " << theta << std::endl;
+    std::cout << " nuMass = " << nuMass << std::endl;
   }
+
+  double prob = p*E*(3*Emax - 2*E - chargedLepMass2/E + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + chargedLepMass2/tauLeptonMass))
+               *sinTheta*(nuMass/tauLeptonMass); // formula (2.5)
 
   double nll = 0.;
   if ( prob > 0. ) {

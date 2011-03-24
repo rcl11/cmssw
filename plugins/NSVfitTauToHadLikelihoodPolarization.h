@@ -13,9 +13,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.7 $
+ * \version $Revision: 1.1 $
  *
- * $Id: NSVfitTauToHadLikelihoodPolarization.h,v 1.7 2011/01/18 16:47:16 friis Exp $
+ * $Id: NSVfitTauToHadLikelihoodPolarization.h,v 1.1 2011/03/23 17:46:39 veelken Exp $
  *
  */
 
@@ -24,7 +24,7 @@
 #include "TauAnalysis/CandidateTools/interface/NSVfitSingleParticleLikelihood.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/NSVfitSingleParticleHypothesisBase.h"
-#include "TauAnalysis/CandidateTools/interface/SVfitVMlineShapeIntegral.h"
+#include "TauAnalysis/CandidateTools/interface/NSVfitVMlineShape.h"
 
 #include <TFormula.h>
 #include <TVectorD.h>
@@ -45,10 +45,42 @@ class NSVfitTauToHadLikelihoodPolarization : public NSVfitSingleParticleLikeliho
  private:
   enum decayModes { kPion, kVMrho, kVMa1Neutral, kVMa1Charged, kOther };
 
-  double probOneProngZeroPi0s(const NSVfitTauToHadHypothesis*) const;
-  double probOneProngOnePi0(const NSVfitTauToHadHypothesis*) const; 
-  double probOneProngTwoPi0s(const NSVfitTauToHadHypothesis*) const;
-  double probThreeProngZeroPi0s(const NSVfitTauToHadHypothesis*) const;
+  struct decayModeEntryType
+  {
+    decayModeEntryType(const edm::ParameterSet& cfg)
+      : vmLineShapeLpol_(0),
+	vmLineShapeTpol_(0),
+        xSigma_(0),
+	xBias_(0)
+    {
+      if ( cfg.exists("xSigma") ) xSigma_ = new TFormula("xSigma", cfg.getParameter<std::string>("xSigma").data());
+      if ( cfg.exists("xBias")  ) xBias_  = new TFormula("xBias",  cfg.getParameter<std::string>("xBias").data());
+      pMin_ = cfg.getParameter<double>("pMin");
+    }
+    ~decayModeEntryType()
+    {
+      delete vmLineShapeLpol_;
+      delete vmLineShapeTpol_;
+      delete xSigma_;
+      delete xBias_;
+    }
+    void print(std::ostream& stream) const
+    {
+      stream << "<decayModeEntryType::print>:" << std::endl;
+      if ( xSigma_ != 0 ) std::cout << " xSigma = " << xSigma_->GetTitle() << std::endl;
+      if ( xBias_  != 0 ) std::cout << " xBias = " << xBias_->GetTitle() << std::endl;
+      std::cout << " pMin = " << pMin_ << std::endl;
+    }
+    NSVfitVMlineShape* vmLineShapeLpol_;
+    NSVfitVMlineShape* vmLineShapeTpol_;
+    TFormula* xSigma_;
+    TFormula* xBias_;
+    double pMin_;
+  };
+
+  double probChargedPionDecay(const NSVfitTauToHadHypothesis*) const;
+  double probVMrhoDecay(const NSVfitTauToHadHypothesis*) const; 
+  double probVMa1Decay(const NSVfitTauToHadHypothesis*, const decayModeEntryType*) const; 
   double probOtherDecayMode(const NSVfitTauToHadHypothesis*) const;
 
 //--- auxiliary functions needed for computation of likelihood
@@ -65,28 +97,18 @@ class NSVfitTauToHadLikelihoodPolarization : public NSVfitSingleParticleLikeliho
   mutable TVectorD vGen_;
   mutable TVectorD vProb_;
 
-  struct decayModeEntryType
-  {
-    decayModeEntryType(const edm::ParameterSet&);
-    ~decayModeEntryType();
-    void print(std::ostream&) const;
-    TFormula* xSigma_;
-    TFormula* xBias_;
-    double pMin_;
-  };
-
   std::vector<decayModeEntryType*> decayModeParameters_;
   std::vector<bool> fitDecayMode_;
 
-  SVfitVMlineShapeIntegral* rhoLpolLineShape_;
-  SVfitVMlineShapeIntegral* rhoTpolLineShape_;
-  SVfitVMlineShapeIntegral* a1LpolLineShape_;
-  SVfitVMlineShapeIntegral* a1TpolLineShape_;
+  NSVfitVMlineShape* rhoLpolLineShape_;
+  NSVfitVMlineShape* rhoTpolLineShape_;
+  NSVfitVMlineShape* a1NeutralLpolLineShape_;
+  NSVfitVMlineShape* a1NeutralTpolLineShape_;
+  NSVfitVMlineShape* a1ChargedLpolLineShape_;
+  NSVfitVMlineShape* a1ChargedTpolLineShape_;
 
   NSVfitSingleParticleLikelihood* likelihoodPhaseSpace_;
-
-  bool useCollApproxFormulas_;
-
+  
 //--- temporary variables to speed-up computations
 //    (computed once in constructor)
   double a1posMassTerm_;
