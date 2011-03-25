@@ -214,15 +214,15 @@ NSVfitTauToHadLikelihoodPolarization::~NSVfitTauToHadLikelihoodPolarization()
 
 void NSVfitTauToHadLikelihoodPolarization::beginJob(NSVfitAlgorithmBase* algorithm)
 {
-  algorithm->requestFitParameter(prodParticleLabel_, kTau_visEnFracX,   pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTau_phi_lab,      pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTau_pol,          pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_theta_rho,  pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_mass2_rho,  pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_theta_a1,   pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_theta_a1r,  pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_phi_a1r,    pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTauVM_mass2_a1,   pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_visEnFracX,   pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_phi_lab,      pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_pol,          pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTauVM_theta_rho,  pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTauVM_mass2_rho,  pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTauVM_theta_a1,   pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTauVM_theta_a1r,  pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTauVM_phi_a1r,    pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTauVM_mass2_a1,   pluginName_);
 }
 
 void NSVfitTauToHadLikelihoodPolarization::beginCandidate(const NSVfitSingleParticleHypothesisBase* hypothesis)

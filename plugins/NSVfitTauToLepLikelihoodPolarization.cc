@@ -27,10 +27,10 @@ NSVfitTauToLepLikelihoodPolarization<T>::~NSVfitTauToLepLikelihoodPolarization()
 template <typename T>
 void NSVfitTauToLepLikelihoodPolarization<T>::beginJob(NSVfitAlgorithmBase* algorithm)
 {
-  algorithm->requestFitParameter(prodParticleLabel_, kTau_visEnFracX, pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTau_phi_lab,    pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTau_nuInvMass,  pluginName_);
-  algorithm->requestFitParameter(prodParticleLabel_, kTau_pol,        pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_visEnFracX, pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_phi_lab,    pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_nuInvMass,  pluginName_);
+  algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_pol,        pluginName_);
 }
 
 template <typename T>
