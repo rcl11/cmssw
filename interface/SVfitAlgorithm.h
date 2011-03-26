@@ -14,9 +14,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.27 $
+ * \version $Revision: 1.28 $
  *
- * $Id: SVfitAlgorithm.h,v 1.27 2011/02/21 13:07:09 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.28 2011/02/27 16:45:16 veelken Exp $
  *
  */
 
@@ -554,7 +554,7 @@ class SVfitAlgorithm
       }
 
       // Build the basic prefix for DQM stuff for this event.
-      stringstream meNameBase;
+	  std::stringstream meNameBase;
       meNameBase << name_ << "_evt_"
         << currentEvent_.event() << "_"
         << currentEvent_.luminosityBlock() << "_"
@@ -699,7 +699,7 @@ class SVfitAlgorithm
               meName, meName, steps, xlow, xhigh);
             double stepsize = (xhigh - xlow)/steps;
             // Make a copy of the paramters
-            vector<double> myxs = minuitFittedParameterValues_;
+			std::vector<double> myxs = minuitFittedParameterValues_;
             // Scan over the parameter
             for(size_t ix = 0; ix < steps; ++ix) {
               double newx = (ix + 0.5)*stepsize;
