@@ -36,6 +36,20 @@ GlobalPoint pcaOfConeToPoint(
     const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
     double coneAngle, int &status);
 
+/// Check whether a point is inside or outside a cone.
+bool pointIsInsideCone(const GlobalPoint& point,
+    const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
+    double coneAngle);
+
+///  Find a new line offset such that the lineOffset point lies in the plane
+/// that is perpindicualr to the cone direction and contains the cone apex.
+/// Sets status to 1 if successfull
+GlobalPoint originAtConeVertexPlane(
+    const GlobalPoint &lineOffset, const GlobalVector &lineDirection,
+    const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
+    int &status);
+
+
 GlobalPoint transform(const GlobalPoint& newOrigin, const GlobalVector &newUz,
                       const GlobalPoint& toTransform);
 GlobalPoint untransform(const GlobalPoint& newOrigin, const GlobalVector &newUz,

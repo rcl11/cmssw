@@ -2,6 +2,7 @@
 #include "TMath.h"
 #include <TRotation.h>
 #include <iostream>
+#include "DataFormats/Math/interface/angle.h"
 
 using namespace TMath;
 
@@ -12,6 +13,14 @@ GlobalPoint propagateLine(const GlobalPoint& origin,
   return origin + tangent*pathLength;
 }
 
+// Stupid type conversion
+template<typename Out, typename In>
+inline Out convert(const In& in) { return Out(in.x(), in.y(), in.z()); }
+
+template<typename T1, typename T2>
+inline GlobalVector vectorSubtract(const T1& t1, const T2& t2) {
+  return GlobalVector(t1.x() - t2.x(), t1.y() - t2.y(), t1.z() - t2.z());
+}
 
 // Get the correct path length solution of the quadratic equation.
 // We always prefer the closest solution that is not negative - i.e. below the
@@ -19,7 +28,6 @@ GlobalPoint propagateLine(const GlobalPoint& origin,
 double solveQuadraticForPathLength(double a, double b, double c, int& status) {
   // Check if solutions are real and finite.
   if ( b*b - 4*a*c < 0 || a == 0 ) {
-    //std::cout << "imaginary solutions!" << std::endl;
     status = 0;
     return 0;
   }
@@ -56,10 +64,34 @@ GlobalPoint intersectionOfLineAndCone(
     const GlobalPoint &coneVertexIn, const GlobalVector &coneDirectionIn,
     double alpha /* cone angle */, int &status) {
 
-//  std::cout << "cone dir in: " << coneDirectionIn << " line dir in" << lineDirectionIn << std::endl;
+  // Check if line origin is inside the cone.  If so, move it out.
+  GlobalPoint lineOffset = lineOffsetIn;
+
+  GlobalPoint originAtVertexPlane = originAtConeVertexPlane(
+      lineOffsetIn, lineDirectionIn, coneVertexIn, coneDirectionIn, status);
+
+  // Check if the line passes through the cone vertex - if so take it as it
+  // is a special case for the equations used to find the equations.
+  if (status &&
+      vectorSubtract(originAtVertexPlane, coneVertexIn).mag2() < 1e-12) {
+    return coneVertexIn;
+  }
+
+  // We only do this in the case that the direction of the line is in the same
+  // direction as the cone.  We use a backward facing line, from the axis
+  // in the PCA computations.
+  if (lineDirectionIn.dot(coneDirectionIn) > 0 &&
+      pointIsInsideCone(lineOffsetIn, coneVertexIn, coneDirectionIn, alpha)) {
+    lineOffset = originAtVertexPlane;
+    // This can only happen in the case that the track is perpendicular to
+    // the cone direction.
+    if (!status) {
+      return GlobalPoint();
+    }
+  }
+
   // Shift coordinates such that the cone vertex is at the origin.
-  GlobalPoint lineOffset = transform(coneVertexIn, coneDirectionIn,
-                                     lineOffsetIn);
+  lineOffset = transform(coneVertexIn, coneDirectionIn, lineOffset);
 
   // Now rotate so the cone is aligned along Z
   GlobalVector lineDirection = transform(coneVertexIn, coneDirectionIn,
@@ -82,12 +114,6 @@ GlobalPoint intersectionOfLineAndCone(
   double b = 2*trackDirX*trackOffsetX + 2*trackDirY*trackOffsetY - 2*trackDirZ*trackOffsetZ*Power(Tan(alpha),2);
 
   double c = Power(trackOffsetX,2) + Power(trackOffsetY,2) - Power(trackOffsetZ,2)*Power(Tan(alpha),2);
-
-  // If the line starts *exactly* at the origin, that is the intersection.
-  if ( !trackOffsetX && !trackOffsetY && !trackOffsetZ ) {
-    status = 1;
-    return untransform(coneVertexIn, coneDirectionIn, GlobalPoint(0, 0, 0));
-  }
 
   // Find the correct solution to our quadratic equation.
   double solution = solveQuadraticForPathLength(a, b, c, status);
@@ -118,7 +144,14 @@ GlobalPoint pcaOfLineToCone(
   double trackDirZ = lineDirection.z();
   double trackOffsetX = lineOffset.x();
   double trackOffsetY = lineOffset.y();
-  //double trackOffsetZ = lineOffset.z();
+
+  // If the track is perpindicular to the cone direction (which should never
+  // happen in practice), it's not possible to find a solution with the current
+  // parameterization.
+  if (trackDirZ == 0.) {
+    status = 0;
+    return GlobalPoint();
+  }
 
   // Get quadratic coefficients for the equation to solve.
   double a = -((Power(trackDirX,2) + Power(trackDirY,2))*
@@ -141,22 +174,31 @@ GlobalPoint pcaOfLineToCone(
   double solution = solveQuadraticForPathLength(a, b, c, status);
 
   // Check if a solution exists
-  if (!status)
+  if (!status) {
     return GlobalPoint();
+  }
 
   GlobalPoint linePCA = propagateLine(lineOffset, lineDirection, solution);
 
   // Now find the point on the cone closest to this point.  Note that we've
   // already transformed our coordinates, we don't need to do it again.
-  GlobalPoint conePCA = pcaOfConeToPoint(linePCA, GlobalPoint(0,0,0),
-                                         GlobalVector(0, 0, 1), alpha, status);
-  return untransform(coneVertexIn, coneDirectionIn, conePCA);
+  //GlobalPoint conePCA = pcaOfConeToPoint(linePCA, GlobalPoint(0,0,0),
+  //                                       GlobalVector(0, 0, 1), alpha, status);
+  //return untransform(coneVertexIn, coneDirectionIn, conePCA);
+  return untransform(coneVertexIn, coneDirectionIn, linePCA);
 }
 
 GlobalPoint pcaOfConeToPoint(
     const GlobalPoint& pointIn,
     const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
     double alpha, int &status) {
+
+  // If the point is "behind" the cone apex, there is no valid PCA (other
+  // than the cone tip).
+  if (vectorSubtract(pointIn, coneVertex).dot(coneDirection) < 0)  {
+    status = 0;
+    return coneVertex;
+  }
 
   // Shift coordinates such that the cone vertex is at the origin.
   GlobalPoint point = transform(coneVertex, coneDirection, pointIn);
@@ -189,9 +231,31 @@ GlobalPoint pcaOfConeToPoint(
   return untransform(coneVertex, coneDirection,conePCA);
 }
 
-// Stupid type conversion
-template<typename Out, typename In>
-inline Out convert(const In& in) { return Out(in.x(), in.y(), in.z()); }
+/// Check whether a point is inside or outside a cone.
+bool pointIsInsideCone(const GlobalPoint& point,
+    const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
+    double coneAngle) {
+  GlobalVector displacementFromVertex = point - coneVertex;
+  return angle(displacementFromVertex, coneDirection) < coneAngle;
+}
+
+GlobalPoint originAtConeVertexPlane(
+    const GlobalPoint &lineOffset, const GlobalVector &lineDirection,
+    const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
+    int& status) {
+  // In the case that the line direction and the cone direction are orthogonal,
+  // its impossible to find a valid point.
+  double projLineOnCone = lineDirection.dot(coneDirection);
+  if (projLineOnCone == 0) {
+    status = 0;
+    return lineOffset;
+  }
+  status = 1;
+  double projLineOffsetOnCone =
+    vectorSubtract(lineOffset,coneVertex).dot(coneDirection);
+  double pathLength = -projLineOffsetOnCone/projLineOnCone;
+  return propagateLine(lineOffset, lineDirection, pathLength);
+}
 
 GlobalPoint transform(const GlobalPoint& newOrigin, const GlobalVector &newUz,
                       const GlobalPoint& toTransform) {
