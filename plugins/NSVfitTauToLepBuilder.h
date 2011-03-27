@@ -44,7 +44,6 @@ class NSVfitTauToLepBuilder : public NSVfitSingleParticleBuilderBase
   int idxFitParameter_visEnFracX_;
   int idxFitParameter_phi_lab_;
   int idxFitParameter_nuInvMass_;
-  int idxFitParameter_pol_;
 
   SVfitLegTrackExtractor<T> trackExtractor_;
 
