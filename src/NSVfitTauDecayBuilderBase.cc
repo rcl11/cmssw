@@ -4,44 +4,38 @@
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 #include "TauAnalysis/CandidateTools/interface/nSVfitParameter.h"
 
-using namespace nSVfit_namespace;
-
 // Map the fit parameters to indices.
 void
-NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm) {
+NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm) 
+{
   algorithm_ = algorithm;
   idxFitParameter_visEnFracX_ = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_visEnFracX);
   idxFitParameter_phi_lab_    = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_phi_lab);
-  // Nu mass is only a fit parameter if the nus can have mass.
-  if (!nuSystemIsMassless()) {
+  if ( !nuSystemIsMassless() ) { // mass of neutrino system is a fit parameter in case of tau --> e/mu nu nu decays only
     idxFitParameter_nuInvMass_  = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_nuInvMass);
   }
-  // The following parameters are only valid when the track likelihoods are
-  // enabled.
-  idxFitParameter_deltaR_ = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_decayDistance_lab);
+  idxFitParameter_deltaR_ = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_decayDistance_lab, true); 
 }
 
 NSVfitSingleParticleHypothesisBase* NSVfitTauDecayBuilderBase::build(
-    const NSVfitTauDecayBuilderBase::inputParticleMap& inputParticles) const {
-
+				      const NSVfitTauDecayBuilderBase::inputParticleMap& inputParticles) const 
+{
   inputParticleMap::const_iterator particlePtr = inputParticles.find(prodParticleLabel_);
   assert(particlePtr != inputParticles.end());
   const reco::Candidate* reconstructedParticle = particlePtr->second.get();
   // Build our tau decay hypthosis
-  NSVfitTauDecayHypothesis* hypothesis = buildSpecific(
-      particlePtr->second, prodParticleLabel_, barcodeCounter_);
+  NSVfitTauDecayHypothesis* hypothesis = buildSpecific(particlePtr->second, prodParticleLabel_, barcodeCounter_);
   ++barcodeCounter_;
 
   hypothesis->p3Vis_unit_ = reconstructedParticle->p4().Vect().Unit();
   hypothesis->visMass_ = reconstructedParticle->mass();
   // If this is a leptonic tau decay, we need to setup the limits on the
   // neutrino system invariant mass parameter.
-  if (!nuSystemIsMassless()) {
-    NSVfitAlgorithmBase::fitParameterType* fitParameter =
+  if ( !nuSystemIsMassless() ) {
+    NSVfitAlgorithmBase::fitParameterType* fitParameter = 
       algorithm_->getFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_nuInvMass);
     assert(fitParameter);
-    fitParameter->upperLimit_ =
-      SVfit_namespace::tauLeptonMass - hypothesis->visMass_;
+    fitParameter->upperLimit_ = SVfit_namespace::tauLeptonMass - hypothesis->visMass_;
   }
   // Extract the associated tracks, and fit a vertex if possible.
   hypothesis->tracks_ = extractTracks(reconstructedParticle);
@@ -49,13 +43,12 @@ NSVfitSingleParticleHypothesisBase* NSVfitTauDecayBuilderBase::build(
 }
 
 void
-NSVfitTauDecayBuilderBase::applyFitParameter(
-    NSVfitSingleParticleHypothesisBase* hypothesis, double* param) const {
+NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase* hypothesis, double* param) const 
+{
   using namespace SVfit_namespace;
 
   // Cast to the concrete tau decay hypothesis
-  NSVfitTauDecayHypothesis* hypothesis_T =
-    dynamic_cast<NSVfitTauDecayHypothesis*>(hypothesis);
+  NSVfitTauDecayHypothesis* hypothesis_T = dynamic_cast<NSVfitTauDecayHypothesis*>(hypothesis);
 
   // Apply any decay-type specific fit parameters (like polarizaiton etc)
   applyFitParameterSpecific(hypothesis_T, param);
@@ -65,8 +58,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(
   double pVis_lab   = hypothesis_T->p4().P();
   double enVis_lab  = hypothesis_T->p4().energy();
   double visMass    = hypothesis_T->visMass();
-  double nuInvMass  = nuSystemIsMassless() ? 0.0 :
-    param[idxFitParameter_nuInvMass_];
+  double nuInvMass  = nuSystemIsMassless() ? 0. : param[idxFitParameter_nuInvMass_];
 
   const reco::Candidate::Vector& p3Vis_unit = hypothesis_T->p3Vis_unit();
 
@@ -126,3 +118,14 @@ void NSVfitTauDecayBuilderBase::print(std::ostream& stream) const {
   stream << " idxFitParameter_phi_lab = " << idxFitParameter_phi_lab_ << std::endl;
   stream << " idxFitParameter_nuInvMass = " << idxFitParameter_nuInvMass_ << std::endl;
 }
+
+//
+//-------------------------------------------------------------------------------
+//
+
+void applyOptionalFitParameter(double* param, int idxFitParameter, double& value)
+{
+  if   ( idxFitParameter != -1 ) value = param[idxFitParameter];
+  else                           value = 0.;
+}
+
