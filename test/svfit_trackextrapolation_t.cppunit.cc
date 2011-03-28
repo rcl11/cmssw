@@ -22,11 +22,14 @@ class testSVFitTrackExtrapolation : public CppUnit::TestFixture {
   CPPUNIT_TEST(testLogLikelihoodFromDisplacement);
   CPPUNIT_TEST(testLogLikelihoodNoDisplacement);
   CPPUNIT_TEST(testSVDisplacementEquivalence);
+  CPPUNIT_TEST(testApproximateError);
   CPPUNIT_TEST_SUITE_END();
 
   public:
     void setUp() {
       origin_ = GlobalPoint(0,0,0);
+      // The fake point about which the DCA is "computed"
+      refPoint_ = GlobalPoint(-1, 0, 0);
       zAxis_ = GlobalVector(0,0,1);
       yAxis_ = GlobalVector(0,1,0);
       xAxis_ = GlobalVector(1,0,0);
@@ -50,14 +53,14 @@ class testSVFitTrackExtrapolation : public CppUnit::TestFixture {
       AlgebraicMatrix33 fakeErrorMatrixAboutX(fakeErrorAboutXVals, 9);
 
       atOriginAlongXAxis_ = TrackExtrapolation(
-          origin_, xAxis_, fakeErrorMatrixAboutX);
+          refPoint_, origin_, xAxis_, fakeErrorMatrixAboutX);
       atOriginAlongZAxis_ = TrackExtrapolation(
-          origin_, zAxis_, fakeErrorMatrixAboutZ);
+          refPoint_, origin_, zAxis_, fakeErrorMatrixAboutZ);
 
       atOffsetAlongXAxis_ = TrackExtrapolation(
-          stdOffset_, xAxis_, fakeErrorMatrixAboutX);
+          refPoint_, stdOffset_, xAxis_, fakeErrorMatrixAboutX);
       atOffsetAlongZAxis_ = TrackExtrapolation(
-          stdOffset_, zAxis_, fakeErrorMatrixAboutZ);
+          refPoint_, stdOffset_, zAxis_, fakeErrorMatrixAboutZ);
     }
 
     void testLogLikelihoodFromDisplacementNoRotation() {
@@ -155,8 +158,38 @@ class testSVFitTrackExtrapolation : public CppUnit::TestFixture {
           displacementResult, displacementResultAtOffset, 1e-8);
     }
 
+    void testApproximateTrackError() {
+      // Test along X
+      double fakeErrorAboutZVals[9] = {
+          3, 2, 0,
+          2, 5, 0,
+          0, 0, 0};
+      AlgebraicMatrix33 fakeErrorMatrixAboutZ(fakeErrorAboutZVals, 9);
+      TrackExtrapolation testTrack(
+          GlobalPoint(-1, 0, 0), // ref point
+          origin_, // track dca point
+          zAxis_,
+          fakeErrorMatrixAboutZ);
+      // Sigma^2 is 3 in x direction, the displacement should be pure X
+      CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+          "Testing approximate error on prinicipal axis",
+          testTrack.approximateTrackError(),
+          TMath::Sqrt(3), 1e-8);
+
+      TrackExtrapolation testTrackDiagonalOffset(
+          GlobalPoint(-1, -1, 0), // ref point
+          origin_, // track dca point
+          zAxis_,
+          fakeErrorMatrixAboutZ);
+      CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+          "Testing approximate error on non-principal axis",
+          testTrackDiagonalOffset.approximateTrackError(),
+          TMath::Sqrt(13), 1e-8);
+    }
+
   private:
     GlobalPoint origin_;
+    GlobalPoint refPoint_;
     GlobalPoint stdOffset_;
     GlobalVector zAxis_;
     GlobalVector yAxis_;
