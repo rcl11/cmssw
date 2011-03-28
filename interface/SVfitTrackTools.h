@@ -49,6 +49,13 @@ GlobalPoint originAtConeVertexPlane(
     const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
     int &status);
 
+/// Propagate the track to a point such that the path length between the
+/// distance between the propagated point and the point on the line that lies
+/// on the cone vertex plane (see above function) is d
+GlobalPoint propagateTrackToDistanceWrtConeVertex(
+    const GlobalPoint &lineOffset, const GlobalVector &lineDirection,
+    const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
+    double distance, int &status);
 
 GlobalPoint transform(const GlobalPoint& newOrigin, const GlobalVector &newUz,
                       const GlobalPoint& toTransform);

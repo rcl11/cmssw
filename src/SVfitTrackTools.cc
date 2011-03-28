@@ -6,6 +6,10 @@
 
 using namespace TMath;
 
+namespace {
+  inline double square(double x) { return x*x; }
+}
+
 namespace SVfit { namespace track {
 
 GlobalPoint propagateLine(const GlobalPoint& origin,
@@ -109,11 +113,11 @@ GlobalPoint intersectionOfLineAndCone(
   double trackOffsetZ = lineOffset.z();
 
   // Get quadratic coefficients
-  double a = Power(trackDirX,2) + Power(trackDirY,2) - Power(trackDirZ,2)*Power(Tan(alpha),2);
+  double a = square(trackDirX) + square(trackDirY) - square(trackDirZ)*square(Tan(alpha));
 
-  double b = 2*trackDirX*trackOffsetX + 2*trackDirY*trackOffsetY - 2*trackDirZ*trackOffsetZ*Power(Tan(alpha),2);
+  double b = 2*trackDirX*trackOffsetX + 2*trackDirY*trackOffsetY - 2*trackDirZ*trackOffsetZ*square(Tan(alpha));
 
-  double c = Power(trackOffsetX,2) + Power(trackOffsetY,2) - Power(trackOffsetZ,2)*Power(Tan(alpha),2);
+  double c = square(trackOffsetX) + square(trackOffsetY) - square(trackOffsetZ)*square(Tan(alpha));
 
   // Find the correct solution to our quadratic equation.
   double solution = solveQuadraticForPathLength(a, b, c, status);
@@ -154,19 +158,19 @@ GlobalPoint pcaOfLineToCone(
   }
 
   // Get quadratic coefficients for the equation to solve.
-  double a = -((Power(trackDirX,2) + Power(trackDirY,2))*
-               (Power(trackDirX,2) + Power(trackDirY,2) - Power(trackDirZ,2) +
-                (Power(trackDirX,2) + Power(trackDirY,2) +
-                 Power(trackDirZ,2))*Cos(2*alpha))) /
-      (2.*Power(trackDirZ,2));
+  double a = -((square(trackDirX) + square(trackDirY))*
+               (square(trackDirX) + square(trackDirY) - square(trackDirZ) +
+                (square(trackDirX) + square(trackDirY) +
+                 square(trackDirZ))*Cos(2*alpha))) /
+      (2.*square(trackDirZ));
 
   double b = -(((trackDirX*trackOffsetX + trackDirY*trackOffsetY)*
-                (Power(trackDirX,2) + Power(trackDirY,2) - Power(trackDirZ,2) +
-                 (Power(trackDirX,2) + Power(trackDirY,2) + Power(trackDirZ,2))
-                 *Cos(2*alpha)))/Power(trackDirZ,2));
+                (square(trackDirX) + square(trackDirY) - square(trackDirZ) +
+                 (square(trackDirX) + square(trackDirY) + square(trackDirZ))
+                 *Cos(2*alpha)))/square(trackDirZ));
 
-  double c = (-Power(trackDirX*trackOffsetX + trackDirY*trackOffsetY,2) + (Power(trackDirX,2)*Power(trackOffsetX,2) + 2*trackDirX*trackDirY*trackOffsetX*trackOffsetY +
-        Power(trackDirY,2)*Power(trackOffsetY,2) + Power(trackDirZ,2)*(Power(trackOffsetX,2) + Power(trackOffsetY,2)))*Power(Sin(alpha),2))/Power(trackDirZ,2);
+  double c = (-square(trackDirX*trackOffsetX + trackDirY*trackOffsetY) + (square(trackDirX)*square(trackOffsetX) + 2*trackDirX*trackDirY*trackOffsetX*trackOffsetY +
+        square(trackDirY)*square(trackOffsetY) + square(trackDirZ)*(square(trackOffsetX) + square(trackOffsetY)))*square(Sin(alpha)))/square(trackDirZ);
 
   // Find the correct solution to our quadratic equation.  This will give us the
   // t parameter that gives the point on the line closest to the
@@ -255,6 +259,15 @@ GlobalPoint originAtConeVertexPlane(
     vectorSubtract(lineOffset,coneVertex).dot(coneDirection);
   double pathLength = -projLineOffsetOnCone/projLineOnCone;
   return propagateLine(lineOffset, lineDirection, pathLength);
+}
+
+GlobalPoint propagateTrackToDistanceWrtConeVertex(
+    const GlobalPoint &lineOffset, const GlobalVector &lineDirection,
+    const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
+    double distance, int &status) {
+  GlobalPoint correctedLineOrigin = originAtConeVertexPlane(
+      lineOffset, lineDirection, coneVertex, coneDirection, status);
+  return propagateLine(correctedLineOrigin, lineDirection.unit(), distance);
 }
 
 GlobalPoint transform(const GlobalPoint& newOrigin, const GlobalVector &newUz,
