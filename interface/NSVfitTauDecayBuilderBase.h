@@ -7,13 +7,15 @@
  *
  * \author Evan K. Friis, Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: NSVfitTauDecayBuilderBase.h,v 1.1 2011/03/27 14:22:35 friis Exp $
+ * $Id: NSVfitTauDecayBuilderBase.h,v 1.2 2011/03/28 13:31:51 veelken Exp $
  *
  */
 
 #include "TauAnalysis/CandidateTools/interface/NSVfitSingleParticleBuilderBase.h"
+#include "TauAnalysis/CandidateTools/interface/NSVfitTrackService.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauDecayHypothesis.h"
 
 class NSVfitSingleParticleHypothesisBase;
@@ -51,10 +53,14 @@ class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase {
   protected:
     NSVfitAlgorithmBase* algorithm_;
   private:
+    edm::Service<NSVfitTrackService> trackService_;
     int idxFitParameter_visEnFracX_;
     int idxFitParameter_phi_lab_;
     int idxFitParameter_nuInvMass_; // only used for leptonic decays.
     int idxFitParameter_deltaR_;
+    int idxFitParameter_pvShiftX_;
+    int idxFitParameter_pvShiftY_;
+    int idxFitParameter_pvShiftZ_;
 };
 
 void applyOptionalFitParameter(double*, int, double&);

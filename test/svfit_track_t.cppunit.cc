@@ -41,6 +41,9 @@ class testSVFitTrack : public CppUnit::TestFixture {
   CPPUNIT_TEST(testLineOriginInsideConeCheck);
   CPPUNIT_TEST(testPropagateLineOriginToConeVertexPlane);
   CPPUNIT_TEST(testLineConeCollinear);
+  CPPUNIT_TEST(testLinePropagation);
+  CPPUNIT_TEST(testTrackCorrections);
+
   CPPUNIT_TEST_SUITE_END();
   public:
      void setUp() {
@@ -393,6 +396,49 @@ class testSVFitTrack : public CppUnit::TestFixture {
            lineOriginOnZ, zAxis_, origin_, zAxis_, angle, status);
        CPPUNIT_ASSERT_MESSAGE(dump(intersection), status == 1);
        CPPUNIT_ASSERT_DOUBLES_EQUAL(intersection.mag(), 0, 1e-8);
+     }
+
+     void testLinePropagation() {
+       GlobalPoint lineOrigin(3, 0, 3);
+       GlobalVector lineDirection(0, 0, 1);
+       int status = -999;
+       GlobalPoint propagatedPoint = propagateTrackToDistanceWrtConeVertex(
+           lineOrigin, lineDirection, origin_, zAxis_, 10, status);
+       CPPUNIT_ASSERT(status);
+       CPPUNIT_ASSERT_DOUBLES_EQUAL(propagatedPoint.x(), 3, 1e-9);
+       CPPUNIT_ASSERT_DOUBLES_EQUAL(propagatedPoint.y(), 0, 1e-9);
+       CPPUNIT_ASSERT_DOUBLES_EQUAL(propagatedPoint.z(), 10, 1e-9);
+     }
+
+     void testTrackCorrections() {
+       // Try and rotate X into Y
+       GlobalVector newY = applyPhiAndRadiusCorrections(
+           zAxis_,
+           xAxis_, // to correct,
+           pi_/2, // angle to rotate
+           0 // radial correction
+           );
+       CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+           "Testing rotation of X onto Y",
+           newY.dot(yAxis_), 1, 1e-8);
+       CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+           "Testing magnitude doesn't change on rotation",
+           newY.mag(), 1, 1e-8);
+
+       GlobalVector longer = applyPhiAndRadiusCorrections(
+           zAxis_,
+           xAxis_,
+           0, 2);
+       CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+           "Testing magnitude positive shift",
+           longer.x(), 3, 1e-8);
+       GlobalVector shorter = applyPhiAndRadiusCorrections(
+           zAxis_,
+           xAxis_,
+           0, -2);
+       CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+           "Testing magnitude negative shift",
+           longer.x(), -1, 1e-8);
      }
 
   private:

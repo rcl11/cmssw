@@ -22,7 +22,7 @@ class testSVFitTrackExtrapolation : public CppUnit::TestFixture {
   CPPUNIT_TEST(testLogLikelihoodFromDisplacement);
   CPPUNIT_TEST(testLogLikelihoodNoDisplacement);
   CPPUNIT_TEST(testSVDisplacementEquivalence);
-  CPPUNIT_TEST(testApproximateError);
+  CPPUNIT_TEST(testApproximateTrackError);
   CPPUNIT_TEST_SUITE_END();
 
   public:
@@ -184,7 +184,7 @@ class testSVFitTrackExtrapolation : public CppUnit::TestFixture {
       CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
           "Testing approximate error on non-principal axis",
           testTrackDiagonalOffset.approximateTrackError(),
-          TMath::Sqrt(13), 1e-8);
+          TMath::Sqrt(12)/TMath::Sqrt(2), 1e-8);
     }
 
   private:

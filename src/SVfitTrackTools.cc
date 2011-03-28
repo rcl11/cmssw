@@ -17,15 +17,6 @@ GlobalPoint propagateLine(const GlobalPoint& origin,
   return origin + tangent*pathLength;
 }
 
-// Stupid type conversion
-template<typename Out, typename In>
-inline Out convert(const In& in) { return Out(in.x(), in.y(), in.z()); }
-
-template<typename T1, typename T2>
-inline GlobalVector vectorSubtract(const T1& t1, const T2& t2) {
-  return GlobalVector(t1.x() - t2.x(), t1.y() - t2.y(), t1.z() - t2.z());
-}
-
 // Get the correct path length solution of the quadratic equation.
 // We always prefer the closest solution that is not negative - i.e. below the
 // the cone vertex.
@@ -268,6 +259,20 @@ GlobalPoint propagateTrackToDistanceWrtConeVertex(
   GlobalPoint correctedLineOrigin = originAtConeVertexPlane(
       lineOffset, lineDirection, coneVertex, coneDirection, status);
   return propagateLine(correctedLineOrigin, lineDirection.unit(), distance);
+}
+
+GlobalVector applyPhiAndRadiusCorrections(
+    const GlobalVector& axis,
+    const GlobalVector& toCorrect,
+    double phiCorrection, double radiusCorrection) {
+  TRotation rotation;
+  rotation.Rotate(phiCorrection, convert<TVector3>(axis));
+  TVector3 rotated = rotation*convert<TVector3>(toCorrect);
+  double length = rotated.Mag();
+  double scaleFactor = (length > 0) ?
+    (length + radiusCorrection)/length : 0;
+  rotated *= scaleFactor;
+  return convert<GlobalVector>(rotated);
 }
 
 GlobalPoint transform(const GlobalPoint& newOrigin, const GlobalVector &newUz,

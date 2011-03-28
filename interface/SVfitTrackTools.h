@@ -14,6 +14,15 @@
 
 namespace SVfit { namespace track {
 
+// Stupid type conversion
+template<typename Out, typename In>
+inline Out convert(const In& in) { return Out(in.x(), in.y(), in.z()); }
+
+template<typename T1, typename T2>
+inline GlobalVector vectorSubtract(const T1& t1, const T2& t2) {
+  return GlobalVector(t1.x() - t2.x(), t1.y() - t2.y(), t1.z() - t2.z());
+}
+
 /// Find the point of intersection between a line and a cone.  status = 1 if a
 /// solution found, 0 if not.
 GlobalPoint intersectionOfLineAndCone(
@@ -56,6 +65,11 @@ GlobalPoint propagateTrackToDistanceWrtConeVertex(
     const GlobalPoint &lineOffset, const GlobalVector &lineDirection,
     const GlobalPoint &coneVertex, const GlobalVector &coneDirection,
     double distance, int &status);
+
+GlobalVector applyPhiAndRadiusCorrections(
+    const GlobalVector& axis,
+    const GlobalVector& toCorrect,
+    double phiCorrection, double radiusCorrection);
 
 GlobalPoint transform(const GlobalPoint& newOrigin, const GlobalVector &newUz,
                       const GlobalPoint& toTransform);

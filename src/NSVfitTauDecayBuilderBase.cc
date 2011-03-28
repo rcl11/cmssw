@@ -3,10 +3,14 @@
 #include "TauAnalysis/CandidateTools/interface/NSVfitAlgorithmBase.h"
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 #include "TauAnalysis/CandidateTools/interface/nSVfitParameter.h"
+#include "TauAnalysis/CandidateTools/interface/SVfitTrackTools.h"
+
+using namespace nSVfit_namespace;
+using namespace SVfit::track;
 
 // Map the fit parameters to indices.
 void
-NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm) 
+NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm)
 {
   algorithm_ = algorithm;
   idxFitParameter_visEnFracX_ = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_visEnFracX);
@@ -14,11 +18,11 @@ NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm)
   if ( !nuSystemIsMassless() ) { // mass of neutrino system is a fit parameter in case of tau --> e/mu nu nu decays only
     idxFitParameter_nuInvMass_  = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_nuInvMass);
   }
-  idxFitParameter_deltaR_ = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_decayDistance_lab, true); 
+  idxFitParameter_deltaR_ = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_decayDistance_lab, true);
 }
 
 NSVfitSingleParticleHypothesisBase* NSVfitTauDecayBuilderBase::build(
-				      const NSVfitTauDecayBuilderBase::inputParticleMap& inputParticles) const 
+				      const NSVfitTauDecayBuilderBase::inputParticleMap& inputParticles) const
 {
   inputParticleMap::const_iterator particlePtr = inputParticles.find(prodParticleLabel_);
   assert(particlePtr != inputParticles.end());
@@ -32,7 +36,7 @@ NSVfitSingleParticleHypothesisBase* NSVfitTauDecayBuilderBase::build(
   // If this is a leptonic tau decay, we need to setup the limits on the
   // neutrino system invariant mass parameter.
   if ( !nuSystemIsMassless() ) {
-    NSVfitAlgorithmBase::fitParameterType* fitParameter = 
+    NSVfitAlgorithmBase::fitParameterType* fitParameter =
       algorithm_->getFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_nuInvMass);
     assert(fitParameter);
     fitParameter->upperLimit_ = SVfit_namespace::tauLeptonMass - hypothesis->visMass_;
@@ -43,7 +47,7 @@ NSVfitSingleParticleHypothesisBase* NSVfitTauDecayBuilderBase::build(
 }
 
 void
-NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase* hypothesis, double* param) const 
+NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase* hypothesis, double* param) const
 {
   using namespace SVfit_namespace;
 
@@ -76,7 +80,134 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
   double pTau_lab = SVfit_namespace::tauMomentumLabFrame(visMass, pVis_rf, gjAngle, pVis_lab);
 
 //--- compute tau lepton direction in laboratory frame
-  reco::Candidate::Vector tauFlight = SVfit_namespace::tauDirection(p3Vis_unit, angleVis_lab, phi_lab);
+  reco::Candidate::Vector tauFlight;
+  // If we are not using track likelihoods, the tau direction is just
+  // a unit vector.
+  if (idxFitParameter_deltaR_ < 0) {
+    tauFlight = SVfit_namespace::tauDirection(p3Vis_unit, angleVis_lab, phi_lab);
+  } else {
+
+    /*************************************************
+     *Begin track parameterization of secondary vertex
+     **************************************************/
+
+    // Get the reconstructed primary vertex from the event.
+    const NSVfitResonanceHypothesis* mother = hypothesis_T->mother();
+    assert(mother);
+    const NSVfitEventHypothesis* eventHyp = mother->eventHypothesis();
+    assert(eventHyp);
+
+    if (eventHyp->eventVertexSVrefittedIsValid())
+      throw cms::Exception("NSVfitTauDecayBuilderBase::NoEventPV") <<
+        "Couldn't get the refitted primary vertex!" << std::endl;
+
+    GlobalPoint eventVertex(
+        eventHyp->eventVertexPosSVrefitted()(0),
+        eventHyp->eventVertexPosSVrefitted()(1),
+        eventHyp->eventVertexPosSVrefitted()(2)
+        );
+
+    GlobalVector visDirection = convert<GlobalVector>(
+        hypothesis_T->p4().Vect());
+
+    assert(hypothesis_T->tracks().size() > 0);
+    const reco::TrackBaseRef& leadTrack = hypothesis_T->tracks().at(0);
+    assert(leadTrack.isNonnull());
+    // Get the track extrapolation
+    const SVfit::track::TrackExtrapolation& linearizedTrack =
+      trackService_->linearizedTrack(leadTrack);
+
+    GlobalPoint trackOrigin(
+        linearizedTrack.dcaPosition()(0),
+        linearizedTrack.dcaPosition()(1),
+        linearizedTrack.dcaPosition()(2));
+    GlobalVector trackDirection(
+        linearizedTrack.tangent()(0),
+        linearizedTrack.tangent()(1),
+        linearizedTrack.tangent()(2));
+
+    // Check if the cone intersects with the cone
+    int status = -999;
+    GlobalPoint svReferencePoint;
+    GlobalPoint pcaOnTrackClosestToSVReferencePoint;
+    svReferencePoint = intersectionOfLineAndCone(
+        trackOrigin, trackDirection,
+        eventVertex, visDirection, angleVis_lab, status);
+    // If there is an intersection the PCAs are the same
+    pcaOnTrackClosestToSVReferencePoint = svReferencePoint;
+
+    // If there is no intersection point, try and find the point of closest
+    // approach of the cone to the track
+    if (!status) {
+      // Get the track to cone PCA
+      pcaOnTrackClosestToSVReferencePoint = pcaOfLineToCone(
+        trackOrigin, trackDirection,
+        eventVertex, visDirection, angleVis_lab, status);
+      // Use this to get the cone to track PcA
+      if (status) {
+        svReferencePoint = pcaOfConeToPoint(
+            pcaOnTrackClosestToSVReferencePoint,
+            eventVertex, visDirection, angleVis_lab, status);
+      }
+    }
+
+    // Find the point of max displacment, corresponding to 5 sigmas in c-tau
+    // along the track
+    int propagationStatus = 0;
+    GlobalPoint maxDisplacementOnTrack = propagateTrackToDistanceWrtConeVertex(
+        trackOrigin, trackDirection,
+        eventVertex, visDirection,
+        10*hypothesis_T->p4().energy()*cTauLifetime,
+        propagationStatus);
+    // This can only fail if the track and visible momenta are perpendicular
+    // to each other.
+    assert(propagationStatus);
+
+    double displacement2 = SVfit::track::vectorSubtract(
+        pcaOnTrackClosestToSVReferencePoint, eventVertex).mag2();
+
+    double displacementAtMax2 = SVfit::track::vectorSubtract(
+        maxDisplacementOnTrack, eventVertex).mag2();
+
+    // If we couldn't find an intersection or PCA, or the found point was
+    // farther than the max, the reference point is point on the cone that is
+    // closest to the max displacement point
+    if (!status || displacementAtMax2 < displacement2) {
+      svReferencePoint = pcaOfConeToPoint(
+          maxDisplacementOnTrack,
+            eventVertex, visDirection, angleVis_lab, status);
+    }
+    // We should always have found a successful status by now!
+    assert(status);
+    // Now apply the phi and deltaR corrections
+    GlobalVector referenceFlight = SVfit::track::vectorSubtract(
+        svReferencePoint, eventVertex);
+
+    // We scale the radius correction such that deltaR = 1
+    // corresonds to approximately 1 simga of track error in transverse
+    // displacement.
+    double radialCorrection =
+      param[idxFitParameter_deltaR_]*linearizedTrack.approximateTrackError() /
+      std::max(1e-6, TMath::Sin(angleVis_lab));
+
+    GlobalVector correctedFlight = applyPhiAndRadiusCorrections(
+        visDirection,
+        referenceFlight,
+        param[idxFitParameter_phi_lab_], radialCorrection);
+
+    // Convert all to the stupid correct types
+    AlgebraicVector3 finalSecondaryVertex(
+        eventVertex.x() + correctedFlight.x(),
+        eventVertex.y() + correctedFlight.y(),
+        eventVertex.z() + correctedFlight.z());
+    tauFlight = reco::Candidate::Vector(
+        correctedFlight.x(),
+        correctedFlight.y(),
+        correctedFlight.z());
+    hypothesis_T->decayVertexPos_ = finalSecondaryVertex;
+    hypothesis_T->flightPath_ = tauFlight;
+    hypothesis_T->decayDistance_ = tauFlight.r();
+  }
 
 //--- compute tau lepton four-vector in laboratory frame
   reco::Candidate::LorentzVector p4Tau = SVfit_namespace::tauP4(tauFlight.Unit(), pTau_lab);
