@@ -157,14 +157,14 @@ SVfitTauLikelihoodPolarization::SVfitTauLikelihoodPolarization(const edm::Parame
 	std::string binLabel_x = histogram_mapRecToGenTauDecayModes->GetXaxis()->GetBinLabel(binIndex_x);
 	
 	size_t tauDecayMode_row = getSupportedTauDecayModeIndex_old(supportedTauDecayModes_, binLabel_x, kOther);
-	assert(tauDecayMode_row >= 0 && tauDecayMode_row < numSupportedTauDecayModes_);
+	assert(tauDecayMode_row < numSupportedTauDecayModes_);
 	
 	int numBinsY = histogram_mapRecToGenTauDecayModes->GetNbinsY();
 	for ( int binIndex_y = 1; binIndex_y <= numBinsY; ++binIndex_y ) {
 	  std::string binLabel_y = histogram_mapRecToGenTauDecayModes->GetYaxis()->GetBinLabel(binIndex_y);
 	  
 	  size_t tauDecayMode_column = getSupportedTauDecayModeIndex_old(supportedTauDecayModes_, binLabel_y, kOther);
-	  assert(tauDecayMode_column >= 0 && tauDecayMode_column < numSupportedTauDecayModes_);
+	  assert(tauDecayMode_column < numSupportedTauDecayModes_);
 	  
 	  mapRecToGenTauDecayModes_(tauDecayMode_row, tauDecayMode_column) 
 	    += histogram_mapRecToGenTauDecayModes->GetBinContent(binIndex_x, binIndex_y);
