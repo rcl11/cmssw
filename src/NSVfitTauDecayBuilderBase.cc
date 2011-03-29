@@ -18,12 +18,7 @@ NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm)
 
   idxFitParameter_visEnFracX_  = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_visEnFracX);
   idxFitParameter_phi_lab_     = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_phi_lab);
-  if ( !nuSystemIsMassless() ) { // mass of neutrino system is a fit parameter in case of tau --> e/mu nu nu decays only
-    idxFitParameter_nuInvMass_ = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_nuInvMass);
-  }
   idxFitParameter_deltaR_      = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_decayDistance_lab, true); 
-
-  if ( verbosity_ ) print(std::cout);
 }
 
 void NSVfitTauDecayBuilderBase::initialize(NSVfitTauDecayHypothesis* hypothesis, const reco::Candidate* visCandidate) const 
@@ -82,7 +77,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
   reco::Candidate::Vector tauFlight;
   // If we are not using track likelihoods, the tau direction is just
   // a unit vector.
-  if (idxFitParameter_deltaR_ < 0) {
+  if ( idxFitParameter_deltaR_ == -1 ) {
     tauFlight = SVfit_namespace::tauDirection(p3Vis_unit, angleVis_lab, phi_lab);
   } else {
 
@@ -241,7 +236,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
 
 void NSVfitTauDecayBuilderBase::print(std::ostream& stream) const 
 {
-  stream << "<NSVfitTauDecayBuilder::print>:" << std::endl;
+  stream << "<NSVfitTauDecayBuilderBase::print>:" << std::endl;
   stream << " pluginName = " << pluginName_ << std::endl;
   stream << " pluginType = " << pluginType_ << std::endl;
   stream << " prodParticleLabel = " << prodParticleLabel_ << std::endl;

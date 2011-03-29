@@ -7,9 +7,9 @@
  *
  * \author Evan K. Friis, Christian Veelken, UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.4 $
  *
- * $Id: NSVfitTauDecayBuilderBase.h,v 1.3 2011/03/28 16:54:00 friis Exp $
+ * $Id: NSVfitTauDecayBuilderBase.h,v 1.4 2011/03/29 14:53:26 veelken Exp $
  *
  */
 
@@ -28,15 +28,16 @@ class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase
   public:
     NSVfitTauDecayBuilderBase(const edm::ParameterSet& cfg)
       : NSVfitSingleParticleBuilderBase(cfg),
-        algorithm_(NULL)
+        algorithm_(0),
+        idxFitParameter_nuInvMass_(-1)
     {}
     virtual ~NSVfitTauDecayBuilderBase() {}
 
     // Setup the parameters of the fit.
-    void beginJob(NSVfitAlgorithmBase*);
+    virtual void beginJob(NSVfitAlgorithmBase*);
 
     // Build the tau decay hypothesis from the fit parameters
-    void applyFitParameter(NSVfitSingleParticleHypothesisBase*, double*) const;
+    virtual void applyFitParameter(NSVfitSingleParticleHypothesisBase*, double*) const;
 
     /* Abstract functions overridden by the different decay type builders */
     // Overridden to allocate the specific decay type.
@@ -54,12 +55,13 @@ class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase
 
     NSVfitAlgorithmBase* algorithm_;
 
-  private:
     edm::Service<NSVfitTrackService> trackService_;
+
     int idxFitParameter_visEnFracX_;
     int idxFitParameter_phi_lab_;
-    int idxFitParameter_nuInvMass_; // only used for leptonic decays.
+    int idxFitParameter_nuInvMass_; // used for leptonic decays only.
     int idxFitParameter_deltaR_;
+
     int idxFitParameter_pvShiftX_;
     int idxFitParameter_pvShiftY_;
     int idxFitParameter_pvShiftZ_;
