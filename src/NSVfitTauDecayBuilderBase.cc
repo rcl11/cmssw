@@ -45,8 +45,6 @@ void NSVfitTauDecayBuilderBase::initialize(NSVfitTauDecayHypothesis* hypothesis,
 void
 NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase* hypothesis, double* param) const
 {
-  std::cout << "<NSVfitTauDecayBuilderBase::applyFitParameter>:" << std::endl;
-
   // Cast to the concrete tau decay hypothesis
   NSVfitTauDecayHypothesis* hypothesis_T = dynamic_cast<NSVfitTauDecayHypothesis*>(hypothesis);
   assert(hypothesis_T);
@@ -221,7 +219,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
     std::cout << " phi_lab = " << param[idxFitParameter_phi_lab_] << std::endl;
     std::cout << " enVis_lab = " << enVis_lab << std::endl;
     std::cout << " visMass = " << visMass << std::endl;
-    std::cout << " nuInvMass = " << param[idxFitParameter_nuInvMass_] << std::endl;
+    std::cout << " nuInvMass = " << hypothesis_T->p4invis_rf_.mass() << std::endl;
     std::cout << " gjAngle = " << gjAngle << std::endl;
     std::cout << " angleVis_lab = " << angleVis_lab << std::endl;
     std::cout << " pTau_lab = " << pTau_lab << std::endl;
