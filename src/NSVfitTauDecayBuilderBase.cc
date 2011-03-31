@@ -73,7 +73,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
 
 //--- compute tau lepton direction in laboratory frame
   reco::Candidate::Vector tauFlight;
-  const std::vector<reco::TrackBaseRef>& tracks = hypothesis_T->tracks();
+  const std::vector<const reco::Track*>& tracks = hypothesis_T->tracks();
   // If we are not using track likelihoods, the tau direction is just a unit vector.
   if ( idxFitParameter_deltaR_ == -1 || tracks.size() == 0 ) {
     tauFlight = SVfit_namespace::tauDirection(p3Vis_unit, angleVis_lab, phi_lab);
@@ -102,8 +102,8 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
     GlobalVector visDirection = convert<GlobalVector>(
         hypothesis_T->p4().Vect());
 
-    const reco::TrackBaseRef& leadTrack = tracks[0];
-    assert(leadTrack.isNonnull());
+    const reco::Track* leadTrack = tracks[0];
+    assert(leadTrack);
 
     // Get the track extrapolation
     const SVfit::track::TrackExtrapolation& linearizedTrack =
@@ -130,7 +130,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
 
     // If there is no intersection point, try and find the point of closest
     // approach of the cone to the track
-    if (!status) {
+    if ( !status ) {
       // Get the track to cone PCA
       pcaOnTrackClosestToSVReferencePoint = pcaOfLineToCone(
         trackOrigin, trackDirection,

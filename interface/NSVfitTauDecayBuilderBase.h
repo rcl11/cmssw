@@ -7,9 +7,9 @@
  *
  * \author Evan K. Friis, Christian Veelken, UC Davis
  *
- * \version $Revision: 1.4 $
+ * \version $Revision: 1.5 $
  *
- * $Id: NSVfitTauDecayBuilderBase.h,v 1.4 2011/03/29 14:53:26 veelken Exp $
+ * $Id: NSVfitTauDecayBuilderBase.h,v 1.5 2011/03/29 15:33:01 veelken Exp $
  *
  */
 
@@ -19,6 +19,7 @@
 #include "TauAnalysis/CandidateTools/interface/NSVfitTrackService.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauDecayHypothesis.h"
+#include "DataFormats/TrackReco/interface/Track.h"
 
 class NSVfitSingleParticleHypothesisBase;
 class NSVfitAlgorithmBase;
@@ -45,7 +46,7 @@ class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase
     // The decay mode
     virtual int getDecayMode(const reco::Candidate*) const = 0;
     // Get the track(s) associated to a given Candidate
-    virtual std::vector<reco::TrackBaseRef> extractTracks(const reco::Candidate*) const = 0;
+    virtual std::vector<const reco::Track*> extractTracks(const reco::Candidate*) const = 0;
 
     virtual void print(std::ostream&) const;
 
