@@ -73,9 +73,9 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
 
 //--- compute tau lepton direction in laboratory frame
   reco::Candidate::Vector tauFlight;
-  // If we are not using track likelihoods, the tau direction is just
-  // a unit vector.
-  if ( idxFitParameter_deltaR_ == -1 ) {
+  const std::vector<reco::TrackBaseRef>& tracks = hypothesis_T->tracks();
+  // If we are not using track likelihoods, the tau direction is just a unit vector.
+  if ( idxFitParameter_deltaR_ == -1 || tracks.size() == 0 ) {
     tauFlight = SVfit_namespace::tauDirection(p3Vis_unit, angleVis_lab, phi_lab);
   } else {
 
@@ -102,9 +102,9 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
     GlobalVector visDirection = convert<GlobalVector>(
         hypothesis_T->p4().Vect());
 
-    assert(hypothesis_T->tracks().size() > 0);
-    const reco::TrackBaseRef& leadTrack = hypothesis_T->tracks().at(0);
+    const reco::TrackBaseRef& leadTrack = tracks[0];
     assert(leadTrack.isNonnull());
+
     // Get the track extrapolation
     const SVfit::track::TrackExtrapolation& linearizedTrack =
       trackService_->linearizedTrack(leadTrack);
@@ -118,7 +118,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
         linearizedTrack.tangent()(1),
         linearizedTrack.tangent()(2));
 
-    // Check if the cone intersects with the cone
+    // Check if the linearized track intersects with the cone
     int status = -999;
     GlobalPoint svReferencePoint;
     GlobalPoint pcaOnTrackClosestToSVReferencePoint;
