@@ -23,6 +23,7 @@ class testSVFitTrackExtrapolation : public CppUnit::TestFixture {
   CPPUNIT_TEST(testLogLikelihoodNoDisplacement);
   CPPUNIT_TEST(testSVDisplacementEquivalence);
   CPPUNIT_TEST(testApproximateTrackError);
+  CPPUNIT_TEST(testDisplacementCalculation);
   CPPUNIT_TEST_SUITE_END();
 
   public:
@@ -185,6 +186,19 @@ class testSVFitTrackExtrapolation : public CppUnit::TestFixture {
           "Testing approximate error on non-principal axis",
           testTrackDiagonalOffset.approximateTrackError(),
           TMath::Sqrt(12)/TMath::Sqrt(2), 1e-8);
+    }
+
+    void testDisplacementCalculation() {
+      AlgebraicVector3 testSV(1, 1, 200);
+      AlgebraicVector3 displacement =
+        atOriginAlongZAxis_.displacementFromTrack(testSV);
+      // We expect displacement to be @ (1, 1, 0);
+      CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+          "Testing x displacment", displacement(0), 1, 1e-6);
+      CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+          "Testing y displacment", displacement(1), 1, 1e-6);
+      CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+          "Testing z displacment", displacement(2), 0, 1e-6);
     }
 
   private:
