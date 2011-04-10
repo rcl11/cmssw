@@ -1,9 +1,11 @@
 #include "TauAnalysis/CandidateTools/interface/NSVfitTauDecayBuilderBase.h"
-#include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauDecayHypothesis.h"
+
 #include "TauAnalysis/CandidateTools/interface/NSVfitAlgorithmBase.h"
-#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
-#include "TauAnalysis/CandidateTools/interface/nSVfitParameter.h"
+#include "TauAnalysis/CandidateTools/interface/NSVfitParameter.h"
 #include "TauAnalysis/CandidateTools/interface/SVfitTrackTools.h"
+#include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
+
+#include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauDecayHypothesis.h"
 
 using namespace nSVfit_namespace;
 using namespace SVfit::track;
@@ -31,11 +33,12 @@ void NSVfitTauDecayBuilderBase::initialize(NSVfitTauDecayHypothesis* hypothesis,
 
   // If this is a leptonic tau decay, we need to setup the limits on the
   // neutrino system invariant mass parameter.
+  // In case reconstructed mass of visible decay products exceeds 1.5 GeV,
+  // assume measurement error and "truncate" @ 1.5 GeV.
   if ( !nuSystemIsMassless() ) {
-    NSVfitAlgorithmBase::fitParameterType* fitParameter =
-      algorithm_->getFitParameter(prodParticleLabel_, nSVfit_namespace::kTau_nuInvMass);
+    NSVfitParameter* fitParameter = algorithm_->getFitParameter(idxFitParameter_nuInvMass_);
     assert(fitParameter);
-    fitParameter->upperLimit_ = SVfit_namespace::tauLeptonMass - hypothesis->visMass_;
+    fitParameter->setUpperLimit(SVfit_namespace::tauLeptonMass - TMath::Min(hypothesis->visMass_, 1.5));
   }
 
   // Extract the associated tracks, and fit a vertex if possible.
@@ -43,7 +46,7 @@ void NSVfitTauDecayBuilderBase::initialize(NSVfitTauDecayHypothesis* hypothesis,
 }
 
 void
-NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase* hypothesis, double* param) const
+NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase* hypothesis, const double* param) const
 {
   // Cast to the concrete tau decay hypothesis
   NSVfitTauDecayHypothesis* hypothesis_T = dynamic_cast<NSVfitTauDecayHypothesis*>(hypothesis);
@@ -289,7 +292,7 @@ void NSVfitTauDecayBuilderBase::print(std::ostream& stream) const
 //-------------------------------------------------------------------------------
 //
 
-void applyOptionalFitParameter(double* param, int idxFitParameter, double& value)
+void applyOptionalFitParameter(const double* param, int idxFitParameter, double& value)
 {
   if   ( idxFitParameter != -1 ) value = param[idxFitParameter];
   else                           value = 0.;

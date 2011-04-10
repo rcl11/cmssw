@@ -7,9 +7,9 @@
  *
  * \author Evan K. Friis, Christian Veelken, UC Davis
  *
- * \version $Revision: 1.5 $
+ * \version $Revision: 1.6 $
  *
- * $Id: NSVfitTauDecayBuilderBase.h,v 1.5 2011/03/29 15:33:01 veelken Exp $
+ * $Id: NSVfitTauDecayBuilderBase.h,v 1.6 2011/03/31 16:31:33 veelken Exp $
  *
  */
 
@@ -38,7 +38,7 @@ class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase
     virtual void beginJob(NSVfitAlgorithmBase*);
 
     // Build the tau decay hypothesis from the fit parameters
-    virtual void applyFitParameter(NSVfitSingleParticleHypothesisBase*, double*) const;
+    virtual void applyFitParameter(NSVfitSingleParticleHypothesisBase*, const double*) const;
 
     /* Abstract functions overridden by the different decay type builders */
     // Overridden to allocate the specific decay type.
@@ -68,6 +68,6 @@ class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase
     int idxFitParameter_pvShiftZ_;
 };
 
-void applyOptionalFitParameter(double*, int, double&);
+void applyOptionalFitParameter(const double*, int, double&);
 
 #endif /* end of include guard: TauAnalysis_CandidateTools_NSVfitSingleTauBuilderBase_h */

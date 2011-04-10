@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.4 $
  *
- * $Id: NSVfitTauToLepBuilder.h,v 1.2 2011/03/03 13:04:47 veelken Exp $
+ * $Id: NSVfitTauToLepBuilder.h,v 1.4 2011/03/27 14:22:35 friis Exp $
  *
  */
 
@@ -36,7 +36,7 @@ class NSVfitTauToLepBuilder : public NSVfitSingleParticleBuilderBase
 
   virtual NSVfitSingleParticleHypothesisBase* build(const inputParticleMap&) const;
 
-  void applyFitParameter(NSVfitSingleParticleHypothesisBase*, double*) const;
+  void applyFitParameter(NSVfitSingleParticleHypothesisBase*, const double*) const;
 
   void print(std::ostream& stream) const;
 

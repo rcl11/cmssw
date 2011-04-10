@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.3 $
+ * \version $Revision: 1.6 $
  *
- * $Id: NSVfitTauToHadBuilder.h,v 1.3 2011/03/03 13:04:47 veelken Exp $
+ * $Id: NSVfitTauToHadBuilder.h,v 1.6 2011/03/27 14:22:35 friis Exp $
  *
  */
 
@@ -35,7 +35,7 @@ class NSVfitTauToHadBuilder : public NSVfitSingleParticleBuilderBase
 
   virtual NSVfitSingleParticleHypothesisBase* build(const inputParticleMap&) const;
 
-  void applyFitParameter(NSVfitSingleParticleHypothesisBase*, double*) const;
+  void applyFitParameter(NSVfitSingleParticleHypothesisBase*, const double*) const;
 
   void print(std::ostream& stream) const;
 
