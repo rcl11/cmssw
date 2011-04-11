@@ -92,7 +92,10 @@ NSVfitResonanceLikelihoodPtBalance::NSVfitResonanceLikelihoodPtBalance(const edm
   : NSVfitResonanceLikelihood(cfg),
     leg1Likelihood_(cfg.getParameter<edm::ParameterSet>("leg1")),
     leg2Likelihood_(cfg.getParameter<edm::ParameterSet>("leg2")) 
-{}
+{
+  power_ = ( cfg.exists("power") ) ?
+    cfg.getParameter<double>("power") : 1.0;
+}
 
 NSVfitResonanceLikelihoodPtBalance::~NSVfitResonanceLikelihoodPtBalance()
 {
@@ -151,7 +154,7 @@ NSVfitResonanceLikelihoodPtBalance::operator()(const NSVfitResonanceHypothesis* 
   double nll = -(TMath::Log(leg1Prob) + TMath::Log(leg2Prob));
   if ( this->verbosity_ ) std::cout << "--> nll = " << nll << std::endl;
 
-  return nll;
+  return power_*nll;
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"

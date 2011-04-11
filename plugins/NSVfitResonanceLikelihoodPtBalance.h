@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: NSVfitResonanceLikelihoodPtBalance.h,v 1.1 2011/02/27 16:45:16 veelken Exp $
+ * $Id: NSVfitResonanceLikelihoodPtBalance.h,v 1.2 2011/03/03 13:04:47 veelken Exp $
  *
  */
 
@@ -32,8 +32,9 @@ class NSVfitResonanceLikelihoodPtBalance : public NSVfitResonanceLikelihood
 
   double operator()(const NSVfitResonanceHypothesis*) const;
   
- private:
-  
+ private:  
+  double power_;
+
   struct Parameterization {
     Parameterization(const edm::ParameterSet& cfg);
     std::auto_ptr<TFormula> smear_;
