@@ -14,9 +14,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.28 $
+ * \version $Revision: 1.29 $
  *
- * $Id: SVfitAlgorithm.h,v 1.28 2011/02/27 16:45:16 veelken Exp $
+ * $Id: SVfitAlgorithm.h,v 1.29 2011/03/26 15:10:49 liis Exp $
  *
  */
 
@@ -672,7 +672,7 @@ class SVfitAlgorithm
 
       char dummyToGetName[100];
       // Do scans of each parameter that was fitted.
-      if (dqmStore_ && monitorCfg_.getParameter<bool>("doScan")) {
+      if ( dqmStore_ && monitorCfg_.getParameter<bool>("doScan") ) {
         // We dont' want to monitor calls to the likelihood while we are messing
         // around with the scans.
         enableLikelihoodMonitoring_ = false;
