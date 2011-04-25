@@ -271,7 +271,7 @@ double NSVfitTauToHadLikelihoodPolarization::operator()(const NSVfitSinglePartic
   const NSVfitTauToHadHypothesis* hypothesis_T = dynamic_cast<const NSVfitTauToHadHypothesis*>(hypothesis);
   assert(hypothesis_T != 0);
 
-  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::negLogLikelihoodPolarized>:" << std::endl;
+  if ( this->verbosity_ ) std::cout << "<NSVfitTauToHadLikelihoodPolarization::operator()>:" << std::endl;
 
   double normProb = 0.;
   for ( size_t iDecayMode = 0; iDecayMode < numSupportedTauDecayModes_; ++iDecayMode ) {
