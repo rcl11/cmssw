@@ -81,10 +81,11 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
   // If we are not using track likelihoods, the tau direction is just a unit vector.
   if ( idxFitParameter_deltaR_ == -1 || tracks.size() == 0 ) {
     tauFlight = SVfit_namespace::tauDirection(p3Vis_unit, angleVis_lab, phi_lab);
-    decayVertexLog << " Build non-track based vertex @ "
-      << tauFlight << std::endl;
+    if (this->verbosity_)
+      decayVertexLog << " Build non-track based vertex @ " << tauFlight << std::endl;
   } else {
-    decayVertexLog << "Finding decay vertex with tracks" << std::endl;
+    if (this->verbosity_)
+      decayVertexLog << "Finding decay vertex with tracks" << std::endl;
 
     /*************************************************
      *Begin track parameterization of secondary vertex
@@ -106,7 +107,8 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
         eventHyp->eventVertexPosSVrefitted()(2)
         );
 
-    decayVertexLog << "Event vertex is @ " << eventVertex << std::endl;
+    if (this->verbosity_)
+      decayVertexLog << "Event vertex is @ " << eventVertex << std::endl;
 
     GlobalVector visDirection = convert<GlobalVector>(
         hypothesis_T->p4().Vect());
@@ -137,8 +139,9 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
     // If there is an intersection the PCAs are the same
     pcaOnTrackClosestToSVReferencePoint = svReferencePoint;
 
-    decayVertexLog << "Trying to find intersection - success = "
-      << status << " vertex @ " << svReferencePoint << std::endl;
+    if (this->verbosity_)
+      decayVertexLog << "Trying to find intersection - success = "
+        << status << " vertex @ " << svReferencePoint << std::endl;
 
     // If there is no intersection point, try and find the point of closest
     // approach of the cone to the track
@@ -147,17 +150,19 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
       pcaOnTrackClosestToSVReferencePoint = pcaOfLineToCone(
         trackOrigin, trackDirection,
         eventVertex, visDirection, angleVis_lab, status);
-      decayVertexLog << "Trying to find pca - success = "
-        << status << " track pca @ " << pcaOnTrackClosestToSVReferencePoint
-        << std::endl;
+      if (this->verbosity_)
+        decayVertexLog << "Trying to find pca - success = "
+          << status << " track pca @ " << pcaOnTrackClosestToSVReferencePoint
+          << std::endl;
       // Use this to get the cone to track PcA
       if (status) {
         svReferencePoint = pcaOfConeToPoint(
             pcaOnTrackClosestToSVReferencePoint,
             eventVertex, visDirection, angleVis_lab, status);
-        decayVertexLog << "Trying to find pca - success = "
-          << status << " cone pca @ " << svReferencePoint
-          << std::endl;
+        if (this->verbosity_)
+          decayVertexLog << "Trying to find pca - success = "
+            << status << " cone pca @ " << svReferencePoint
+            << std::endl;
       }
     }
 
@@ -186,16 +191,18 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
       svReferencePoint = pcaOfConeToPoint(
           maxDisplacementOnTrack,
             eventVertex, visDirection, angleVis_lab, status);
-      decayVertexLog << "Using PCA of cone to max displacement point. success="
-        << status << " cone pca @ " << svReferencePoint
-        << std::endl;
+      if (this->verbosity_)
+        decayVertexLog << "Using PCA of cone to max displacement point. success="
+          << status << " cone pca @ " << svReferencePoint
+          << std::endl;
     }
     // We should always have found a successful status by now!
     assert(status);
     // Now apply the phi and deltaR corrections
     GlobalVector referenceFlight = SVfit::track::vectorSubtract(
         svReferencePoint, eventVertex);
-    decayVertexLog << "Flight path is: " << referenceFlight << std::endl;
+    if (this->verbosity_)
+      decayVertexLog << "Flight path is: " << referenceFlight << std::endl;
 
     // We scale the radius correction such that deltaR = 1
     // corresonds to approximately 1 simga of track error in transverse
@@ -209,18 +216,21 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
         referenceFlight,
         param[idxFitParameter_phi_lab_], radialCorrection);
 
-    decayVertexLog << "Applying dPhi = " << param[idxFitParameter_phi_lab_]
-      << " and unscaled/scaled DR = " << param[idxFitParameter_deltaR_]
-      << " / " << radialCorrection << std::endl;
-
-    decayVertexLog << "Corrected flight path is: " << correctedFlight << std::endl;
+    if (this->verbosity_) {
+      decayVertexLog << "Applying dPhi = " << param[idxFitParameter_phi_lab_]
+        << " and unscaled/scaled DR = " << param[idxFitParameter_deltaR_]
+        << " / " << radialCorrection << std::endl;
+      decayVertexLog << "Corrected flight path is: " << correctedFlight << std::endl;
+    }
 
     // Convert all to the stupid correct types
     AlgebraicVector3 finalSecondaryVertex(
         eventVertex.x() + correctedFlight.x(),
         eventVertex.y() + correctedFlight.y(),
         eventVertex.z() + correctedFlight.z());
-    decayVertexLog << "Final SV: " << finalSecondaryVertex << std::endl;
+    if (this->verbosity_) {
+      decayVertexLog << "Final SV: " << finalSecondaryVertex << std::endl;
+    }
     tauFlight = reco::Candidate::Vector(
         correctedFlight.x(),
         correctedFlight.y(),
