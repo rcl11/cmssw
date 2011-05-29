@@ -24,30 +24,36 @@ NSVfitResonanceLikelihoodPtBalance2::NSVfitResonanceLikelihoodPtBalance2(
   addMassFactor_ = pset.getParameter<bool>("addMassFactor");
 }
 
-void NSVfitResonanceLikelihoodPtBalance2::beginCandidate(
-    const NSVfitResonanceHypothesis* hyp) const {
+void NSVfitResonanceLikelihoodPtBalance2::beginCandidate(const NSVfitResonanceHypothesis*) const 
+{
   // Reset the highest likelihood found so far
   highestLikelihood_ = -std::numeric_limits<double>::max();
 }
 
-double NSVfitResonanceLikelihoodPtBalance2::operator()(
-    const NSVfitResonanceHypothesis* resonance) const {
+double NSVfitResonanceLikelihoodPtBalance2::operator()(const NSVfitResonanceHypothesis* hypothesis) const 
+{
+//--- compute negative log-likelihood for two tau leptons
+//    to have transverse momenta leg1Pt, leg2Pt
 
-  const edm::OwnVector<NSVfitSingleParticleHypothesisBase>& daughters =
-    resonance->daughters();
-  assert(daughters.size() == 2);
+  if ( this->verbosity_ ) std::cout << "<NSVfitLikelihoodDiTauPtBalance2::operator()>:" << std::endl;
+
+  if ( hypothesis->numDaughters() != 2 ) {
+    throw cms::Exception("NSVfitResonanceLikelihoodPtBalance2::operator()")
+      << " Resonance hypothesis passed as function argument has " << hypothesis->numDaughters()
+      << " daughter particles, exactly two expected !!\n";
+  }
+
+  const NSVfitSingleParticleHypothesis* daughter1 = hypothesis->daughter(0);
+  const NSVfitSingleParticleHypothesis* daughter2 = hypothesis->daughter(1);
 
   // Get the visible angles
-  double deltaPhi = TMath::Abs(
-      TMath::Pi() -
-      TMath::Abs(reco::deltaPhi(daughters[0].p4().phi(),
-        daughters[1].p4().phi())));
+  double deltaPhi = TMath::Abs(TMath::Pi() - TMath::Abs(reco::deltaPhi(daughter1->p4().phi(), daughter2->p4().phi())));
 
-  double original_mass = resonance->p4_fitted().mass();
+  double original_mass = hypothesis->p4_fitted().mass();
   double mass = original_mass;
 
-  double leg1Pt = daughters[0].p4_fitted().pt();
-  double leg2Pt = daughters[1].p4_fitted().pt();
+  double leg1Pt = daughter1->p4_fitted().pt();
+  double leg2Pt = daughter2->p4_fitted().pt();
 
   // Always use the reconstructed mass to do the scaling.
   double scaledLeg1Pt = 2.0*leg1Pt/mass;

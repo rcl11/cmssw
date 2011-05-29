@@ -34,7 +34,7 @@ void NSVfitTauToLepLikelihoodPolarization<T>::beginJob(NSVfitAlgorithmBase* algo
 }
 
 template <typename T>
-double NSVfitTauToLepLikelihoodPolarization<T>::operator()(const NSVfitSingleParticleHypothesisBase* hypothesis) const
+double NSVfitTauToLepLikelihoodPolarization<T>::operator()(const NSVfitSingleParticleHypothesis* hypothesis) const
 {
 //--- compute negative log-likelihood for tau lepton decay 
 //    tau- --> e- nu nu (tau- --> mu- nu nu)
@@ -45,7 +45,8 @@ double NSVfitTauToLepLikelihoodPolarization<T>::operator()(const NSVfitSinglePar
 //           B.K. Bullock, K. Hagiwara and A.D. Martin,
 //           Nucl. Phys. B395 (1993) 499.
 //
-  const NSVfitTauToLepHypothesis<T>* hypothesis_T = dynamic_cast<const NSVfitTauToLepHypothesis<T>*>(hypothesis);
+  const NSVfitTauToLepHypothesis<T, NSVfitTauDecayHypothesis>* hypothesis_T = 
+    dynamic_cast<const NSVfitTauToLepHypothesis<T, NSVfitTauDecayHypothesis>*>(hypothesis);
   assert(hypothesis_T != 0);
 
   if ( this->verbosity_ ) std::cout << "<NSVfitTauToLepLikelihoodPolarization::operator()>:" << std::endl;

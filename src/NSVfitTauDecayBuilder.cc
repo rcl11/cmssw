@@ -1,4 +1,4 @@
-#include "TauAnalysis/CandidateTools/interface/NSVfitTauDecayBuilderBase.h"
+#include "TauAnalysis/CandidateTools/interface/NSVfitTauDecayBuilder.h"
 
 #include "TauAnalysis/CandidateTools/interface/NSVfitAlgorithmBase.h"
 #include "TauAnalysis/CandidateTools/interface/NSVfitParameter.h"
@@ -14,7 +14,7 @@ using namespace SVfit_namespace;
 
 // Map the fit parameters to indices.
 void
-NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm)
+NSVfitTauDecayBuilder::beginJob(NSVfitAlgorithmBase* algorithm)
 {
   algorithm_ = algorithm;
 
@@ -23,7 +23,7 @@ NSVfitTauDecayBuilderBase::beginJob(NSVfitAlgorithmBase* algorithm)
   idxFitParameter_deltaR_      = getFitParameterIdx(algorithm, prodParticleLabel_, nSVfit_namespace::kTau_decayDistance_lab, true);
 }
 
-void NSVfitTauDecayBuilderBase::initialize(NSVfitTauDecayHypothesis* hypothesis, const reco::Candidate* visCandidate) const
+void NSVfitTauDecayBuilder::initialize(NSVfitTauDecayHypothesis* hypothesis, const reco::Candidate* visCandidate) const
 {
   hypothesis->p3Vis_unit_ = visCandidate->p4().Vect().Unit();
   hypothesis->visMass_ = visCandidate->mass();
@@ -46,7 +46,7 @@ void NSVfitTauDecayBuilderBase::initialize(NSVfitTauDecayHypothesis* hypothesis,
 }
 
 void
-NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase* hypothesis, const double* param) const
+NSVfitTauDecayBuilder::applyFitParameter(NSVfitSingleParticleHypothesis* hypothesis, const double* param) const
 {
   // Cast to the concrete tau decay hypothesis
   NSVfitTauDecayHypothesis* hypothesis_T = dynamic_cast<NSVfitTauDecayHypothesis*>(hypothesis);
@@ -286,7 +286,7 @@ NSVfitTauDecayBuilderBase::applyFitParameter(NSVfitSingleParticleHypothesisBase*
   }
 }
 
-void NSVfitTauDecayBuilderBase::print(std::ostream& stream) const
+void NSVfitTauDecayBuilder::print(std::ostream& stream) const
 {
   stream << "<NSVfitTauDecayBuilderBase::print>:" << std::endl;
   stream << " pluginName = " << pluginName_ << std::endl;

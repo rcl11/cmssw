@@ -119,19 +119,20 @@ NSVfitResonanceLikelihoodPtBalance::operator()(const NSVfitResonanceHypothesis* 
 
   if ( this->verbosity_ ) std::cout << "<NSVfitLikelihoodDiTauPtBalance::operator()>:" << std::endl;
 
-  if ( hypothesis->daughters().size() != 2 ) {
+  if ( hypothesis->numDaughters() != 2 ) {
     throw cms::Exception("NSVfitResonanceLikelihoodPtBalance::operator()")
-      << " Resonance hypothesis passed as function argument has " << hypothesis->daughters().size()
+      << " Resonance hypothesis passed as function argument has " << hypothesis->numDaughters()
       << " daughter particles, exactly two expected !!\n";
   }
+
+  const NSVfitSingleParticleHypothesis* daughter1 = hypothesis->daughter(0);
+  const NSVfitSingleParticleHypothesis* daughter2 = hypothesis->daughter(1);
 
   double diTauMass = hypothesis->p4_fitted().mass();
   if ( this->verbosity_ ) std::cout << " diTauMass = " << diTauMass << std::endl;
   
-  const edm::OwnVector<NSVfitSingleParticleHypothesisBase> daughters = hypothesis->daughters();
-  assert(daughters.size() == 2);
-  double leg1Pt = daughters[0].p4_fitted().pt();
-  double leg2Pt = daughters[1].p4_fitted().pt();
+  double leg1Pt = daughter1->p4_fitted().pt();
+  double leg2Pt = daughter2->p4_fitted().pt();
   if ( this->verbosity_ ) {
     std::cout << " leg1Pt = " << leg1Pt << std::endl;
     std::cout << " leg2Pt = " << leg2Pt << std::endl;

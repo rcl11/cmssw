@@ -1,15 +1,15 @@
-#ifndef TauAnalysis_CandidateTools_NSVfitSingleTauBuilderBase_h
-#define TauAnalysis_CandidateTools_NSVfitSingleTauBuilderBase_h
+#ifndef TauAnalysis_CandidateTools_NSVfitTauDecayBuilder_h
+#define TauAnalysis_CandidateTools_NSVfitTauDecayBuilder_h
 
-/** \class NSVfitTauDecayBuilderBase
+/** \class NSVfitTauDecayBuilder
  *
  * Base-class for building objects that come from tau decays.
  *
  * \author Evan K. Friis, Christian Veelken, UC Davis
  *
- * \version $Revision: 1.6 $
+ * \version $Revision: 1.7 $
  *
- * $Id: NSVfitTauDecayBuilderBase.h,v 1.6 2011/03/31 16:31:33 veelken Exp $
+ * $Id: NSVfitTauDecayBuilderBase.h,v 1.7 2011/04/10 14:46:47 veelken Exp $
  *
  */
 
@@ -21,24 +21,24 @@
 #include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauDecayHypothesis.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 
-class NSVfitSingleParticleHypothesisBase;
+class NSVfitSingleParticleHypothesis;
 class NSVfitAlgorithmBase;
 
-class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase 
+class NSVfitTauDecayBuilder : public NSVfitSingleParticleBuilderBase
 {
   public:
-    NSVfitTauDecayBuilderBase(const edm::ParameterSet& cfg)
+    NSVfitTauDecayBuilder(const edm::ParameterSet& cfg)
       : NSVfitSingleParticleBuilderBase(cfg),
         algorithm_(0),
         idxFitParameter_nuInvMass_(-1)
     {}
-    virtual ~NSVfitTauDecayBuilderBase() {}
+    virtual ~NSVfitTauDecayBuilder() {}
 
     // Setup the parameters of the fit.
     virtual void beginJob(NSVfitAlgorithmBase*);
 
     // Build the tau decay hypothesis from the fit parameters
-    virtual void applyFitParameter(NSVfitSingleParticleHypothesisBase*, const double*) const;
+    virtual void applyFitParameter(NSVfitSingleParticleHypothesis*, const double*) const;
 
     /* Abstract functions overridden by the different decay type builders */
     // Overridden to allocate the specific decay type.
@@ -70,4 +70,4 @@ class NSVfitTauDecayBuilderBase : public NSVfitSingleParticleBuilderBase
 
 void applyOptionalFitParameter(const double*, int, double&);
 
-#endif /* end of include guard: TauAnalysis_CandidateTools_NSVfitSingleTauBuilderBase_h */
+#endif /* end of include guard: TauAnalysis_CandidateTools_NSVfitTauDecayBuilder_h */

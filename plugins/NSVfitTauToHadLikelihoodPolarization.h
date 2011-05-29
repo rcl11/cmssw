@@ -13,9 +13,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: NSVfitTauToHadLikelihoodPolarization.h,v 1.1 2011/03/23 17:46:39 veelken Exp $
+ * $Id: NSVfitTauToHadLikelihoodPolarization.h,v 1.2 2011/03/24 12:01:41 veelken Exp $
  *
  */
 
@@ -38,9 +38,9 @@ class NSVfitTauToHadLikelihoodPolarization : public NSVfitSingleParticleLikeliho
   ~NSVfitTauToHadLikelihoodPolarization();
 
   void beginJob(NSVfitAlgorithmBase*);
-  void beginCandidate(const NSVfitSingleParticleHypothesisBase*);
+  void beginCandidate(const NSVfitSingleParticleHypothesis*);
   
-  double operator()(const NSVfitSingleParticleHypothesisBase*) const;
+  double operator()(const NSVfitSingleParticleHypothesis*) const;
 
  private:
   enum decayModes { kPion, kVMrho, kVMa1Neutral, kVMa1Charged, kOther };

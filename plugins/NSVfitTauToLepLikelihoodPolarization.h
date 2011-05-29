@@ -9,9 +9,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: NSVfitTauToLepLikelihoodPolarization.h,v 1.1 2011/03/23 17:46:39 veelken Exp $
+ * $Id: NSVfitTauToLepLikelihoodPolarization.h,v 1.2 2011/03/24 12:01:41 veelken Exp $
  *
  */
 
@@ -30,7 +30,7 @@ class NSVfitTauToLepLikelihoodPolarization : public NSVfitSingleParticleLikeliho
   
   void beginJob(NSVfitAlgorithmBase*);
   
-  double operator()(const NSVfitSingleParticleHypothesisBase*) const;
+  double operator()(const NSVfitSingleParticleHypothesis*) const;
 };
 
 #endif

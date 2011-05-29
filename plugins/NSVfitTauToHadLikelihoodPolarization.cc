@@ -225,7 +225,7 @@ void NSVfitTauToHadLikelihoodPolarization::beginJob(NSVfitAlgorithmBase* algorit
   algorithm->requestFitParameter(prodParticleLabel_, nSVfit_namespace::kTauVM_mass2_a1,   pluginName_);
 }
 
-void NSVfitTauToHadLikelihoodPolarization::beginCandidate(const NSVfitSingleParticleHypothesisBase* hypothesis)
+void NSVfitTauToHadLikelihoodPolarization::beginCandidate(const NSVfitSingleParticleHypothesis* hypothesis)
 {
   const NSVfitTauToHadHypothesis* hypothesis_T = dynamic_cast<const NSVfitTauToHadHypothesis*>(hypothesis);
   assert(hypothesis_T != 0);
@@ -254,7 +254,7 @@ void NSVfitTauToHadLikelihoodPolarization::beginCandidate(const NSVfitSinglePart
   //vGen_.Print();
 }
 
-double NSVfitTauToHadLikelihoodPolarization::operator()(const NSVfitSingleParticleHypothesisBase* hypothesis) const
+double NSVfitTauToHadLikelihoodPolarization::operator()(const NSVfitSingleParticleHypothesis* hypothesis) const
 {
 //--- compute negative log-likelihood for tau lepton decay "leg"
 //    to be compatible with decay tau- --> X nu of polarized tau lepton into hadrons,
