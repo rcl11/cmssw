@@ -45,8 +45,7 @@ double NSVfitTauToLepLikelihoodPolarization<T>::operator()(const NSVfitSinglePar
 //           B.K. Bullock, K. Hagiwara and A.D. Martin,
 //           Nucl. Phys. B395 (1993) 499.
 //
-  const NSVfitTauToLepHypothesis<T, NSVfitTauDecayHypothesis>* hypothesis_T = 
-    dynamic_cast<const NSVfitTauToLepHypothesis<T, NSVfitTauDecayHypothesis>*>(hypothesis);
+  const NSVfitTauToLepHypothesis<T>* hypothesis_T = dynamic_cast<const NSVfitTauToLepHypothesis<T>*>(hypothesis);
   assert(hypothesis_T != 0);
 
   if ( this->verbosity_ ) std::cout << "<NSVfitTauToLepLikelihoodPolarization::operator()>:" << std::endl;
