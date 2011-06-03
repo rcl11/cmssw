@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.2 $
+ * \version $Revision: 1.1 $
  *
- * $Id: NSVfitResonanceLikelihoodSculpting.h,v 1.2 2011/03/03 13:04:47 veelken Exp $
+ * $Id: NSVfitResonanceLikelihoodSculpting.h,v 1.1 2011/05/31 09:00:47 friis Exp $
  *
  */
 
@@ -35,6 +35,8 @@ class NSVfitResonanceLikelihoodSculpting : public NSVfitResonanceLikelihood
  private:
   TFormula meanFunc_;
   TFormula rmsFunc_;
+  double power_;
+  bool normalize_;
 };
 
 #endif

@@ -9,7 +9,9 @@ NSVfitResonanceLikelihoodSculpting::NSVfitResonanceLikelihoodSculpting(
     const edm::ParameterSet& cfg)
   : NSVfitResonanceLikelihood(cfg),
     meanFunc_("meanFunc", cfg.getParameter<std::string>("meanFunction").data()),
-    rmsFunc_("rmsFunc", cfg.getParameter<std::string>("rmsFunction").data())
+    rmsFunc_("rmsFunc", cfg.getParameter<std::string>("rmsFunction").data()),
+    power_(cfg.getParameter<double>("power")),
+    normalize_(cfg.getParameter<bool>("normalize"))
 {}
 
 NSVfitResonanceLikelihoodSculpting::~NSVfitResonanceLikelihoodSculpting() { }
@@ -37,7 +39,9 @@ NSVfitResonanceLikelihoodSculpting::operator()(const NSVfitResonanceHypothesis* 
   double scaledVisMass = visMass/diTauMass;
   double residual = scaledVisMass - meanFunc_.Eval(diTauMass);
   double sigma = rmsFunc_.Eval(diTauMass);
-  double nll = -SVfit_namespace::logGaussian(residual, sigma);
+
+  double nll = (normalize_) ? -SVfit_namespace::logGaussian(residual, sigma) :
+    0.5*residual*residual/(sigma*sigma);
 
   if ( this->verbosity_ ) {
     std::cout << " diTauMass = " << diTauMass
@@ -46,7 +50,7 @@ NSVfitResonanceLikelihoodSculpting::operator()(const NSVfitResonanceHypothesis* 
       << " residual = " << residual
       << " sigma = " << sigma << std::endl;
   }
-  return nll;
+  return power_*nll;
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
