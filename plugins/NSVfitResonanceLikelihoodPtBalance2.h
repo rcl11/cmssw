@@ -8,9 +8,9 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: $
+ * \version $Revision: 1.1 $
  *
- * $Id: $
+ * $Id: NSVfitResonanceLikelihoodPtBalance2.h,v 1.1 2011/05/28 09:31:09 friis Exp $
  *
  */
 
@@ -44,4 +44,4 @@ class NSVfitResonanceLikelihoodPtBalance2 : public NSVfitResonanceLikelihood
 };
 
 
-#endif /* end of include guard: TauAnalysis_CandidateTools_plugins_NSVfitResonanceLikelihoodPtBalance22_h */
+#endif /* end of include guard: TauAnalysis_CandidateTools_plugins_NSVfitResonanceLikelihoodPtBalance2_h */
