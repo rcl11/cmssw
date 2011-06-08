@@ -1,8 +1,0 @@
-#include "TauAnalysis/CandidateTools/interface/SVfitLegLikelihoodBase.h"
-
-#include "FWCore/Framework/interface/MakerMacros.h"
-
-EDM_REGISTER_PLUGINFACTORY(SVfitElectronLikelihoodBasePluginFactory, "SVfitElectronLikelihoodBasePluginFactory");
-EDM_REGISTER_PLUGINFACTORY(SVfitMuonLikelihoodBasePluginFactory, "SVfitMuonLikelihoodBasePluginFactory");
-EDM_REGISTER_PLUGINFACTORY(SVfitTauLikelihoodBasePluginFactory, "SVfitTauLikelihoodBasePluginFactory");
-EDM_REGISTER_PLUGINFACTORY(SVfitCandidateLikelihoodBasePluginFactory, "SVfitCandidateLikelihoodBasePluginFactory");
