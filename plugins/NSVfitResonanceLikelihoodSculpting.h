@@ -8,15 +8,16 @@
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: NSVfitResonanceLikelihoodSculpting.h,v 1.1 2011/05/31 09:00:47 friis Exp $
+ * $Id: NSVfitResonanceLikelihoodSculpting.h,v 1.2 2011/06/03 21:26:05 friis Exp $
  *
  */
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "TauAnalysis/CandidateTools/interface/NSVfitResonanceLikelihood.h"
+#include "TauAnalysis/CandidateTools/interface/NSVfitCachingPdfWrapper.h"
 
 #include "AnalysisDataFormats/TauAnalysis/interface/NSVfitResonanceHypothesis.h"
 
@@ -33,10 +34,8 @@ class NSVfitResonanceLikelihoodSculpting : public NSVfitResonanceLikelihood
   double operator()(const NSVfitResonanceHypothesis*) const;
 
  private:
-  TFormula meanFunc_;
-  TFormula rmsFunc_;
+  NSVfitCachingPdfWrapper pdf_;
   double power_;
-  bool normalize_;
 };
 
 #endif
