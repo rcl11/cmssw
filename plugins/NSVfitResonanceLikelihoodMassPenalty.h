@@ -31,7 +31,7 @@ class NSVfitResonanceLikelihoodMassPenalty : public NSVfitResonanceLikelihood
   double operator()(const NSVfitResonanceHypothesis*) const;
 
  private:
-  double penaltyFactor_;
+  double power_;
 };
 
 

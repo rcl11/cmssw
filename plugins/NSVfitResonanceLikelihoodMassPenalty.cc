@@ -3,14 +3,14 @@
 
 NSVfitResonanceLikelihoodMassPenalty::NSVfitResonanceLikelihoodMassPenalty(
     const edm::ParameterSet& pset):NSVfitResonanceLikelihood(pset) {
-  penaltyFactor_ = pset.getParameter<double>("penaltyFactor");
+  power_ = pset.getParameter<double>("power");
 }
 
 double NSVfitResonanceLikelihoodMassPenalty::operator()(
     const NSVfitResonanceHypothesis* resonance) const {
   assert(resonance);
   double mass = resonance->p4_fitted().mass();
-  return penaltyFactor_*TMath::Log(mass);
+  return power_*TMath::Log(mass);
 }
 
 #include "FWCore/Framework/interface/MakerMacros.h"
