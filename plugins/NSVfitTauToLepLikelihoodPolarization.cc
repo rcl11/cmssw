@@ -3,7 +3,7 @@
 #include "TauAnalysis/CandidateTools/interface/NSVfitAlgorithmBase.h"
 #include "TauAnalysis/CandidateTools/interface/svFitAuxFunctions.h"
 
-#include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauToLepHypothesis.h"
+#include "AnalysisDataFormats/TauAnalysis/interface/NSVfitTauToDaughtersHypothesisBaseT1T2.h"
 
 #include <TMath.h>
 
@@ -45,7 +45,8 @@ double NSVfitTauToLepLikelihoodPolarization<T>::operator()(const NSVfitSinglePar
 //           B.K. Bullock, K. Hagiwara and A.D. Martin,
 //           Nucl. Phys. B395 (1993) 499.
 //
-  const NSVfitTauToLepHypothesis<T>* hypothesis_T = dynamic_cast<const NSVfitTauToLepHypothesis<T>*>(hypothesis);
+  const NSVfitTauToDaughtersHypothesisBaseT1T2<NSVfitTauDecayHypothesis, T>* hypothesis_T = 
+    dynamic_cast<const NSVfitTauToDaughtersHypothesisBaseT1T2<NSVfitTauDecayHypothesis, T>*>(hypothesis);
   assert(hypothesis_T != 0);
 
   if ( this->verbosity_ ) std::cout << "<NSVfitTauToLepLikelihoodPolarization::operator()>:" << std::endl;
