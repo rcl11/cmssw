@@ -1,3 +1,4 @@
+#include "DataFormats/Common/interface/View.h"
 #include "DataFormats/Common/interface/Handle.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 
@@ -13,8 +14,8 @@
 /// default constructor
 NSVfitEventAnalyzer::NSVfitEventAnalyzer(const edm::ParameterSet& cfg): 
   met_  (cfg.getParameter<edm::InputTag>("met"  )),
-  leps1_(cfg.getParameter<edm::InputTag>("muons")),
-  leps2_(cfg.getParameter<edm::InputTag>("elecs"))
+  leps1_(cfg.getParameter<edm::InputTag>("leps1")),
+  leps2_(cfg.getParameter<edm::InputTag>("leps2"))
 {
   // initialize MET significance calculation 
   metSign_ = new PFMEtSignInterface(cfg.getParameter<edm::ParameterSet>("metSignificance"));
@@ -34,10 +35,10 @@ NSVfitEventAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& eve
   edm::Handle<std::vector<pat::MET> > met;
   event.getByLabel(met_, met);
   // fetch selected muon
-  edm::Handle<std::vector<pat::Muon> > leps1;
+  edm::Handle<edm::View<reco::Candidate> > leps1;
   event.getByLabel(leps1_, leps1);
   // fetch selected electron
-  edm::Handle<std::vector<pat::Electron> > leps2;
+  edm::Handle<edm::View<reco::Candidate> > leps2;
   event.getByLabel(leps2_, leps2);
   // ...
   metSign_->beginEvent(event, eventSetup);
@@ -53,11 +54,11 @@ NSVfitEventAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& eve
   }
 
   // loop leptons
-  for(std::vector<pat::Muon>::const_iterator lep1=leps1->begin(); lep1!=leps1->end(); ++lep1){
-    for(std::vector<pat::Electron>::const_iterator lep2=leps2->begin(); lep2!=leps2->end(); ++lep2){
+  for(edm::View<reco::Candidate>::const_iterator lep1=leps1->begin(); lep1!=leps1->end(); ++lep1){
+    for(edm::View<reco::Candidate>::const_iterator lep2=leps2->begin(); lep2!=leps2->end(); ++lep2){
       // determine met significance
-      candList.push_back(dynamic_cast<const reco::Candidate*>(&*lep1));
-      candList.push_back(dynamic_cast<const reco::Candidate*>(&*lep2));
+      candList.push_back(&*lep1);
+      candList.push_back(&*lep2);
 
       TMatrixD covMET(2,2);
       covMET = (*metSign_)(candList);
@@ -65,7 +66,7 @@ NSVfitEventAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& eve
       // setup measure tau lepton vectors 
       std::vector<NSVfitStandalone::MeasuredTauLepton> measuredTauLeptons;
       measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(NSVfitStandalone::kLepDecay, lep1->p4()));
-      measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(NSVfitStandalone::kLepDecay, lep2->p4()));
+      measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(NSVfitStandalone::kHadDecay, lep2->p4()));
       
       // construct the class object from the minimal necesarry information
       NSVfitStandaloneAlgorithm algo(measuredTauLeptons, met->front().momentum(), covMET, 0);
@@ -77,7 +78,7 @@ NSVfitEventAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& eve
       algo.fit();
       // retrieve the results upon success
       //if(algo.isValidSolution()){
-      std::cout << "--> getting mass = " << algo.fittedDiTauSystem().mass() << " + " << algo.massUncert() << " - " << algo.massUncert() << " [" << algo.fitStatus() << "]" << std::endl;
+      std::cout << "--> mass (standalone version) = " << algo.fittedDiTauSystem().mass() << " + " << algo.massUncert() << " - " << algo.massUncert() << " [" << algo.fitStatus() << "]" << std::endl;
       //}
     }
   }
