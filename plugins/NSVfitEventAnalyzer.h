@@ -16,12 +16,23 @@ class PFMEtSignInterface;
    \class NSVfitEventAnalyzer NSVfitEventAnalyzer.h "TauAnalysis/CandidateTools/interface/NSVfitEventAnalyzer.h"
    \brief Basic edm and fwlite friendly analyzer class to do basic testing of NSVfit
 
-   This is an example for keeping classes that can be used both within FWLite and within the full 
-   framework. The class is derived from the BasicAnalyzer base class, which is an interface for 
-   the two wrapper classes EDAnalyzerWrapper and FWLiteAnalyzerWrapper. The latter provides basic 
-   configuration file reading and event looping equivalent to the FWLiteHistograms executable of 
-   this package. You can see the FWLiteAnalyzerWrapper class at work in the FWLiteWithBasicAnalyzer
-   executable of this package.
+   EDAnalyzer to test the standalone verison of SVfit against the plugin version. The EDAnalyzer reads exactly
+   the same input from the EDM event that is used by the plugin version, prepares the input, instantiates and 
+   executed the standalone version of the NSVfitAlgorithmByLikelihoodMaximization version of NSVfit. Note that 
+   the selection of the lepton candidates, which are to be used by the fit is left to the user. When run in one 
+   configuration with the plugin version the two versions can be cross checked against each other to check that
+   they give identical results. For a first study have a look to 
+
+   https://indico.cern.ch/getFile.py/access?contribId=23&sessionId=0&resId=0&materialId=slides&confId=155708
+
+   Note that the EDAnalyzer is a very simplistic example only. It is capable of using any combination of lepton 
+   types as defined by the input tags (accoording to the use of edm::Views), but the user still has to make 
+   sure that the corresponding decay channel when setting up the algorithm is properly indicated to be hadronic 
+   or leptonic. In a future version of the Analyzer this might be adapted to be configurable from the cfi file 
+   to improve user friendliness.
+
+   For an example for a genuine use of the standalone version of the algorithm have a look to the 
+   nsvfitStandalone.cc executable as defined in the bin directory of this package. 
 */
 
 class NSVfitEventAnalyzer : public edm::EDAnalyzer {
