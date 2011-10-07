@@ -26,10 +26,7 @@ class PFMEtSignInterface;
    https://indico.cern.ch/getFile.py/access?contribId=23&sessionId=0&resId=0&materialId=slides&confId=155708
 
    Note that the EDAnalyzer is a very simplistic example only. It is capable of using any combination of lepton 
-   types as defined by the input tags (accoording to the use of edm::Views), but the user still has to make 
-   sure that the corresponding decay channel when setting up the algorithm is properly indicated to be hadronic 
-   or leptonic. In a future version of the Analyzer this might be adapted to be configurable from the cfi file 
-   to improve user friendliness.
+   types as defined by the input tags (accoording to the use of edm::Views)
 
    For an example for a genuine use of the standalone version of the algorithm have a look to the 
    nsvfitStandalone.cc executable as defined in the bin directory of this package. 
@@ -56,6 +53,10 @@ class NSVfitEventAnalyzer : public edm::EDAnalyzer {
   edm::InputTag leps1_;
   /// input tag for muons
   edm::InputTag leps2_;
+  /// lepton type1
+  std::string type1_;
+  /// lewpton type2
+  std::string type2_;
 
   /// MET significance interface
   PFMEtSignInterface* metSign_;

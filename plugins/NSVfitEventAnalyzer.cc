@@ -15,7 +15,9 @@
 NSVfitEventAnalyzer::NSVfitEventAnalyzer(const edm::ParameterSet& cfg): 
   met_  (cfg.getParameter<edm::InputTag>("met"  )),
   leps1_(cfg.getParameter<edm::InputTag>("leps1")),
-  leps2_(cfg.getParameter<edm::InputTag>("leps2"))
+  leps2_(cfg.getParameter<edm::InputTag>("leps2")),
+  type1_(cfg.getParameter<std::string  >("type1")),
+  type2_(cfg.getParameter<std::string  >("type2"))
 {
   // initialize MET significance calculation 
   metSign_ = new PFMEtSignInterface(cfg.getParameter<edm::ParameterSet>("metSignificance"));
@@ -65,8 +67,8 @@ NSVfitEventAnalyzer::analyze(const edm::Event& event, const edm::EventSetup& eve
 
       // setup measure tau lepton vectors 
       std::vector<NSVfitStandalone::MeasuredTauLepton> measuredTauLeptons;
-      measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(NSVfitStandalone::kLepDecay, lep1->p4()));
-      measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(NSVfitStandalone::kHadDecay, lep2->p4()));
+      measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(type1_==std::string("lep") ? NSVfitStandalone::kLepDecay : NSVfitStandalone::kHadDecay, lep1->p4()));
+      measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(type2_==std::string("lep") ? NSVfitStandalone::kLepDecay : NSVfitStandalone::kHadDecay, lep2->p4()));
       
       // construct the class object from the minimal necesarry information
       NSVfitStandaloneAlgorithm algo(measuredTauLeptons, met->front().momentum(), covMET, 0);
