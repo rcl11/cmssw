@@ -8,11 +8,11 @@
  *
  * Options used in the past are:
  *  o TMath::Log(mass)
- *  o [0]*([1] - TMath::Erf((x - [2])*[3]))
- *    with p0 = 4.21e-2, p1 = 2.52e-2, p2 = 4.40e+1, p3 = -6.90e-3 
+ *  o TMath::Log(TMath::Max([0], [1]*([2] - TMath::Erf((x - [3])*[4]))))
+ *    with p0 = 5.00e-3, p1 = 4.21e-2, p2 = 2.52e-2, p3 = 4.40e+1, p4 = -6.90e-3 
  *   (efficiency of gg --> Higgs --> mu + tau_had channel in 2010 analysis)
- *  o [0]*([1] - TMath::Erf((x - [2])*[3]))
- *    with p0 = 2.49e-2, p1 = 7.78e-2, p2 = 5.63e+1, p3 = -7.53e-3 
+ *  o TMath::Log(TMath::Max([0], [1]*([2] - TMath::Erf((x - [3])*[4]))))
+ *    with p0 = 2.50e-3, p1 = 2.49e-2, p2 = 7.78e-2, p3 = 5.63e+1, p4 = -7.53e-3 
  *   (efficiency of gg --> Higgs --> e + tau_had channel in 2010 analysis)
  *
  * \author Evan Friis, Christian Veelken; UC Davis
@@ -42,7 +42,7 @@ class NSVfitResonanceLikelihoodMassPenalty : public NSVfitResonanceLikelihood
 
  private:
 
-  TFormula* formula_;
+  TFormula* nll_formula_;
 
   double power_;
 };
