@@ -70,7 +70,7 @@ double NSVfitTauToLepLikelihoodPolarization<T>::operator()(const NSVfitSinglePar
     std::cout << " nuMass = " << nuMass << std::endl;
   }
 
-  double prob = p*E*(3*Emax - 2*E - chargedLepMass2/E + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + chargedLepMass2/tauLeptonMass))
+  double prob = p*E*(3*Emax - 2*E - (chargedLepMass2/E) + tauLeptonPol*cosTheta*(p/E)*(Emax - 2*E + (chargedLepMass2/tauLeptonMass)))
                *sinTheta*(nuMass/tauLeptonMass); // formula (2.5)
 
   if ( applyVisPtCutCorrection_ ) prob *= evaluateVisPtCutCorrection(hypothesis);
