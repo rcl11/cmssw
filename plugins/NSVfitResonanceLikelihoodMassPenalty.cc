@@ -21,7 +21,7 @@ NSVfitResonanceLikelihoodMassPenalty::~NSVfitResonanceLikelihoodMassPenalty()
   delete nll_formula_;
 }
 
-double NSVfitResonanceLikelihoodMassPenalty::operator()(const NSVfitResonanceHypothesis* resonance) const 
+double NSVfitResonanceLikelihoodMassPenalty::operator()(const NSVfitResonanceHypothesis* resonance, int polHandedness) const 
 {
   assert(resonance);
 
