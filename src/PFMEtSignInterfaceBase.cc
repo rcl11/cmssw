@@ -18,10 +18,27 @@ const double defaultPFMEtResolutionY = 10.;
 const double epsilon = 1.e-9;
 
 PFMEtSignInterfaceBase::PFMEtSignInterfaceBase(const edm::ParameterSet& cfg)
-  : pfMEtResolution_(0)
+  : pfMEtResolution_(0),
+    inputFile_(0),
+    lut_(0)
 {
   pfMEtResolution_ = new metsig::SignAlgoResolutions(cfg);
 
+  if ( cfg.exists("addJERcorr") ) {
+    edm::ParameterSet cfgJERcorr = cfg.getParameter<edm::ParameterSet>("addJERcorr");
+    edm::FileInPath inputFileName = cfgJERcorr.getParameter<edm::FileInPath>("inputFileName");
+    std::string lutName = cfgJERcorr.getParameter<std::string>("lutName");
+    if ( !inputFileName.isLocal() ) 
+      throw cms::Exception("PFMEtSignInterfaceBase") 
+        << " Failed to find File = " << inputFileName << " !!\n";
+    
+    inputFile_ = new TFile(inputFileName.fullPath().data());
+    lut_ = dynamic_cast<TH2*>(inputFile_->Get(lutName.data()));
+    if ( !lut_ ) 
+      throw cms::Exception("PFMEtSignInterfaceBase") 
+        << " Failed to load LUT = " << lutName.data() << " from file = " << inputFileName.fullPath().data() << " !!\n";
+  }
+  
   verbosity_ = cfg.exists("verbosity") ?
     cfg.getParameter<int>("verbosity") : 0;
 }
@@ -29,6 +46,8 @@ PFMEtSignInterfaceBase::PFMEtSignInterfaceBase(const edm::ParameterSet& cfg)
 PFMEtSignInterfaceBase::~PFMEtSignInterfaceBase()
 {
   delete pfMEtResolution_;
+  delete inputFile_;
+  delete lut_;
 }
 
 TMatrixD PFMEtSignInterfaceBase::operator()(const std::list<const reco::Candidate*>& particles) const

@@ -12,7 +12,7 @@
  *
  * \version $Revision: 1.1 $
  *
- * $Id: PFMEtSignInterfaceBase.h,v 1.1 2011/04/19 08:16:11 veelken Exp $
+ * $Id: PFMEtSignInterfaceBase.h,v 1.1 2012/02/13 14:00:16 veelken Exp $
  *
  */
 
@@ -33,6 +33,8 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
 
+#include <TFile.h>
+#include <TH2.h>
 #include <TMatrixD.h>
 
 #include <list>
@@ -108,7 +110,26 @@ class PFMEtSignInterfaceBase
       } else if ( dynamic_cast<const reco::PFJet*>(*particle) != 0 ) {
 	const reco::PFJet* pfJet = dynamic_cast<const reco::PFJet*>(*particle);
 	//std::cout << "pfJet: pt = " << pt << ", eta = " << eta << ", phi = " << phi << std::endl;
-	metSignObjects.push_back(pfMEtResolution_->evalPFJet(pfJet));
+	// CV: apply additional jet energy resolution corrections
+	//     not included in (PF)MEt significance algorithm yet
+	//    (cf. CMS AN-11/400 vs. CMS AN-11/330)
+	metsig::SigInputObj pfJetResolution = pfMEtResolution_->evalPFJet(pfJet);
+	if ( lut_ && pfJet->pt() > 10. ) {
+	  double x = TMath::Abs(pfJet->eta());
+	  double y = pfJet->pt();
+	  if ( x > lut_->GetXaxis()->GetXmin() && x < lut_->GetXaxis()->GetXmax() &&
+	       y > lut_->GetYaxis()->GetXmin() && y < lut_->GetYaxis()->GetXmax() ) {
+	    int binIndex = lut_->FindBin(x, y);
+	    double addJERcorrFactor = lut_->GetBinContent(binIndex);
+	    //std::cout << " addJERcorrFactor = " << addJERcorrFactor << std::endl;
+	    pfJetResolution.set(pfJetResolution.get_type(),
+				pfJetResolution.get_energy(),
+				pfJetResolution.get_phi(),
+				addJERcorrFactor*pfJetResolution.get_sigma_e(),
+				pfJetResolution.get_sigma_tan());
+	  }
+	}
+	metSignObjects.push_back(pfJetResolution);
       } else if ( dynamic_cast<const reco::PFCandidate*>(*particle) != 0 ) {
 	const reco::PFCandidate* pfCandidate = dynamic_cast<const reco::PFCandidate*>(*particle);
 	//std::cout << "pfCandidate: pt = " << pt << ", eta = " << eta << ", phi = " << phi << std::endl;
@@ -122,6 +143,12 @@ class PFMEtSignInterfaceBase
  private:
 
   metsig::SignAlgoResolutions* pfMEtResolution_;
+
+  // CV: look-up table for additional jet energy resolution corrections
+  //     not included in (PF)MEt significance algorithm yet
+  //    (cf. CMS AN-11/400 vs. CMS AN-11/330)
+  TFile* inputFile_;
+  TH2* lut_;
 
   int verbosity_;
 };
