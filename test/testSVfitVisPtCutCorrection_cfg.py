@@ -4,7 +4,7 @@ import copy
 import os
 import re
 
-process = cms.Process("produceSVfitNtuple")
+process = cms.Process("testSVfitVisPtCutCorrection")
 
 process.load('FWCore/MessageService/MessageLogger_cfi')
 process.MessageLogger.cerr.FwkReport.reportEvery = 100
@@ -28,7 +28,7 @@ channel = 'muTau'
 metResolution = None # take reconstructed PFMET
 #metResolution = 5. # produce "toy" MET = generated MET plus 5 GeV Gaussian smearing in x/y direction
 inputFileNames = None
-maxEvents = 20
+maxEvents = 1000
 #--------------------------------------------------------------------------------
 
 #--------------------------------------------------------------------------------
@@ -184,7 +184,7 @@ process.testSVfitVisPtCutCorrSequence += process.genMatchedTauJets
 
 #--------------------------------------------------------------------------------
 # require event to contain generator level tau lepton pair,
-# decaying in the sprecified channel
+# decaying in the specified channel
 numElectrons = None
 numMuons     = None
 numTauJets   = None
@@ -210,24 +210,24 @@ else:
 if numElectrons > 0:
     process.electronFilter = cms.EDFilter("CandViewCountFilter",
         src = cms.InputTag(genElectronsFromTauDecays),
-        minNumber = cms.uint32(1),
-        maxNumber = cms.uint32(1)                      
+        minNumber = cms.uint32(numElectrons),
+        maxNumber = cms.uint32(numElectrons)                      
     ) 
     process.testSVfitVisPtCutCorrSequence += process.electronFilter
 
 if numMuons > 0:    
     process.muonFilter = cms.EDFilter("CandViewCountFilter",
         src = cms.InputTag(genMuonsFromTauDecays),
-        minNumber = cms.uint32(1),
-        maxNumber = cms.uint32(1)                      
+        minNumber = cms.uint32(numMuons),
+        maxNumber = cms.uint32(numMuons)                      
     )
     process.testSVfitVisPtCutCorrSequence += process.muonFilter
 
 if numTauJets > 0:
     process.tauFilter = cms.EDFilter("CandViewCountFilter",
         src = cms.InputTag(genTauJetsFromTauDecays),
-        minNumber = cms.uint32(1),
-        maxNumber = cms.uint32(1)                      
+        minNumber = cms.uint32(numTauJets),
+        maxNumber = cms.uint32(numTauJets)                      
     )
     process.testSVfitVisPtCutCorrSequence += process.tauFilter
 #--------------------------------------------------------------------------------
@@ -465,9 +465,9 @@ if metResolution is not None:
 else:
     srcRecMEt = 'patType1CorrectedPFMet'
 
-for idxSVfitOption in range(14):
-    ##if not (idxSVfitOption == 3):
-    ##    continue
+for idxSVfitOption in range(16):
+    if not (idxSVfitOption == 1):
+        continue
     nSVfitProducer = None
     if idxSVfitOption == 3 or idxSVfitOption == 6 or idxSVfitOption == 11 or idxSVfitOption == 13:
         nSVfitProducer = copy.deepcopy(process.nSVfitProducerByIntegration)
@@ -479,35 +479,21 @@ for idxSVfitOption in range(14):
     if idxSVfitOption <= 1:
         nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions = cms.VPSet(nSVfitLeg1LikelihoodPhaseSpace.clone())
         nSVfitProducer.config.event.resonances.A.daughters.leg2.likelihoodFunctions = cms.VPSet(nSVfitLeg2LikelihoodPhaseSpace.clone())
-    elif idxSVfitOption <= 12:
+    else:
         nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions = cms.VPSet(nSVfitLeg1LikelihoodMatrixElement.clone())
         nSVfitProducer.config.event.resonances.A.daughters.leg2.likelihoodFunctions = cms.VPSet(nSVfitLeg2LikelihoodMatrixElement.clone())
-    else:
-        nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions = cms.VPSet(
-            nSVfitLeg1LikelihoodMatrixElement.clone(),
-            cms.PSet(
-                pluginName = cms.string("nSVfitLeg1LikelihoodTrackInfo"),
-                pluginType = cms.string("NSVfitTauDecayLikelihoodTrackInfo"),
-                useLifetimeConstraint = cms.bool(True),
-                verbosity = cms.int32(0)  
-            )
-        )
-        nSVfitProducer.config.event.resonances.A.daughters.leg2.likelihoodFunctions = cms.VPSet(
-            nSVfitLeg2LikelihoodMatrixElement.clone(),
-            cms.PSet(
-                pluginName = cms.string("nSVfitLeg2LikelihoodTrackInfo"),
-                pluginType = cms.string("NSVfitTauDecayLikelihoodTrackInfo"),
-                useLifetimeConstraint = cms.bool(True),
-                verbosity = cms.int32(0)  
-            )
-        )
-    if idxSVfitOption >= 1:
+    if idxSVfitOption == 0:
+        nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions[0].applySinThetaFactor = cms.bool(True)
+        nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions[0].applyVisPtCutCorrection = cms.bool(False)
+        nSVfitProducer.config.event.resonances.A.daughters.leg2.likelihoodFunctions[0].applySinThetaFactor = cms.bool(True)
+        nSVfitProducer.config.event.resonances.A.daughters.leg2.likelihoodFunctions[0].applyVisPtCutCorrection = cms.bool(False)
+    elif idxSVfitOption >= 1 and idxSVfitOption <= 9:
         nSVfitProducer.config.event.resonances.A.likelihoodFunctions = cms.VPSet()        
         nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions[0].applySinThetaFactor = cms.bool(False)
         nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions[0].applyVisPtCutCorrection = cms.bool(False)
         nSVfitProducer.config.event.resonances.A.daughters.leg2.likelihoodFunctions[0].applySinThetaFactor = cms.bool(False)
         nSVfitProducer.config.event.resonances.A.daughters.leg2.likelihoodFunctions[0].applyVisPtCutCorrection = cms.bool(False)
-    if idxSVfitOption == 10 or idxSVfitOption == 11:
+    elif idxSVfitOption >= 10:
         nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions[0].applyVisPtCutCorrection = cms.bool(True)
         nSVfitProducer.config.event.resonances.A.daughters.leg1.likelihoodFunctions[0].visPtCutThreshold = \
           cms.double(nSVfitLeg2visPtCutThreshold)
@@ -536,8 +522,14 @@ for idxSVfitOption in range(14):
         nSVfitProducer.config.event.resonances.A.likelihoodFunctions = cms.VPSet(nSVfitResonanceLikelihoodPrior_strength5)
     nSVfitProducer.config.event.srcMEt = cms.InputTag(srcRecMEt)
     if srcRecMEtCovMatrix is not None:
-        nSVfitProducer.config.event.likelihoodFunctions[0].srcMEtCovMatrix = cms.InputTag(srcRecMEtCovMatrix)
+        nSVfitProducer.config.event.likelihoodFunctions[0].srcMEtCovMatrix = cms.InputTag(srcRecMEtCovMatrix)        
     nSVfitProducer.config.event.srcPrimaryVertex = cms.InputTag('selectedPrimaryVertexPosition')
+    if idxSVfitOption >= 12:
+        nSVfitProducer.config.event.likelihoodFunctions[0].tailProbCorr = process.tailProbCorr_MC_2011
+    if idxSVfitOption == 14:
+        nSVfitProducer.config.event.likelihoodFunctions[0].power = cms.double(1.25)
+    elif idxSVfitOption == 15:
+        nSVfitProducer.config.event.likelihoodFunctions[0].power = cms.double(1.5)
     nSVfitProducerName = "nSVfitProducer%i" % idxSVfitOption
     setattr(process, nSVfitProducerName, nSVfitProducer)
     process.testSVfitVisPtCutCorrSequence += nSVfitProducer
@@ -555,16 +547,26 @@ for idxSVfitOption in range(14):
         srcPFMEtCovMatrix = cms.InputTag('pfMEtSignCovMatrix'),
         srcWeights = cms.VInputTag(),                
         dqmDirectory = cms.string("nSVfitAnalyzerOption%i" % idxSVfitOption)
-    )                                    
+    )
     nSVfitAnalyzerName = "nSVfitAnalyzer%i" % idxSVfitOption
     setattr(process, nSVfitAnalyzerName, nSVfitAnalyzer)
     process.testSVfitVisPtCutCorrSequence += nSVfitAnalyzer
+    if idxSVfitOption == 3 or idxSVfitOption == 6 or idxSVfitOption == 11 or idxSVfitOption == 13:
+        nSVfitCorrelationAnalyzer = cms.EDAnalyzer("NSVfitEventHypothesisCorrelationAnalyzer",
+            srcEventHypotheses1 = cms.InputTag(nSVfitProducerName),
+            srcEventHypotheses2 = cms.InputTag(nSVfitProducerName.replace("%i" % idxSVfitOption, "%i" % (idxSVfitOption - 1))),
+            srcWeights = cms.VInputTag(),                
+            dqmDirectory = cms.string("nSVfitCorrelationAnalyzerOption%ivs%i" % (idxSVfitOption, idxSVfitOption - 1))
+        )
+        nSVfitCorrelationAnalyzerName = "nSVfitCorrelationAnalyzer%ivs%i" % (idxSVfitOption, idxSVfitOption - 1)
+        setattr(process, nSVfitCorrelationAnalyzerName, nSVfitCorrelationAnalyzer)
+        process.testSVfitVisPtCutCorrSequence += nSVfitCorrelationAnalyzer
 #--------------------------------------------------------------------------------
 
 process.DQMStore = cms.Service("DQMStore")
 
 process.saveSVfitVisPtCutCorrectionPlots = cms.EDAnalyzer("DQMSimpleFileSaver",
-    outputFileName = cms.string('testSVfitVisPtCutCorrection_%s_2012Mar20.root' % sample)
+    outputFileName = cms.string('testSVfitVisPtCutCorrection_%s_2012Mar21.root' % sample)
 )
 
 process.p = cms.Path(

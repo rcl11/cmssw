@@ -40,8 +40,8 @@ channelsToAnalyze = [
     'diTau'
 ]
 
-#runSVfitEventHypothesisAnalyzer = True
-runSVfitEventHypothesisAnalyzer = False
+runSVfitEventHypothesisAnalyzer = True
+#runSVfitEventHypothesisAnalyzer = False
 #runLXBatchHarvesting = True
 runLXBatchHarvesting = False
 
@@ -93,7 +93,7 @@ executable_shell = '/bin/csh'
 
 bsubQueue = "1nd"
 
-configFileName_SVfitEventHypothesisAnalyzer_template = "testSVfitVisPtCutCorrection_cfg.py"
+configFileName_SVfitEventHypothesisAnalyzer_template = "runSVfitPerformanceAnalysis_AHtautau_cfg.py"
 
 def runCommand(commandLine):
     sys.stdout.write("%s\n" % commandLine)
@@ -206,7 +206,7 @@ for sampleToAnalyze in samplesToAnalyze:
         def local_copy_mapper(sample):
             return os.path.join(
                 outputFilePath,
-                'testSVfitVisPtCutCorrection_%s_%s_%s_harvested.root' % (channelToAnalyze, sampleToAnalyze, version))
+                'svFitPerformanceAnalysisPlots_%s_%s_%s_harvested.root' % (channelToAnalyze, sampleToAnalyze, version))
 
         inputFileInfos = []
         for inputFileName in fileNames_SVfitEventHypothesisAnalyzer[sampleToAnalyze][channelToAnalyze]['outputFileNames']:
@@ -273,7 +273,7 @@ for sampleToAnalyze in samplesToAnalyze:
             #        are copied to local disk via rfcp prior to running 'hadd'
             haddInputFileNames.append(os.path.join(outputFilePath, os.path.basename(final_harvest_file[1])))
 haddShellFileName = os.path.join(configFilePath, 'harvestSVfitPerformanceHistograms_%s.csh' % version)
-haddOutputFileName = os.path.join(outputFilePath, 'testSVfitVisPtCutCorrection__all_%s.root' % version)
+haddOutputFileName = os.path.join(outputFilePath, 'svFitPerformanceAnalysisPlots_all_%s.root' % version)
 retVal_hadd = \
   buildConfigFile_hadd(executable_hadd, haddShellFileName, haddInputFileNames, haddOutputFileName)
 haddLogFileName = retVal_hadd['logFileName']
@@ -314,11 +314,10 @@ if runSVfitEventHypothesisAnalyzer:
             fileNameEntry = fileNames_SVfitEventHypothesisAnalyzer[sampleToAnalyze][channelToAnalyze]
             if fileNameEntry is None or len(fileNameEntry['inputFileNames']) == 0:
                 continue
-            bsubJobEntry = bsubJobNames_SVfitEventHypothesisAnalyzer[sampleToAnalyze][eventSelectionToAnalyze]
+            bsubJobEntry = bsubJobNames_SVfitEventHypothesisAnalyzer[sampleToAnalyze][channelToAnalyze]
             for i in range(len(fileNameEntry['inputFileNames'])):
-                makeFile.write("%s: %s\n" %
-                  (fileNameEntry['outputFileNames'][i],
-                   executable_SVfitEventHypothesisAnalyzer))
+                makeFile.write("%s:\n" %
+                  (fileNameEntry['outputFileNames'][i]))
                 makeFile.write("\t%s -q %s -J %s < %s\n" %
                   (executable_bsub,
                    bsubQueue,
@@ -330,7 +329,7 @@ if runLXBatchHarvesting:
         for channelToAnalyze in channelsToAnalyze:
             if runSVfitEventHypothesisAnalyzer:
                 makeFile.write("%s: %s\n" %
-                  (bsubJobNames_harvesting[sampleToAnalyze][eventSelectionToAnalyze],
+                  (bsubJobNames_harvesting[sampleToAnalyze][channelToAnalyze],
                    make_MakeFile_vstring(fileNames_SVfitEventHypothesisAnalyzer[sampleToAnalyze][channelToAnalyze]['outputFileNames'])))
                 makeFile.write("\t%s %s\n" %
                   (executable_waitForLXBatchJobs,
