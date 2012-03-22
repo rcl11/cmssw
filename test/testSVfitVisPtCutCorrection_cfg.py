@@ -580,7 +580,7 @@ for idxSVfitOption in range(12):
 process.DQMStore = cms.Service("DQMStore")
 
 process.saveSVfitVisPtCutCorrectionPlots = cms.EDAnalyzer("DQMSimpleFileSaver",
-    outputFileName = cms.string('testSVfitVisPtCutCorrection_%s_2012Mar22.root' % sample)
+    outputFileName = cms.string('testSVfitVisPtCutCorrection_%s_2012Mar22v2.root' % sample)
 )
 
 process.p = cms.Path(

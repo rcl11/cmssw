@@ -1,7 +1,7 @@
 #ifndef TauAnalysis_CandidateTools_plugins_NSVfitResonanceLikelihoodMassPenalty_h
-#define TauAnalysis_CandidateTools_plugins_NSVfitResonanceLikelihoodMassPenalty_h
+#define TauAnalysis_CandidateTools_plugins_NSVfitResonanceLikelihoodRegularization_h
 
-/** \class NSVfitResonanceLikelihoodMassPenalty
+/** \class NSVfitResonanceLikelihoodRegularization
  *
  * Adds a penalty term for high masses.  
  * The return value of operator() is configurable via python.
@@ -14,6 +14,7 @@
  *  o TMath::Log(TMath::Max([0], [1]*([2] - TMath::Erf((x - [3])*[4]))))
  *    with p0 = 2.50e-3, p1 = 2.49e-2, p2 = 7.78e-2, p3 = 5.63e+1, p4 = -7.53e-3 
  *   (efficiency of gg --> Higgs --> e + tau_had channel in 2010 analysis)
+ #  o TMath::Log(pt)
  *
  * \author Evan Friis, Christian Veelken; UC Davis
  *
@@ -27,12 +28,12 @@
 
 #include "TFormula.h"
 
-class NSVfitResonanceLikelihoodMassPenalty : public NSVfitResonanceLikelihood
+class NSVfitResonanceLikelihoodRegularization : public NSVfitResonanceLikelihood
 {
  public:
 
-  NSVfitResonanceLikelihoodMassPenalty(const edm::ParameterSet&);
-  ~NSVfitResonanceLikelihoodMassPenalty();
+  NSVfitResonanceLikelihoodRegularization(const edm::ParameterSet&);
+  ~NSVfitResonanceLikelihoodRegularization();
 
   void beginJob(NSVfitAlgorithmBase*) const {}
 
@@ -43,9 +44,9 @@ class NSVfitResonanceLikelihoodMassPenalty : public NSVfitResonanceLikelihood
  private:
 
   TFormula* nll_formula_;
-
+  
   double power_;
 };
 
 
-#endif /* end of include guard: TauAnalysis_CandidateTools_plugins_NSVfitResonanceLikelihoodMassPenalty2_h */
+#endif /* end of include guard: TauAnalysis_CandidateTools_plugins_NSVfitResonanceLikelihoodRegularization2_h */
