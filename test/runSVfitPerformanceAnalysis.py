@@ -18,7 +18,7 @@ import TauAnalysis.Configuration.tools.castor as castor
 version = '2012Mar13'
 
 inputFilePath  = '/castor/cern.ch/user/v/veelken/CMSSW_4_2_x/skims/SVfitStudies/'
-harvestingFilePath = '/castor/cern.ch/user/v/veelken/CMSSW_4_2_x/harvesting/SVfitStudies/'
+harvestingFilePath = '/castor/cern.ch/user/v/veelken/CMSSW_4_2_x/harvesting/SVfitStudies/2012Mar25/'
 outputFilePath = '/tmp/veelken/svFitStudies/' 
 
 samplesToAnalyze = [
@@ -40,10 +40,10 @@ channelsToAnalyze = [
     'diTau'
 ]
 
-runSVfitEventHypothesisAnalyzer = True
-#runSVfitEventHypothesisAnalyzer = False
-#runLXBatchHarvesting = True
-runLXBatchHarvesting = False
+#runSVfitEventHypothesisAnalyzer = True
+runSVfitEventHypothesisAnalyzer = False
+runLXBatchHarvesting = True
+#runLXBatchHarvesting = False
 
 def createFilePath_recursively(filePath):
     filePath_items = filePath.split('/')
@@ -87,11 +87,11 @@ executable_cmsRun = 'cmsRun'
 executable_bsub = 'bsub'
 executable_waitForLXBatchJobs = 'python %s/src/TauAnalysis/Configuration/python/tools/waitForLXBatchJobs.py' % os.environ['CMSSW_BASE']
 executable_rfcp = 'rfcp'
-executable_rfrm = 'rfrm' # CV: ignore error code returned by 'rfrm' in case file on castor does not exist
+executable_rfrm = 'rfrm'
 executable_hadd = 'hadd -f'
 executable_shell = '/bin/csh'
 
-bsubQueue = "1nd"
+bsubQueue = "1nw"
 
 configFileName_SVfitEventHypothesisAnalyzer_template = "runSVfitPerformanceAnalysis_AHtautau_cfg.py"
 
@@ -103,10 +103,10 @@ def runCommand(commandLine):
     return retVal
 
 # find and delete "bad" files
-files = [ file_info for file_info in castor.nslsl(harvestingFilePath) ]
-for file in files:
-    if file['size'] < 1000:
-        runCommand("%s %s" % (executable_rfrm, file['path']))
+##files = [ file_info for file_info in castor.nslsl(harvestingFilePath) ]
+##for file in files:
+##    if file['size'] < 1000:
+##        runCommand("%s %s" % (executable_rfrm, file['path']))
 
 #--------------------------------------------------------------------------------
 #
@@ -238,7 +238,7 @@ for sampleToAnalyze in samplesToAnalyze:
             check_old_files = False,
             max_bsub_concurrent_file_access = 250,
             verbosity = 0
-            )
+        )
 
         bsubFileNames_harvesting[sampleToAnalyze][channelToAnalyze] = retVal_make_harvest_scripts
 
@@ -262,7 +262,7 @@ bjobListFile_harvesting.close()
 # build shell script for running 'hadd' in order to collect histograms
 # for all samples and event selections into single .root file
 #
-haddInputFileNames = []
+final_haddInputFileNames = []
 for sampleToAnalyze in samplesToAnalyze:
     for channelToAnalyze in channelsToAnalyze:
         for final_harvest_file in bsubFileNames_harvesting[sampleToAnalyze][channelToAnalyze]['final_harvest_files']:
@@ -271,12 +271,13 @@ for sampleToAnalyze in samplesToAnalyze:
             #       (cf. TauAnalysis/Configuration/python/tools/harvestingLXBatch.py)
             #    (2) assume that .root files containing histograms for single sample and single channel
             #        are copied to local disk via rfcp prior to running 'hadd'
-            haddInputFileNames.append(os.path.join(outputFilePath, os.path.basename(final_harvest_file[1])))
-haddShellFileName = os.path.join(configFilePath, 'harvestSVfitPerformanceHistograms_%s.csh' % version)
-haddOutputFileName = os.path.join(outputFilePath, 'svFitPerformanceAnalysisPlots_all_%s.root' % version)
-retVal_hadd = \
-  buildConfigFile_hadd(executable_hadd, haddShellFileName, haddInputFileNames, haddOutputFileName)
-haddLogFileName = retVal_hadd['logFileName']
+            final_haddInputFileNames.append(os.path.join(outputFilePath, os.path.basename(final_harvest_file[1])))
+final_haddShellFileName = os.path.join(configFilePath, 'harvestSVfitPerformanceHistograms_%s.csh' % version)
+final_haddOutputFileName = os.path.join(outputFilePath, 'svFitPerformanceAnalysisPlots_all_%s.root' % version)
+retVal_final_hadd = \
+  buildConfigFile_hadd(executable_hadd, final_haddShellFileName, final_haddInputFileNames, final_haddOutputFileName)
+final_haddJobName = 'final_hadd'
+final_haddLogFileName = retVal_final_hadd['logFileName']
 #--------------------------------------------------------------------------------
 
 def make_MakeFile_vstring(list_of_strings):
@@ -340,6 +341,21 @@ if runLXBatchHarvesting:
             makeFile.write("\t%s %s\n" %
               (executable_shell,
                bsubFileNames_harvesting[sampleToAnalyze][channelToAnalyze]['harvest_script_name']))
+    makeFile.write("%s: %s\n" %
+      (final_haddJobName,
+       final_haddOutputFileName))
+    makeFile.write("\t%s %s\n" %
+      (executable_waitForLXBatchJobs,
+       bjobListFileName_harvesting))
+if not (runSVfitEventHypothesisAnalyzer or runLXBatchHarvesting):
+    for final_haddInputFileName in final_haddInputFileNames:
+        makeFile.write("\t%s %s %s\n" %
+          (executable_rfcp,
+           os.path.join(harvestingFilePath, os.path.basename(final_haddInputFileName)),
+           final_haddInputFileName))
+    makeFile.write("\t%s %s\n" %
+      (executable_shell,
+       final_haddShellFileName))
 makeFile.write("\n")
 makeFile.write(".PHONY: clean\n")
 makeFile.write("clean:\n")
@@ -360,9 +376,9 @@ for sampleToAnalyze in samplesToAnalyze:
                 makeFile.write("\t- %s %s\n" %
                   (executable_rfrm,
                    os.path.join(harvestingFilePath, final_harvest_file[1])))
-makeFile.write("\trm -f %s\n" % make_MakeFile_vstring(haddInputFileNames))            
-makeFile.write("\trm -f %s\n" % haddShellFileName)
-makeFile.write("\trm -f %s\n" % haddOutputFileName)
+makeFile.write("\trm -f %s\n" % make_MakeFile_vstring(final_haddInputFileNames))            
+makeFile.write("\trm -f %s\n" % final_haddShellFileName)
+makeFile.write("\trm -f %s\n" % final_haddOutputFileName)
 makeFile.write("\techo 'Finished deleting old files.'\n")
 makeFile.write("\n")
 makeFile.close()
