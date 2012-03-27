@@ -35,9 +35,9 @@ samplesToAnalyze = [
 
 channelsToAnalyze = [
     'muTau',
-    'eleTau',
-    'eleMu',
-    'diTau'
+    ##'eleTau',
+    ##'eleMu',
+    ##'diTau'
 ]
 
 #runSVfitEventHypothesisAnalyzer = True

@@ -575,7 +575,11 @@ for idxSVfitOption in range(18):
         srcGenLeg2 = cms.InputTag(srcGenLeg2),
         srcGenMEt = cms.InputTag('genMetFromGenParticles'),
         srcPFMEtCovMatrix = cms.InputTag('pfMEtSignCovMatrix'),
-        srcWeights = cms.VInputTag(),                
+        srcWeights = cms.VInputTag(),
+        numBinsSVfitMass = cms.int32(250),
+        svFitMassMax = cms.double(250.),
+        numBinsSVfitSigma = cms.int32(50),
+        svFitSigmaMax = cms.double(50.),                            
         dqmDirectory = cms.string("nSVfitAnalyzerOption%i" % idxSVfitOption)
     )
     nSVfitAnalyzerName = "nSVfitAnalyzer%i" % idxSVfitOption
