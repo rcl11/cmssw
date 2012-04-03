@@ -18,19 +18,23 @@ import TauAnalysis.Configuration.tools.castor as castor
 version = '2012Mar13'
 
 inputFilePath  = '/castor/cern.ch/user/v/veelken/CMSSW_4_2_x/skims/SVfitStudies/'
-harvestingFilePath = '/castor/cern.ch/user/v/veelken/CMSSW_4_2_x/harvesting/SVfitStudies/2012Mar25/'
+harvestingFilePath = '/castor/cern.ch/user/v/veelken/CMSSW_4_2_x/harvesting/SVfitStudies/AHtautau_2012Mar29/'
 outputFilePath = '/tmp/veelken/svFitStudies/' 
 
 samplesToAnalyze = [
+    'ggHiggs120',
+    'vbfHiggs120',
     'ggHiggs130',
     'vbfHiggs130',
+    'ggPhi160',
+    'bbPhi160',
     'ggPhi200',
     'bbPhi200',
     'ggPhi300',
     'bbPhi300',
     'ggPhi450',
     'bbPhi450',
-    'ZplusJets',
+    'ZplusJets'
 ]
 
 channelsToAnalyze = [
@@ -123,7 +127,7 @@ for sampleToAnalyze in samplesToAnalyze:
         retVal_SVfitEventHypothesisAnalyzer = \
           buildConfigFile_SVfitEventHypothesisAnalyzer(sampleToAnalyze, channelToAnalyze,
                                                        configFileName_SVfitEventHypothesisAnalyzer_template,
-                                                       os.path.join(inputFilePath, version, channelToAnalyze),
+                                                       os.path.join(inputFilePath, version, channelToAnalyze), 1,
                                                        configFilePath, logFilePath, harvestingFilePath)        
         if retVal_SVfitEventHypothesisAnalyzer is not None:
             fileNames_SVfitEventHypothesisAnalyzer[sampleToAnalyze][channelToAnalyze] = retVal_SVfitEventHypothesisAnalyzer
@@ -146,8 +150,8 @@ for sampleToAnalyze in samplesToAnalyze:
 
             # The None in the tuple indicates that batch job has no dependencies on other batch jobs
             input_files_and_jobs = \
-              [ (None, os.path.join(inputFilePath, version, channelToAnalyze,
-                                    retVal_SVfitEventHypothesisAnalyzer['inputFileNames'][i])) ]
+              [ (None, os.path.join(inputFilePath, version, channelToAnalyze, inputFileName)) \
+                for inputFileName in retVal_SVfitEventHypothesisAnalyzer['inputFileNames'][i] ]
 
             def log_file_maker(job_hash):
                 log_fileName = os.path.join(logFilePath, retVal_SVfitEventHypothesisAnalyzer['logFileNames'][i])
@@ -289,7 +293,7 @@ def make_MakeFile_vstring(list_of_strings):
     return retVal
 
 # done building config files, now build Makefile...
-makeFileName = "Makefile_SVfitPerformanceAnalysis"
+makeFileName = "Makefile_SVfitPerformanceAnalysis_AHtautau"
 makeFile = open(makeFileName, "w")
 makeFile.write("\n")
 outputFileNames_make = []
