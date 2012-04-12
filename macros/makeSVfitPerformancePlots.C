@@ -64,7 +64,7 @@ TH1* getHistogram(TFile* inputFile, const std::string& channel, double massPoint
   }
   if ( process_qq != "" ) {
     std::string directory_qq = 
-      Form("DQMData/%s/%s/%s/%s", process_qq.data(), channel.data(), metResolution_label.data(), directory.data());
+      Form("DQMData/%s/%s/%s/%s/plotEntryType1", process_qq.data(), channel.data(), metResolution_label.data(), directory.data());
     histograms.push_back(getHistogram(inputFile, directory_qq, histogramName));
   }
   if ( process_bb != "" ) {
@@ -173,9 +173,59 @@ void showHistograms(double canvasSizeX, double canvasSizeY,
   delete canvas;  
 }
 
-TGraph* makeGraph()
+struct histogram_vs_X_Type
 {
-  return NULL;
+  histogram_vs_X_Type(TH1* histogram, double x, double xErrUp, double xErrDown)
+    : histogram_(histogram),
+      x_(x),
+      xErrUp_(xErrUp),
+      xErrDown_(xErrDown)
+  {}
+   ~histogram_vs_X_Type() {}
+  TH1* histogram_;
+  double x_;
+  double xErrUp_;
+  double xErrDown_;
+};
+
+TGraph* makeGraph(std::vector<histogram_vs_X_Type>& histograms_vs_X, double y_true, const std::string& mode)
+{
+  enum { kResponse, kResolution };
+  int mode_int = -1;
+  if      ( mode == "response"   ) mode_int = kResponse;
+  else if ( mode == "resolution" ) mode_int = kResolution;
+  else assert(0);
+
+  unsigned numPoints = histograms_vs_X.size();
+
+  TGraphAsymmErrors* graph = new TGraphAsymmErrors(numPoints);
+
+  for ( unsigned iPoint = 0; iPoint < numPoints; ++iPoint ) {
+    double x = histograms_vs_X[iPoint].x_;
+    double xErrUp = histograms_vs_X[iPoint].xErrUp_;
+    double xErrDown = histograms_vs_X[iPoint].xErrDown_;
+
+    TH1* histogram = histograms_vs_X[iPoint].histogram_;
+
+    double histogram_mean = histogram->GetMean();
+    double histogram_meanErr = histogram->GetMeanError();
+    double histogram_rms = histogram->GetRMS();
+    double histogram_rmsErr = histogram->GetRMSError();
+    
+    double y, yErr;
+    if ( mode_int == kResponse ) {
+      y = histogram_mean/y_true;
+      yErr = histogram_meanErr/y_true;
+    } else if ( mode_int == kResolution ) {
+      y = histogram_rms/histogram_mean;
+      yErr = y*TMath::Sqrt(TMath::Power(histogram_rms/histogram_rmsErr, 2.) + TMath::Power(histogram_mean/histogram_meanErr, 2.));
+    } else assert(0);
+
+    graph->SetPoint(iPoint, x, y);
+    graph->SetPointError(iPoint, xErrDown, xErrUp, yErr, yErr);
+  }
+
+  return graph;
 }
 
 void showGraphs(double canvasSizeX, double canvasSizeY,
@@ -296,8 +346,9 @@ void makeSVfitPerformancePlots()
   std::string directory_MEkine12_wPolZorAH_Int = "nSVfitAnalyzerOption12b";
   std::string directory_MEkine12_wPolZorAH_Fit = "nSVfitAnalyzerOption12a";
   
-  std::string histogramName_svFitMass = "plotEntryType1/svFitMass";
+  std::string histogramName_svFitMass = "svFitMass";
   std::string xAxisTitle_svFitMass    = "M_{#tau#tau} / GeV";
+  std::string histogramName_dPhi12    = "dPhi12";
 
   typedef std::pair<double, double> pdouble;
   std::vector<pdouble> xRanges_dPhi;
@@ -342,8 +393,78 @@ void makeSVfitPerformancePlots()
 		 0.04, 0.61, 0.74, 0.28, 0.15,
 		 label_ZplusJets, 0.04, 0.175, 0.78, 0.24, 0.11, 
 		 0., 250., xAxisTitle_svFitMass, 1.2,
-		 0., 0.15, "a.u.", 1.6,
+		 0., 0.165, "a.u.", 1.6,
 		 "svFitPerformance_ZplusJets_PSkine_woLogM_Int.eps");
+
+  for ( std::vector<pdouble>::const_iterator xRange_dPhi = xRanges_dPhi.begin();
+	xRange_dPhi != xRanges_dPhi.end(); ++xRange_dPhi ) {
+    double dPhi_min = xRange_dPhi->first;
+    double dPhi_max = xRange_dPhi->second;
+    std::string dPhi_label;
+    if      ( dPhi_min >  0. && dPhi_max <  180. ) dPhi_label = Form("dPhi%1.0fto%1.0f", dPhi_min, dPhi_max);
+    else if ( dPhi_min == 0. && dPhi_max <  180. ) dPhi_label = Form("dPhiLt%1.0f", dPhi_max);
+    else if ( dPhi_min >  0. && dPhi_max == 180. ) dPhi_label = Form("dPhiGt%1.0f", dPhi_min);
+    else assert(0);
+    std::string histogramName_svFitMass_full = Form("%s/%s", dPhi_label.data(), histogramName_svFitMass.data());
+    TH1* histogram_ZplusJets = 
+      getHistogram(inputFile, channel, 90., directory_PSkine_woLogM_Int, 
+		   histogramName_svFitMass_full, metResolution_nominal);
+    std::string dPhi_label2;
+    if      ( dPhi_min >  0. && dPhi_max <  180. ) dPhi_label2 = Form("%1.0f < #Delta#phi < %1.0f", dPhi_min, dPhi_max);
+    else if ( dPhi_min == 0. && dPhi_max <  180. ) dPhi_label2 = Form("#Delta#phi < %1.0f", dPhi_max);
+    else if ( dPhi_min >  0. && dPhi_max == 180. ) dPhi_label2 = Form("#Delta#phi > %1.0f", dPhi_min);
+    else assert(0);
+    std::vector<std::string> label_ZplusJets_full = label_ZplusJets;
+    label_ZplusJets_full.push_back(dPhi_label2);
+    std::string outputFileName = Form("svFitPerformance_ZplusJets_PSkine_woLogM_Int_%s.eps", dPhi_label.data());
+    showHistograms(800, 800, 
+		   histogram_ZplusJets, "PS model", NULL, "",
+		   0.04, 0.61, 0.74, 0.28, 0.15,
+		   label_ZplusJets_full, 0.04, 0.175, 0.725, 0.24, 0.165, 
+		   0., 250., xAxisTitle_svFitMass, 1.2,
+		   0., 0.165, "a.u.", 1.6,
+		   outputFileName.data());
+  }
+
+  std::vector<histogram_vs_X_Type> histograms_ZplusJets_vs_dPhi;
+  for ( std::vector<pdouble>::const_iterator xRange_dPhi = xRanges_dPhi.begin();
+	xRange_dPhi != xRanges_dPhi.end(); ++xRange_dPhi ) {
+    double dPhi_min = xRange_dPhi->first;
+    double dPhi_max = xRange_dPhi->second;
+    std::string dPhi_label;
+    if      ( dPhi_min >  0. && dPhi_max <  180. ) dPhi_label = Form("dPhi%1.0fto%1.0f", dPhi_min, dPhi_max);
+    else if ( dPhi_min == 0. && dPhi_max <  180. ) dPhi_label = Form("dPhiLt%1.0f", dPhi_max);
+    else if ( dPhi_min >  0. && dPhi_max == 180. ) dPhi_label = Form("dPhiGt%1.0f", dPhi_min);
+    else assert(0);
+    std::string histogramName_dPhi12_full = Form("%s/%s", dPhi_label.data(), histogramName_dPhi12.data());
+    TH1* histogram_ZplusJets_dPhi12 = 
+      getHistogram(inputFile, channel, 90., directory_PSkine_woLogM_Int, 
+		   histogramName_dPhi12_full, metResolution_nominal);
+    double dPhi_mean = histogram_ZplusJets_dPhi12->GetMean();
+    std::string histogramName_svFitMass_full = Form("%s/%s", dPhi_label.data(), histogramName_svFitMass.data());
+    TH1* histogram_ZplusJets_svFitMass = 
+      getHistogram(inputFile, channel, 90., directory_PSkine_woLogM_Int, 
+		   histogramName_svFitMass_full, metResolution_nominal);
+    histograms_ZplusJets_vs_dPhi.push_back(
+      histogram_vs_X_Type(histogram_ZplusJets_svFitMass, dPhi_mean, dPhi_max - dPhi_mean, dPhi_mean - dPhi_min));
+  }    
+  std::vector<std::string> label_dPhi;
+  TGraph* graph_ZplusJets_response = makeGraph(histograms_ZplusJets_vs_dPhi, 90., "response");
+  showGraphs(800, 600,
+	     graph_ZplusJets_response, "M = 90 GeV", NULL, "", NULL, "", NULL, "",
+	     0.04, 0.61, 0.74, 0.28, 0.15,
+	     label_dPhi, 0.04, 0.175, 0.725, 0.24, 0.165, 
+	     0., 180., "#Delta#phi / #circ", 1.2,
+	     0., 0.50, "<M_{#tau#tau}>/M", 1.6,
+	     "svFitPerformance_ZplusJets_PSkine_woLogM_Int_response_vs_dPhi.eps");
+  TGraph* graph_ZplusJets_resolution = makeGraph(histograms_ZplusJets_vs_dPhi, 90., "resolution");
+  showGraphs(800, 600,
+	     graph_ZplusJets_resolution, "M = 90 GeV", NULL, "", NULL, "", NULL, "",
+	     0.04, 0.61, 0.74, 0.28, 0.15,
+	     label_dPhi, 0.04, 0.175, 0.725, 0.24, 0.165, 
+	     0., 180., "#Delta#phi / #circ", 1.2,
+	     0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.6,
+	     "svFitPerformance_ZplusJets_PSkine_woLogM_Int_resolution_vs_dPhi.eps");
 
   delete inputFile;
 }
