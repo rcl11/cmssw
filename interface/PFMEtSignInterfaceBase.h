@@ -10,9 +10,9 @@
  *
  * \author Christian Veelken, UC Davis
  *
- * \version $Revision: 1.1 $
+ * \version $Revision: 1.2 $
  *
- * $Id: PFMEtSignInterfaceBase.h,v 1.1 2012/02/13 14:00:16 veelken Exp $
+ * $Id: PFMEtSignInterfaceBase.h,v 1.2 2012/03/14 09:50:57 veelken Exp $
  *
  */
 
@@ -29,6 +29,7 @@
 #include "DataFormats/TauReco/interface/PFTau.h"
 #include "DataFormats/PatCandidates/interface/Tau.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
+#include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
@@ -73,7 +74,8 @@ class PFMEtSignInterfaceBase
 	//std::cout << "electron: pt = " << pt << ", eta = " << eta << ", phi = " << phi 
 	//          << " --> dpt = " << dpt << ", dphi = " << dphi << std::endl;
 	metSignObjects.push_back(metsig::SigInputObj(particleType, pt, phi, dpt, dphi));
-      } else if ( dynamic_cast<const pat::Muon*>(*particle) != 0 || dynamic_cast<const reco::Muon*>(*particle) != 0 ) {
+      } else if ( dynamic_cast<const reco::Muon*>(*particle) != 0 ||
+		  dynamic_cast<const pat::Muon*>(*particle) != 0 ) {
 	std::string particleType = "muon";
 	double dpt, dphi;
 	const reco::Track* muonTrack = 0;
@@ -95,7 +97,8 @@ class PFMEtSignInterfaceBase
 	//std::cout << "muon: pt = " << pt << ", eta = " << eta << ", phi = " << phi 
 	//	  << " --> dpt = " << dpt << ", dphi = " << dphi << std::endl;
 	metSignObjects.push_back(metsig::SigInputObj(particleType, pt, phi, dpt, dphi));
-      } else if ( dynamic_cast<const pat::Tau*>(*particle) != 0 || dynamic_cast<const reco::PFTau*>(*particle) != 0 ) {
+      } else if ( dynamic_cast<const reco::PFTau*>(*particle) != 0 ||
+		  dynamic_cast<const pat::Tau*>(*particle) != 0 ) {
 	// CV: use PFJet resolutions for PFTaus for now...
 	//    (until PFTau specific resolutions are available)
 	if ( dynamic_cast<const pat::Tau*>(*particle) != 0 ) {
@@ -107,16 +110,27 @@ class PFMEtSignInterfaceBase
 	  //std::cout << "tau: pt = " << pt << ", eta = " << eta << ", phi = " << phi << std::endl;
 	  metSignObjects.push_back(pfMEtResolution_->evalPFJet(pfTau->jetRef().get()));
 	} else assert(0);
-      } else if ( dynamic_cast<const reco::PFJet*>(*particle) != 0 ) {
-	const reco::PFJet* pfJet = dynamic_cast<const reco::PFJet*>(*particle);
+      } else if ( dynamic_cast<const reco::PFJet*>(*particle) != 0 ||
+		  dynamic_cast<const pat::Jet*>(*particle) != 0 ) {
+	metsig::SigInputObj pfJetResolution;
+	if ( dynamic_cast<const reco::PFJet*>(*particle) != 0 ) {
+	  const reco::PFJet* pfJet = dynamic_cast<const reco::PFJet*>(*particle);
+	  pfJetResolution = pfMEtResolution_->evalPFJet(pfJet);
+	} else if ( dynamic_cast<const pat::Jet*>(*particle) != 0 ) {
+	  const pat::Jet* jet = dynamic_cast<const pat::Jet*>(*particle);
+	  if ( jet->isPFJet() ) {
+	    reco::PFJet pfJet(jet->p4(), jet->vertex(), jet->pfSpecific(), jet->getJetConstituents());
+	    pfJetResolution = pfMEtResolution_->evalPFJet(&pfJet);
+	  } else throw cms::Exception("addPFMEtSignObjects")
+	      << "PAT jet not of PF-type !!\n";
+	} else assert(0);
 	//std::cout << "pfJet: pt = " << pt << ", eta = " << eta << ", phi = " << phi << std::endl;
 	// CV: apply additional jet energy resolution corrections
 	//     not included in (PF)MEt significance algorithm yet
 	//    (cf. CMS AN-11/400 vs. CMS AN-11/330)
-	metsig::SigInputObj pfJetResolution = pfMEtResolution_->evalPFJet(pfJet);
-	if ( lut_ && pfJet->pt() > 10. ) {
-	  double x = TMath::Abs(pfJet->eta());
-	  double y = pfJet->pt();
+	if ( lut_ && pt > 10. ) {
+	  double x = TMath::Abs(eta);
+	  double y = pt;
 	  if ( x > lut_->GetXaxis()->GetXmin() && x < lut_->GetXaxis()->GetXmax() &&
 	       y > lut_->GetYaxis()->GetXmin() && y < lut_->GetYaxis()->GetXmax() ) {
 	    int binIndex = lut_->FindBin(x, y);
@@ -136,7 +150,8 @@ class PFMEtSignInterfaceBase
 	metSignObjects.push_back(pfMEtResolution_->evalPF(pfCandidate));
       } else throw cms::Exception("addPFMEtSignObjects")
 	  << "Invalid type of particle:"
-	  << " valid types = { pat::Electron, pat::Muon, pat::Tau, reco::PFJet, reco::PFCandidate } !!\n";
+	  << " valid types = { reco::GsfElectron/pat::Electron, reco::Muon/pat::Muon, reco::PFTau/pat::Tau," 
+	  << " reco::PFJet/pat::Jet, reco::PFCandidate } !!\n";
     }
   }
 
