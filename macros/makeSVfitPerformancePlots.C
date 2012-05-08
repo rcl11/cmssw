@@ -166,7 +166,7 @@ void showHistograms(double canvasSizeX, double canvasSizeY,
   outputFileName_plot.append(std::string(outputFileName, 0, idx));
   if ( idx != std::string::npos ) canvas->Print(std::string(outputFileName_plot).append(std::string(outputFileName, idx)).data());
   canvas->Print(std::string(outputFileName_plot).append(".png").data());
-  canvas->Print(std::string(outputFileName_plot).append(".pdf").data());
+  canvas->Print(std::string(outputFileName_plot).append(".pdf").data());/data1/veelken/tmp/caloMEtTriggerEffStudy/2012May06/
   
   delete label;
   delete legend;
