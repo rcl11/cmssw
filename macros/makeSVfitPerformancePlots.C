@@ -40,11 +40,6 @@ TH1* getHistogram(TFile* inputFile, const std::string& directory, const std::str
 
   if ( !histogram->GetSumw2N() ) histogram->Sumw2();
 
-  if ( histogram->GetNbinsX() > 100 && (histogram->GetNbinsX() % 5) == 0 ) histogram->Rebin(5);
-  if ( histogram->GetNbinsX() >  80 && (histogram->GetNbinsX() % 4) == 0 ) histogram->Rebin(4);
-  if ( histogram->GetNbinsX() >  60 && (histogram->GetNbinsX() % 3) == 0 ) histogram->Rebin(3);
-  if ( histogram->GetNbinsX() >  40 && (histogram->GetNbinsX() % 2) == 0 ) histogram->Rebin(2);
-
   return histogram;
 }
 
@@ -59,13 +54,7 @@ TH1* getHistogram(TFile* inputFile, const std::string& channel, double massPoint
   else if ( massPoint < 135. ) process_qq = Form("vbfHiggs%1.0f", massPoint);
   std::string process_bb = "";
   if      ( massPoint > 155. ) process_bb = Form("bbPhi%1.0f", massPoint);
- 
-  // CV: ONLY FOR TESTING
-  //process_gg = "";
-  //process_qq = "ZplusJets";
-  //process_bb = "";
-  // CV: FOR TESTING ONLY
- 
+  
   std::string metResolution_label;
   if ( metResolution > 0. ) metResolution_label = Form("pfMEtRes%1.0f", metResolution);
   else metResolution_label = "pfMEtResMC";
@@ -105,6 +94,32 @@ TH1* getHistogram(TFile* inputFile, const std::string& channel, double massPoint
   return histogramSum;
 }
 
+TH1* rebinHistogram(const TH1* histogram, unsigned numBinsMin_rebinned, double xMin, double xMax)
+{
+  TH1* histogram_rebinned = 0;
+
+  if ( histogram ) {
+    histogram_rebinned = (TH1*)histogram->Clone(std::string(histogram->GetName()).append("_rebinned").data());
+    if ( !histogram_rebinned->GetSumw2N() ) histogram_rebinned->Sumw2();
+    
+    unsigned numBins = histogram->GetNbinsX();
+    unsigned numBins_withinRange = 0;
+    for ( int iBin = 1; iBin <= numBins; ++iBin ) {
+      double binCenter = histogram->GetBinCenter(iBin);
+      if ( binCenter >= xMin && binCenter <= xMax ) ++numBins_withinRange;
+    }
+    
+    assert(histogram_rebinned->GetNbinsX() == numBins);
+
+    if ( numBins_withinRange > (5*numBinsMin_rebinned) && (numBins % 5) == 0 ) histogram_rebinned->Rebin(5);
+    if ( numBins_withinRange > (4*numBinsMin_rebinned) && (numBins % 4) == 0 ) histogram_rebinned->Rebin(4);
+    if ( numBins_withinRange > (3*numBinsMin_rebinned) && (numBins % 3) == 0 ) histogram_rebinned->Rebin(3);
+    if ( numBins_withinRange > (2*numBinsMin_rebinned) && (numBins % 2) == 0 ) histogram_rebinned->Rebin(2);
+  }
+
+  return histogram_rebinned;
+}
+
 void showHistograms(double canvasSizeX, double canvasSizeY,
 		    TH1* histogram1, const std::string& legendEntry1,
 		    TH1* histogram2, const std::string& legendEntry2,
@@ -117,6 +132,12 @@ void showHistograms(double canvasSizeX, double canvasSizeY,
 		    bool useLogScale, double yMin, double yMax, const std::string& yAxisTitle, double yAxisOffset,
 		    const std::string& outputFileName)
 {
+  unsigned numBinsMin_rebinned = 20;
+  TH1* histogram1_rebinned = rebinHistogram(histogram1, numBinsMin_rebinned, xMin, xMax);
+  TH1* histogram2_rebinned = rebinHistogram(histogram2, numBinsMin_rebinned, xMin, xMax);
+  TH1* histogram3_rebinned = rebinHistogram(histogram3, numBinsMin_rebinned, xMin, xMax);
+  TH1* histogram4_rebinned = rebinHistogram(histogram4, numBinsMin_rebinned, xMin, xMax);
+
   TCanvas* canvas = new TCanvas("canvas", "canvas", canvasSizeX, canvasSizeY);
   canvas->SetFillColor(10);
   canvas->SetBorderSize(2);
@@ -126,73 +147,78 @@ void showHistograms(double canvasSizeX, double canvasSizeY,
 
   canvas->SetLogy(useLogScale);
 
-  histogram1->SetTitle("");
-  histogram1->SetStats(false);
-  histogram1->SetMinimum(yMin);
-  histogram1->SetMaximum(yMax);
+  histogram1_rebinned->SetTitle("");
+  histogram1_rebinned->SetStats(false);
+  histogram1_rebinned->SetMinimum(yMin);
+  histogram1_rebinned->SetMaximum(yMax);
 
-  TAxis* xAxis = histogram1->GetXaxis();
+  TAxis* xAxis = histogram1_rebinned->GetXaxis();
   xAxis->SetTitle(xAxisTitle.data());
-  xAxis->SetTitleOffset(xAxisOffset);
+  xAxis->SetTitleSize(0.045);
+  xAxis->SetTitleOffset(xAxisOffset);  
   if ( xMax > xMin ) {
     std::cout << "limiting x-axis range to " << xMin << ".." << xMax << std::endl;
     xAxis->SetRangeUser(xMin, xMax);
   }
 
-  TAxis* yAxis = histogram1->GetYaxis();
+  TAxis* yAxis = histogram1_rebinned->GetYaxis();
   yAxis->SetTitle(yAxisTitle.data());
+  yAxis->SetTitleSize(0.045);
   yAxis->SetTitleOffset(yAxisOffset);
 
   int colors[4] = { 1, 2, 3, 4 };
   int lineStyles[4] = { 1, 7, 4, 3 };
 
-  histogram1->SetLineColor(colors[0]);
-  histogram1->SetLineWidth(2);
-  histogram1->SetLineStyle(lineStyles[0]);
-  histogram1->Draw("hist");
+  histogram1_rebinned->SetLineColor(colors[0]);
+  histogram1_rebinned->SetLineWidth(2);
+  histogram1_rebinned->SetLineStyle(lineStyles[0]);
+  histogram1_rebinned->Draw("hist");
 
-  if ( histogram2 ) {
-    histogram2->SetLineColor(colors[1]);
-    histogram2->SetLineWidth(2);
-    histogram2->SetLineStyle(lineStyles[1]);
-    histogram2->Draw("histsame");
+  if ( histogram2_rebinned ) {
+    histogram2_rebinned->SetLineColor(colors[1]);
+    histogram2_rebinned->SetLineWidth(2);
+    histogram2_rebinned->SetLineStyle(lineStyles[1]);
+    histogram2_rebinned->Draw("histsame");
   }
 
-  if ( histogram3 ) {
-    histogram3->SetLineColor(colors[2]);
-    histogram3->SetLineWidth(2);
-    histogram3->SetLineStyle(lineStyles[2]);
-    histogram3->Draw("histsame");
+  if ( histogram3_rebinned ) {
+    histogram3_rebinned->SetLineColor(colors[2]);
+    histogram3_rebinned->SetLineWidth(2);
+    histogram3_rebinned->SetLineStyle(lineStyles[2]);
+    histogram3_rebinned->Draw("histsame");
   }
 
-  if ( histogram4 ) {
-    histogram4->SetLineColor(colors[3]);
-    histogram4->SetLineWidth(2);
-    histogram4->SetLineStyle(lineStyles[3]);
-    histogram4->Draw("histsame");
+  if ( histogram4_rebinned ) {
+    histogram4_rebinned->SetLineColor(colors[3]);
+    histogram4_rebinned->SetLineWidth(2);
+    histogram4_rebinned->SetLineStyle(lineStyles[3]);
+    histogram4_rebinned->Draw("histsame");
   }
 
   TLegend* legend = new TLegend(legendPosX, legendPosY, legendPosX + legendSizeX, legendPosY + legendSizeY, "", "brNDC"); 
   legend->SetBorderSize(0);
   legend->SetFillColor(0);
   legend->SetTextSize(legendTextSize);
-  legend->AddEntry(histogram1, legendEntry1.data(), "l");
-  if ( histogram2 ) legend->AddEntry(histogram2, legendEntry2.data(), "l");
-  if ( histogram3 ) legend->AddEntry(histogram3, legendEntry3.data(), "l");
-  if ( histogram4 ) legend->AddEntry(histogram4, legendEntry4.data(), "l");
+  legend->AddEntry(histogram1_rebinned, legendEntry1.data(), "l");
+  if ( histogram2_rebinned ) legend->AddEntry(histogram2_rebinned, legendEntry2.data(), "l");
+  if ( histogram3_rebinned ) legend->AddEntry(histogram3_rebinned, legendEntry3.data(), "l");
+  if ( histogram4_rebinned ) legend->AddEntry(histogram4_rebinned, legendEntry4.data(), "l");
   legend->Draw();
 
-  TPaveText* label = new TPaveText(labelPosX, labelPosY, labelPosX + labelSizeX, labelPosY + labelSizeY, "brNDC");
-  for ( std::vector<std::string>::const_iterator labelTextLine = labelTextLines.begin();
-	labelTextLine != labelTextLines.end(); ++labelTextLine ) {
-    label->AddText(labelTextLine->data());
+  TPaveText* label = 0;
+  if ( labelTextLines.size() > 0 ) {
+    label = new TPaveText(labelPosX, labelPosY, labelPosX + labelSizeX, labelPosY + labelSizeY, "brNDC");
+    for ( std::vector<std::string>::const_iterator labelTextLine = labelTextLines.begin();
+	  labelTextLine != labelTextLines.end(); ++labelTextLine ) {
+      label->AddText(labelTextLine->data());
+    }
+    label->SetFillColor(10);
+    label->SetBorderSize(0);
+    label->SetTextColor(1);
+    label->SetTextAlign(12);
+    label->SetTextSize(labelTextSize);
+    label->Draw();
   }
-  label->SetFillColor(10);
-  label->SetBorderSize(0);
-  label->SetTextColor(1);
-  label->SetTextAlign(12);
-  label->SetTextSize(labelTextSize);
-  label->Draw();
 
   canvas->Update();
   std::string outputFileName_plot = "plots/";
@@ -205,6 +231,11 @@ void showHistograms(double canvasSizeX, double canvasSizeY,
   delete label;
   delete legend;
   delete canvas;  
+
+  delete histogram1_rebinned;
+  delete histogram2_rebinned;
+  delete histogram3_rebinned;
+  delete histogram4_rebinned;
 }
 
 struct histogram_vs_X_Type
@@ -396,12 +427,11 @@ void compHistogram_yMax(const TH1* histogram, double& xMax, double& xMaxErr_high
   xMaxErr_low = xMax - xMax_low;  
 }
 
-TGraph* makeGraph_response_asymmetric(std::vector<histogram_vs_X_Type>& histograms_vs_X, double y_true)
+TGraph* makeGraph_response_asymmetric(std::vector<histogram_vs_X_Type>& histograms_vs_X, const std::vector<double>& y_true_array)
 {
   //std::cout << "<makeGraph_response_asymmetric>:" << std::endl;
 
   unsigned numPoints = histograms_vs_X.size();
-  //std::cout << " numPoints = " << numPoints << std::endl;
   assert(numPoints > 0);
 
   TGraphAsymmErrors* graph = new TGraphAsymmErrors(numPoints);
@@ -415,6 +445,10 @@ TGraph* makeGraph_response_asymmetric(std::vector<histogram_vs_X_Type>& histogra
 
     double max, maxErrUp, maxErrDown;
     compHistogram_yMax(histogram, max, maxErrUp, maxErrDown);
+    //std::cout << "histogram = " << histogram->GetName() << ": max = " << max << " + " << maxErrUp << " - " << maxErrDown << std::endl;
+
+    double y_true = y_true_array[iPoint];
+    //std::cout << " y(true) = " << y_true << std::endl;
 
     double y = max/y_true;
     double yErrUp = maxErrUp/y_true;
@@ -429,6 +463,8 @@ TGraph* makeGraph_response_asymmetric(std::vector<histogram_vs_X_Type>& histogra
 
 void compHistogram_rms(const TH1* histogram, double xRef, int firstBin, int lastBin,  double& rms, double& rmsErr)
 {
+  //std::cout << "<makeGraph_response_asymmetric>:" << std::endl;
+  
   rms = 0.;
   rmsErr = 0.;
   
@@ -469,12 +505,11 @@ void compHistogram_rms(const TH1* histogram, double xMax, double& rms_high, doub
   compHistogram_rms(histogram, xMax, xMax_bin, numBinsX, rms_high, rmsErr_high);
 }
 
-std::pair<TGraph*, TGraph*> makeGraph_resolution_asymmetric(std::vector<histogram_vs_X_Type>& histograms_vs_X, double y_true)
+std::pair<TGraph*, TGraph*> makeGraph_resolution_asymmetric(std::vector<histogram_vs_X_Type>& histograms_vs_X)
 {
   //std::cout << "<makeGraph_resolution_asymmetric>:" << std::endl;
 
   unsigned numPoints = histograms_vs_X.size();
-  //std::cout << " numPoints = " << numPoints << std::endl;
   assert(numPoints > 0);
 
   TGraphAsymmErrors* graph_left = new TGraphAsymmErrors(numPoints);
@@ -489,21 +524,28 @@ std::pair<TGraph*, TGraph*> makeGraph_resolution_asymmetric(std::vector<histogra
 
     double max, maxErrUp, maxErrDown;
     compHistogram_yMax(histogram, max, maxErrUp, maxErrDown);
-    
+    //std::cout << "histogram = " << histogram->GetName() << ": max = " << max << " + " << maxErrUp << " - " << maxErrDown << std::endl;
+
     if ( !(max > 0.) ) continue;
 
     double rms_high_max, rmsErr_high_max, rms_low_max, rmsErr_low_max;
     compHistogram_rms(histogram, max, rms_high_max, rmsErr_high_max, rms_low_max, rmsErr_low_max);
+    //std::cout << " rms: high = " << rms_high_max << " +/- " << rmsErr_high_max << "," 
+    //	        << " low = " << rms_low_max << " +/- " << rmsErr_low_max << std::endl;
 
     double rms_high_maxErrUp, rmsErr_high_maxErrUp, rms_low_maxErrUp, rmsErr_low_maxErrUp;
     compHistogram_rms(histogram, max + maxErrUp, rms_high_maxErrUp, rmsErr_high_maxErrUp, rms_low_maxErrUp, rmsErr_low_maxErrUp);
+    //std::cout << " rms err.up: high = " << rms_high_maxErrUp << " +/- " << rmsErr_high_maxErrUp << "," 
+    //	        << " low = " << rms_low_maxErrUp << " +/- " << rmsErr_low_maxErrUp << std::endl;
 
     double rms_high_maxErrDown, rmsErr_high_maxErrDown, rms_low_maxErrDown, rmsErr_low_maxErrDown;
     compHistogram_rms(histogram, max - maxErrDown, rms_high_maxErrDown, rmsErr_high_maxErrDown, rms_low_maxErrDown, rmsErr_low_maxErrDown);
+    //std::cout << " rms err.down: high = " << rms_high_maxErrDown << " +/- " << rmsErr_high_maxErrDown << "," 
+    //	        << " low = " << rms_low_maxErrDown << " +/- " << rmsErr_low_maxErrDown << std::endl;
 
     double y_left = rms_low_max/max;
-    double yErrUp_left = TMath::Sqrt(square(rmsErr_low_max) + square(rms_high_max - rms_high_maxErrDown))/max;
-    double yErrDown_left = TMath::Sqrt(square(rmsErr_low_max) + square(rms_high_maxErrUp - rms_high_max))/max;
+    double yErrUp_left = TMath::Sqrt(square(rmsErr_low_max) + square(rms_low_max - rms_low_maxErrDown))/max;
+    double yErrDown_left = TMath::Sqrt(square(rmsErr_low_max) + square(rms_low_maxErrUp - rms_low_max))/max;
 
     graph_left->SetPoint(iPoint, x, y_left);
     graph_left->SetPointError(iPoint, xErrDown, xErrUp, yErrDown_left, yErrUp_left);
@@ -560,15 +602,15 @@ TGraph* makeGraph(std::vector<histogram_vs_X_Type>& histograms_vs_X, const std::
       yErrUp = histogram_meanErr/y_true;
       yErrDown = yErrUp;
     } else if ( mode_int == kResponse_asymmetric ) {
-      return makeGraph_response_asymmetric(histograms_vs_X, y_true);
+      return makeGraph_response_asymmetric(histograms_vs_X, y_true_array);
     } else if ( mode_int == kResolution ) {
       y = histogram_rms/histogram_mean;
       yErrUp = y*TMath::Sqrt(TMath::Power(histogram_rms/histogram_rmsErr, 2.) + TMath::Power(histogram_mean/histogram_meanErr, 2.));
       yErrDown = yErrUp;
     } else if ( mode_int == kResolution_asymmetric_left ) {
-      return makeGraph_resolution_asymmetric(histograms_vs_X, y_true).first;
+      return makeGraph_resolution_asymmetric(histograms_vs_X).first;
     } else if ( mode_int == kResolution_asymmetric_right ) {
-      return makeGraph_resolution_asymmetric(histograms_vs_X, y_true).second;
+      return makeGraph_resolution_asymmetric(histograms_vs_X).second;
     } else {
       std::vector<fitParameterType> fitParameter;
       fit(histogram, -1., -1., y_true, fitParameter);
@@ -630,51 +672,65 @@ void showGraphs(double canvasSizeX, double canvasSizeY,
 
   TAxis* xAxis = dummyHistogram->GetXaxis();
   xAxis->SetTitle(xAxisTitle.data());
+  xAxis->SetTitleSize(0.045);
   xAxis->SetTitleOffset(xAxisOffset);
 
   TAxis* yAxis = dummyHistogram->GetYaxis();
   yAxis->SetTitle(yAxisTitle.data());
+  yAxis->SetTitleSize(0.045);
   yAxis->SetTitleOffset(yAxisOffset);
 
   dummyHistogram->Draw("axis");
 
   graph1->SetLineColor(colors[0]);
+  graph1->SetLineWidth(2);
   graph1->SetMarkerColor(colors[0]);
   graph1->SetMarkerStyle(markerStyles[0]);
+  graph1->SetMarkerSize(2);
   graph1->Draw("p");
 
   if ( graph2 ) {
     graph2->SetLineColor(colors[1]);
+    graph2->SetLineWidth(2);
     graph2->SetMarkerColor(colors[1]);
     graph2->SetMarkerStyle(markerStyles[1]);
+    graph2->SetMarkerSize(2);
     graph2->Draw("p");
   }
   
   if ( graph3 ) {
     graph3->SetLineColor(colors[2]);
+    graph3->SetLineWidth(2);
     graph3->SetMarkerColor(colors[2]);
     graph3->SetMarkerStyle(markerStyles[2]);
+    graph3->SetMarkerSize(2);
     graph3->Draw("p");
   }
 
   if ( graph4 ) {
     graph4->SetLineColor(colors[3]);
+    graph4->SetLineWidth(2);
     graph4->SetMarkerColor(colors[3]);
     graph4->SetMarkerStyle(markerStyles[3]);
+    graph4->SetMarkerSize(2);
     graph4->Draw("p");
   }
 
   if ( graph5 ) {
     graph5->SetLineColor(colors[4]);
+    graph5->SetLineWidth(2);
     graph5->SetMarkerColor(colors[4]);
     graph5->SetMarkerStyle(markerStyles[4]);
+    graph5->SetMarkerSize(2);
     graph5->Draw("p");
   }
 
   if ( graph6 ) {
     graph6->SetLineColor(colors[5]);
+    graph6->SetLineWidth(2);
     graph6->SetMarkerColor(colors[5]);
     graph6->SetMarkerStyle(markerStyles[5]);
+    graph6->SetMarkerSize(2);
     graph6->Draw("p");
   }
   
@@ -682,25 +738,28 @@ void showGraphs(double canvasSizeX, double canvasSizeY,
   legend->SetBorderSize(0);
   legend->SetFillColor(0);
   legend->SetTextSize(legendTextSize);
-  legend->AddEntry(graph1, legendEntry1.data(), "l");
-  if ( graph2 ) legend->AddEntry(graph2, legendEntry2.data(), "l");
-  if ( graph3 ) legend->AddEntry(graph3, legendEntry3.data(), "l");
-  if ( graph4 ) legend->AddEntry(graph4, legendEntry4.data(), "l");
-  if ( graph5 ) legend->AddEntry(graph5, legendEntry5.data(), "l");
-  if ( graph6 ) legend->AddEntry(graph6, legendEntry6.data(), "l");
+  legend->AddEntry(graph1, legendEntry1.data(), "p");
+  if ( graph2 ) legend->AddEntry(graph2, legendEntry2.data(), "p");
+  if ( graph3 ) legend->AddEntry(graph3, legendEntry3.data(), "p");
+  if ( graph4 ) legend->AddEntry(graph4, legendEntry4.data(), "p");
+  if ( graph5 ) legend->AddEntry(graph5, legendEntry5.data(), "p");
+  if ( graph6 ) legend->AddEntry(graph6, legendEntry6.data(), "p");
   legend->Draw();
 
-  TPaveText* label = new TPaveText(labelPosX, labelPosY, labelPosX + labelSizeX, labelPosY + labelSizeY, "brNDC");
-  for ( std::vector<std::string>::const_iterator labelTextLine = labelTextLines.begin();
-	labelTextLine != labelTextLines.end(); ++labelTextLine ) {
-    label->AddText(labelTextLine->data());
+  TPaveText* label = 0;
+  if ( labelTextLines.size() > 0 ) {
+    label = new TPaveText(labelPosX, labelPosY, labelPosX + labelSizeX, labelPosY + labelSizeY, "brNDC");
+    for ( std::vector<std::string>::const_iterator labelTextLine = labelTextLines.begin();
+	  labelTextLine != labelTextLines.end(); ++labelTextLine ) {
+      label->AddText(labelTextLine->data());
+    }
+    label->SetFillColor(10);
+    label->SetBorderSize(0);
+    label->SetTextColor(1);
+    label->SetTextAlign(12);
+    label->SetTextSize(labelTextSize);
+    label->Draw();
   }
-  label->SetFillColor(10);
-  label->SetBorderSize(0);
-  label->SetTextColor(1);
-  label->SetTextAlign(12);
-  label->SetTextSize(labelTextSize);
-  label->Draw();
 
   canvas->Update();
   std::string outputFileName_plot = "plots/";
@@ -799,13 +858,13 @@ void makeSVfitPerformancePlots()
     for ( std::vector<double>::const_iterator massPoint = massPointsToCompare.begin();
 	  massPoint != massPointsToCompare.end(); ++massPoint ) {
       TH1* histogram1 = 
-	getHistogram(inputFile, *channel, *massPoint, directory_PSkine_wLogM_Fit, 
-		     histogramName_svFitMass, metResolution_nominal);
-      std::string legendEntry1 = "PS + log(M), Fit";
-      TH1* histogram2 = 
 	getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
 		     histogramName_svFitMass, metResolution_nominal);
-      std::string legendEntry2 = "PS, Int";
+      std::string legendEntry1 = "PS, Int";
+      TH1* histogram2 = 
+	getHistogram(inputFile, *channel, *massPoint, directory_PSkine_wLogM_Fit, 
+		     histogramName_svFitMass, metResolution_nominal);
+      std::string legendEntry2 = "PS + log(M), Fit";
       std::vector<std::string> label;
       std::string process = "";
       double xMax = -1.;
@@ -822,15 +881,16 @@ void makeSVfitPerformancePlots()
 	process = "Higgs300";
 	xMax = 500;
       } else assert(0);
+      double labelSizeY = label.size()*0.05;
       showHistograms(800, 600, 
 		     histogram1, legendEntry1,
 		     histogram2, legendEntry2,
 		     NULL, "",
 		     NULL, "",
 		     0.04, 0.61, 0.74, 0.28, 0.15,
-		     label, 0.04, 0.175, 0.78, 0.24, 0.11, 
+		     label, 0.04, 0.17, 0.89 - labelSizeY, 0.18, labelSizeY, 
 		     0., xMax, xAxisTitle_svFitMass, 1.2,
-		     false, 0., 0.165, "a.u.", 1.6,
+		     false, 0., 0.35, "a.u.", 1.4,
 		     Form("svFitPerformance_%s_%s_Fit_vs_Int_linear.eps", process.data(), channel->data()));
       showHistograms(800, 600, 
 		     histogram1, legendEntry1,
@@ -838,9 +898,9 @@ void makeSVfitPerformancePlots()
 		     NULL, "",
 		     NULL, "",
 		     0.04, 0.61, 0.74, 0.28, 0.15,
-		     label, 0.04, 0.175, 0.78, 0.24, 0.11, 
+		     label, 0.04, 0.17, 0.89 - labelSizeY, 0.18, labelSizeY, 
 		     0., xMax, xAxisTitle_svFitMass, 1.2,
-		     true, 1.e-4, 1.e0, "a.u.", 1.6,
+		     true, 1.e-4, 1.e0, "a.u.", 1.4,
 		     Form("svFitPerformance_%s_%s_Fit_vs_Int_log.eps", process.data(), channel->data()));
     }
   }
@@ -863,6 +923,8 @@ void makeSVfitPerformancePlots()
       std::string legendEntry3 = "";
       TH1* histogram4 = 0;
       std::string legendEntry4 = "";
+      double legendSizeX = 0.;      
+      double yMax = 0.;
       if ( (*channel) == "eleMu" ) {
 	histogram1 = 
 	  getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
@@ -871,29 +933,37 @@ void makeSVfitPerformancePlots()
 	histogram2 = 
 	  getHistogram(inputFile, *channel, *massPoint, directory_MEkine12_wPolZorAH_Int, 
 		       histogramName_svFitMass, metResolution_nominal);
-	legendEntry2 = "ME w. Pol, Int";
-	histogram3 = 
-	  getHistogram(inputFile, *channel, *massPoint, directory_MCkine_selected_Int, 
-		       histogramName_svFitMass, metResolution_nominal);
-	legendEntry2 = "MC, Int";
+	legendEntry2 = "ME, Int";			
+	//histogram3 = 
+	//  getHistogram(inputFile, *channel, *massPoint, directory_MCkine_selected_Int, 
+	//	         histogramName_svFitMass, metResolution_nominal);
+	//legendEntry3 = "MC, Int";
+	legendSizeX = 0.12;
+	if      ( (*massPoint) <  95. ) yMax = 0.30;
+	else if ( (*massPoint) < 135. ) yMax = 0.20;
+	else                            yMax = 0.15;
       } else if ( (*channel) == "muTau" ) {
-	histogram1 = 
-	  getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
-		       histogramName_svFitMass, metResolution_nominal);
-	legendEntry1 = "PS_{#ell} + PS_{had}, Int";
-	histogram2 = 
+        histogram1 = 
 	  getHistogram(inputFile, *channel, *massPoint, directory_MEkine1_woPol_Int, 
 		       histogramName_svFitMass, metResolution_nominal);
-	legendEntry2 = "ME_{#ell} + PS_{had}, Int";
+	legendEntry1 = "ME_{lep} + PS_{had}, Int";
+	histogram2 = 
+	  getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
+		       histogramName_svFitMass, metResolution_nominal);
+	legendEntry2 = "PS_{lep} + PS_{had}, Int";
 	histogram3 = 
 	  getHistogram(inputFile, *channel, *massPoint, directory_MEkine12_wPolZorAH_Int, 
 		       histogramName_svFitMass, metResolution_nominal);
-	legendEntry3 = "ME_{#ell} + ME_{had}, Int";
-	histogram4 = 
-	  getHistogram(inputFile, *channel, *massPoint, directory_MCkine_selected_Int, 
-		       histogramName_svFitMass, metResolution_nominal);
-	legendEntry4 = "MC_{#ell} + MC_{had}, Int";
-      } else if ( (*channel) == "diTau" ) {
+	legendEntry3 = "ME_{lep} + ME_{had}, Int";	
+	//histogram4 = 
+	//  getHistogram(inputFile, *channel, *massPoint, directory_MCkine_selected_Int, 
+	//	         histogramName_svFitMass, metResolution_nominal);
+	//legendEntry4 = "MC_{lep} + MC_{had}, Int";
+	legendSizeX = 0.28;
+	if      ( (*massPoint) <  95. ) yMax = 0.30;
+	else if ( (*massPoint) < 135. ) yMax = 0.25;
+	else                            yMax = 0.15;
+      } else if ( (*channel) == "diTau" ) {	
 	histogram1 = 
 	  getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
 		       histogramName_svFitMass, metResolution_nominal);
@@ -902,11 +972,21 @@ void makeSVfitPerformancePlots()
 	  getHistogram(inputFile, *channel, *massPoint, directory_MEkine12_wPolZorAH_Int, 
 		       histogramName_svFitMass, metResolution_nominal);
 	legendEntry2 = "ME, Int";
-	histogram3 = 
-	  getHistogram(inputFile, *channel, *massPoint, directory_MCkine_selected_Int, 
-		       histogramName_svFitMass, metResolution_nominal);
-	legendEntry3 = "MC, Int";
+	//histogram3 = 
+	//  getHistogram(inputFile, *channel, *massPoint, directory_MCkine_selected_Int, 
+	//	       histogramName_svFitMass, metResolution_nominal);
+	//legendEntry3 = "MC, Int";
+	legendSizeX = 0.12;
+	if      ( (*massPoint) <  95. ) yMax = 0.40;
+	else if ( (*massPoint) < 135. ) yMax = 0.30;
+	else                            yMax = 0.20;
       } else assert(0);
+      unsigned numLegendEntries = 0;
+      if ( legendEntry1 != "" ) ++numLegendEntries;
+      if ( legendEntry2 != "" ) ++numLegendEntries;
+      if ( legendEntry3 != "" ) ++numLegendEntries;
+      if ( legendEntry4 != "" ) ++numLegendEntries;
+      double legendSizeY = 0.05*numLegendEntries;
       std::vector<std::string> label;
       std::string process = "";
       double xMax = -1.;
@@ -923,25 +1003,26 @@ void makeSVfitPerformancePlots()
 	process = "Higgs300";
 	xMax = 500;
       } else assert(0);
+      double labelSizeY = label.size()*0.05;
       showHistograms(800, 600, 
 		     histogram1, legendEntry1,
 		     histogram2, legendEntry2,
 		     histogram3, legendEntry3,
 		     histogram4, legendEntry4,
-		     0.04, 0.61, 0.74, 0.28, 0.15,
-		     label, 0.04, 0.175, 0.78, 0.24, 0.11, 
+		     0.04, 0.89 - legendSizeX, 0.89 - legendSizeY, legendSizeX, legendSizeY,
+		     label, 0.04, 0.17, 0.89 - labelSizeY, 0.18, labelSizeY, 
 		     0., xMax, xAxisTitle_svFitMass, 1.2,
-		     false, 0., 0.165, "a.u.", 1.6,
+		     false, 0., yMax, "a.u.", 1.4,
 		     Form("svFitPerformance_%s_%s_compLikelihoodModels_linear.eps", process.data(), channel->data()));
       showHistograms(800, 600, 
 		     histogram1, legendEntry1,
 		     histogram2, legendEntry2,
 		     histogram3, legendEntry3,
 		     histogram4, legendEntry4,
-		     0.04, 0.61, 0.74, 0.28, 0.15,
-		     label, 0.04, 0.175, 0.78, 0.24, 0.11, 
+		     0.04, 0.89 - legendSizeX, 0.74, legendSizeX, 0.15,
+		     label, 0.04, 0.17, 0.89 - labelSizeY, 0.18, labelSizeY, 
 		     0., xMax, xAxisTitle_svFitMass, 1.2,
-		     true, 1.e-4, 1.e0, "a.u.", 1.6,
+		     true, 1.e-4, 1.e0, "a.u.", 1.4,
 		     Form("svFitPerformance_%s_%s_compLikelihoodModels_log.eps", process.data(), channel->data()));
     }
   }
@@ -1000,7 +1081,7 @@ void makeSVfitPerformancePlots()
 		       0.04, 0.61, 0.74, 0.28, 0.15,
 		       label, 0.04, 0.175, 0.725, 0.24, 0.165, 
 		       0., xMax, xAxisTitle_svFitMass, 1.2,
-		       false, 0., 0.165, "a.u.", 1.6,
+		       false, 0., 0.35, "a.u.", 1.4,
 		       Form("svFitPerformance_%s_%s_PSkine_woLogM_Int_%s_linear.eps", process.data(), channel->data(), dPhi_label.data()));
 	showHistograms(800, 600, 
 		       histogram, "PS, Int", 
@@ -1010,7 +1091,7 @@ void makeSVfitPerformancePlots()
 		       0.04, 0.61, 0.74, 0.28, 0.15,
 		       label, 0.04, 0.175, 0.725, 0.24, 0.165, 
 		       0., xMax, xAxisTitle_svFitMass, 1.2,
-		       true, 1.e-4, 1.e0, "a.u.", 1.6,
+		       true, 1.e-4, 1.e0, "a.u.", 1.4,
 		       Form("svFitPerformance_%s_%s_PSkine_woLogM_Int_%s_log.eps", process.data(), channel->data(), dPhi_label.data()));
       }
     }
@@ -1020,7 +1101,7 @@ void makeSVfitPerformancePlots()
   int markerStyles_style1[3] = { 20, 21, 33 };
 
   int colors_style2[6] = { 1, 1, 2, 2, 4, 4 };             // style 2: used to show asymmetric resolution for Z vs. Higgs(130) vs. Higgs (300)
-  int markerStyles_style2[6] = { 22, 23, 22, 23, 22, 23 }; //   (22 = right tail of resolution, 23 = left tail of resolution)
+  int markerStyles_style2[6] = { 22, 32, 20, 24, 21, 25 }; //   (22 = right tail of resolution, 23 = left tail of resolution)
   
   for ( std::vector<std::string>::const_iterator channel = channels.begin();
 	channel != channels.end(); ++channel ) {
@@ -1033,24 +1114,44 @@ void makeSVfitPerformancePlots()
       else if ( (*massPoint) == 130. ) process = "Higgs130";
       else if ( (*massPoint) == 300. ) process = "Higgs300";
       else assert(0);
-      for ( std::vector<pdouble>::const_iterator xRange_dPhi = xRanges_dPhi.begin();
-	    xRange_dPhi != xRanges_dPhi.end(); ++xRange_dPhi ) {
-	double dPhi_min = xRange_dPhi->first;
-	double dPhi_max = xRange_dPhi->second;
-	std::string dPhi_label;
-	if      ( dPhi_min >  0. && dPhi_max <  180. ) dPhi_label = Form("dPhi%1.0fto%1.0f", dPhi_min, dPhi_max);
-	else if ( dPhi_min == 0. && dPhi_max <  180. ) dPhi_label = Form("dPhiLt%1.0f", dPhi_max);
-	else if ( dPhi_min >  0. && dPhi_max == 180. ) dPhi_label = Form("dPhiGt%1.0f", dPhi_min);
-	else assert(0);
-	std::string histogramName_dPhi12_full = Form("%s/%s", dPhi_label.data(), histogramName_dPhi12.data());
-	TH1* histogram_dPhi12 = 
-	  getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
-		       histogramName_dPhi12_full, metResolution_nominal);
+      unsigned numRanges_dPhi = xRanges_dPhi.size();
+      unsigned rebin_dPhi = 2;
+      for ( unsigned iRange_dPhi = 0; iRange_dPhi < numRanges_dPhi; iRange_dPhi += rebin_dPhi ) {
+	double dPhi_min = +1.e+3;
+	double dPhi_max = -1.e+3;
+	TH1* histogram_dPhi12 = 0;
+	TH1* histogram_svFitMass = 0;
+	for ( unsigned jRange_dPhi = iRange_dPhi; jRange_dPhi < TMath::Min(iRange_dPhi + rebin_dPhi, numRanges_dPhi); ++jRange_dPhi ) {
+	  pdouble xRange_dPhi = xRanges_dPhi[jRange_dPhi];
+	  double dPhi_min_j = xRange_dPhi.first;
+	  dPhi_min = TMath::Min(dPhi_min, dPhi_min_j);
+	  double dPhi_max_j = xRange_dPhi.second;
+	  dPhi_max = TMath::Max(dPhi_max, dPhi_max_j);
+	  std::string dPhi_label;
+	  if      ( dPhi_min_j >  0. && dPhi_max_j <  180. ) dPhi_label = Form("dPhi%1.0fto%1.0f", dPhi_min_j, dPhi_max_j);
+	  else if ( dPhi_min_j == 0. && dPhi_max_j <  180. ) dPhi_label = Form("dPhiLt%1.0f", dPhi_max_j);
+	  else if ( dPhi_min_j >  0. && dPhi_max_j == 180. ) dPhi_label = Form("dPhiGt%1.0f", dPhi_min_j);
+	  else assert(0);
+	  std::string histogramName_dPhi12_full = Form("%s/%s", dPhi_label.data(), histogramName_dPhi12.data());
+	  TH1* histogram_dPhi12_j = 
+	    getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
+			 histogramName_dPhi12_full, metResolution_nominal);
+	  if ( !histogram_dPhi12 ) {
+	    histogram_dPhi12 = (TH1*)histogram_dPhi12_j->Clone(std::string(histogram_dPhi12_j->GetName()).append("_cloned").data());
+	  } else {
+	    histogram_dPhi12->Add(histogram_dPhi12_j);
+	  }
+	  std::string histogramName_svFitMass_full = Form("%s/%s", dPhi_label.data(), histogramName_svFitMass.data());
+	  TH1* histogram_svFitMass_j = 
+	    getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
+			 histogramName_svFitMass_full, metResolution_nominal);
+	  if ( !histogram_svFitMass ) {
+	    histogram_svFitMass = (TH1*)histogram_svFitMass_j->Clone(std::string(histogram_svFitMass_j->GetName()).append("_cloned").data());
+	  } else {
+	    histogram_svFitMass->Add(histogram_svFitMass_j);
+	  }
+	}
 	double dPhi_mean = histogram_dPhi12->GetMean();
-	std::string histogramName_svFitMass_full = Form("%s/%s", dPhi_label.data(), histogramName_svFitMass.data());
-	TH1* histogram_svFitMass = 
-	  getHistogram(inputFile, *channel, *massPoint, directory_PSkine_woLogM_Int, 
-		       histogramName_svFitMass_full, metResolution_nominal);
 	std::cout << " adding histogram for process = " << process << ", dPhi = " << dPhi_min << ".." << dPhi_max << std::endl;
 	histograms_vs_dPhi[process].push_back(
 	  histogram_vs_X_Type(histogram_svFitMass, dPhi_mean, dPhi_max - dPhi_mean, dPhi_mean - dPhi_min));
@@ -1071,7 +1172,7 @@ void makeSVfitPerformancePlots()
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_dPhi, 0.04, 0.175, 0.725, 0.24, 0.165, 
 	       0., 180., "#Delta#phi / #circ", 1.2,
-	       0., 0.50, "<M_{#tau#tau}>/M", 1.6,
+	       0.75, 1.25, "<M_{#tau#tau}>/M", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_response_vs_dPhi.eps", channel->data()));
     TGraph* graph_ZplusJets_response_asymmetric = makeGraph(histograms_vs_dPhi["ZplusJets"], 90., "response_asymmetric");
     TGraph* graph_Higgs130_response_asymmetric  = makeGraph(histograms_vs_dPhi["Higgs130"], 130., "response_asymmetric");
@@ -1087,7 +1188,7 @@ void makeSVfitPerformancePlots()
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_dPhi, 0.04, 0.175, 0.725, 0.24, 0.165, 
 	       0., 180., "#Delta#phi / #circ", 1.2,
-	       0., 0.50, "<M_{#tau#tau}>/M", 1.6,
+	       0.75, 1.25, "M_{#tau#tau}^{max}/M", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_response_vs_dPhi_asymmetric.eps", channel->data()));
     TGraph* graph_ZplusJets_resolution = makeGraph(histograms_vs_dPhi["ZplusJets"], 90., "resolution");
     TGraph* graph_Higgs130_resolution  = makeGraph(histograms_vs_dPhi["Higgs130"], 130., "resolution");
@@ -1103,7 +1204,7 @@ void makeSVfitPerformancePlots()
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_dPhi, 0.04, 0.175, 0.725, 0.24, 0.165, 
 	       0., 180., "#Delta#phi / #circ", 1.2,
-	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.6,
+	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_resolution_vs_dPhi.eps", channel->data()));
     TGraph* graph_ZplusJets_resolution_asymmetric_left  = makeGraph(histograms_vs_dPhi["ZplusJets"], 90., "resolution_asymmetric_left");
     TGraph* graph_ZplusJets_resolution_asymmetric_right = makeGraph(histograms_vs_dPhi["ZplusJets"], 90., "resolution_asymmetric_right");
@@ -1112,17 +1213,17 @@ void makeSVfitPerformancePlots()
     TGraph* graph_Higgs300_resolution_asymmetric_left   = makeGraph(histograms_vs_dPhi["Higgs300"], 300., "resolution_asymmetric_left");
     TGraph* graph_Higgs300_resolution_asymmetric_right  = makeGraph(histograms_vs_dPhi["Higgs300"], 300., "resolution_asymmetric_right");
     showGraphs(800, 600,
-	       graph_ZplusJets_resolution_asymmetric_left, "Sim. Z #rightarrow #tau#tau #downarrow",
-	       graph_ZplusJets_resolution_asymmetric_right, "Sim. Z #rightarrow #tau#tau #uparrow",
-	       graph_Higgs130_resolution_asymmetric_left, "Sim. H_{130} #rightarrow #tau#tau #downarrow",
-	       graph_Higgs130_resolution_asymmetric_right, "Sim. H_{130} #rightarrow #tau#tau #uparrow",
-	       graph_Higgs300_resolution_asymmetric_left, "Sim. H_{300} #rightarrow #tau#tau #downarrow",
-	       graph_Higgs300_resolution_asymmetric_right, "Sim. H_{300} #rightarrow #tau#tau #uparrow",
+	       graph_ZplusJets_resolution_asymmetric_right, "Sim. Z #rightarrow #tau#tau +",
+	       graph_ZplusJets_resolution_asymmetric_left, "Sim. Z #rightarrow #tau#tau -",
+	       graph_Higgs130_resolution_asymmetric_right, "Sim. H_{130} #rightarrow #tau#tau +",
+	       graph_Higgs130_resolution_asymmetric_left, "Sim. H_{130} #rightarrow #tau#tau -",
+	       graph_Higgs300_resolution_asymmetric_right, "Sim. H_{300} #rightarrow #tau#tau +",
+	       graph_Higgs300_resolution_asymmetric_left, "Sim. H_{300} #rightarrow #tau#tau -",
 	       colors_style2, markerStyles_style2,
-	       0.04, 0.61, 0.74, 0.28, 0.15,
+	       0.04, 0.175, 0.64, 0.30, 0.25,
 	       label_dPhi, 0.04, 0.175, 0.725, 0.24, 0.165, 
 	       0., 180., "#Delta#phi / #circ", 1.2,
-	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.6,
+	       0., 0.60, "#sigmaM_{#tau#tau}/M_{#tau#tau}^{max}", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_resolution_vs_dPhi_asymmetric.eps", channel->data()));
    }
 
@@ -1172,7 +1273,7 @@ void makeSVfitPerformancePlots()
 		     0.04, 0.61, 0.74, 0.28, 0.15,
 		     label, 0.04, 0.175, 0.725, 0.24, 0.165, 
 		     0., xMax, xAxisTitle_svFitMass, 1.2,
-		     false, 0., 0.165, "a.u.", 1.6,
+		     false, 0., 0.35, "a.u.", 1.4,
 		     Form("svFitPerformance_%s_%s_PSkine_woLogM_Int_vs_metResolution_linear.eps", process.data(), channel->data()));
       showHistograms(800, 600,
 		     histograms[0], legendEntries[0],
@@ -1182,7 +1283,7 @@ void makeSVfitPerformancePlots()
 		     0.04, 0.61, 0.74, 0.28, 0.15,
 		     label, 0.04, 0.175, 0.725, 0.24, 0.165, 
 		     0., xMax, xAxisTitle_svFitMass, 1.2,
-		     true, 1.e-4, 1.e0, "a.u.", 1.6,
+		     true, 1.e-4, 1.e0, "a.u.", 1.4,
 		     Form("svFitPerformance_%s_%s_PSkine_woLogM_Int_vs_metResolution_log.eps", process.data(), channel->data()));
     }
   }
@@ -1220,8 +1321,8 @@ void makeSVfitPerformancePlots()
 	       colors_style1, markerStyles_style1,
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_metResolution, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "#sigma_{X} = #sigma_{Y} / GeV", 1.2,
-	       0., 0.50, "<M_{#tau#tau}>/M", 1.6,
+	       0., 25., "#sigma_{X/Y} / GeV", 1.2,
+	       0.75, 1.25, "<M_{#tau#tau}>/M", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_response_vs_metResolution.eps", channel->data()));
     TGraph* graph_ZplusJets_response_asymmetric = makeGraph(histograms_vs_metResolution["ZplusJets"], 90., "response_asymmetric");
     TGraph* graph_Higgs130_response_asymmetric  = makeGraph(histograms_vs_metResolution["Higgs130"], 130., "response_asymmetric");
@@ -1236,8 +1337,8 @@ void makeSVfitPerformancePlots()
 	       colors_style1, markerStyles_style1,
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_metResolution, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "#sigma_{X} = #sigma_{Y} / GeV", 1.2,
-	       0., 0.50, "<M_{#tau#tau}>/M", 1.6,
+	       0., 25., "#sigma_{X/Y} / GeV", 1.2,
+	       0.75, 1.25, "M_{#tau#tau}^{max}/M", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_response_vs_metResolution_asymmetric.eps", channel->data()));
     TGraph* graph_ZplusJets_resolution = makeGraph(histograms_vs_metResolution["ZplusJets"], 90., "resolution");
     TGraph* graph_Higgs130_resolution  = makeGraph(histograms_vs_metResolution["Higgs130"], 130., "resolution");
@@ -1252,8 +1353,8 @@ void makeSVfitPerformancePlots()
 	       colors_style1, markerStyles_style1,
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_metResolution, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "#sigma_{X} = #sigma_{Y} / GeV", 1.2,
-	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.6,
+	       0., 25., "#sigma_{X/Y} / GeV", 1.2,
+	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_resolution_vs_metResolution.eps", channel->data()));
     TGraph* graph_ZplusJets_resolution_asymmetric_left  = makeGraph(histograms_vs_metResolution["ZplusJets"], 90., "resolution_asymmetric_left");
     TGraph* graph_ZplusJets_resolution_asymmetric_right = makeGraph(histograms_vs_metResolution["ZplusJets"], 90., "resolution_asymmetric_right");
@@ -1262,17 +1363,17 @@ void makeSVfitPerformancePlots()
     TGraph* graph_Higgs300_resolution_asymmetric_left   = makeGraph(histograms_vs_metResolution["Higgs300"], 300., "resolution_asymmetric_left");
     TGraph* graph_Higgs300_resolution_asymmetric_right  = makeGraph(histograms_vs_metResolution["Higgs300"], 300., "resolution_asymmetric_right");
     showGraphs(800, 600,
-	       graph_ZplusJets_resolution_asymmetric_left, "Sim. Z #rightarrow #tau#tau #downarrow",
-	       graph_ZplusJets_resolution_asymmetric_right, "Sim. Z #rightarrow #tau#tau #uparrow",
-	       graph_Higgs130_resolution_asymmetric_left, "Sim. H_{130} #rightarrow #tau#tau #downarrow",
-	       graph_Higgs130_resolution_asymmetric_right, "Sim. H_{130} #rightarrow #tau#tau #uparrow",
-	       graph_Higgs300_resolution_asymmetric_left, "Sim. H_{300} #rightarrow #tau#tau #downarrow",
-	       graph_Higgs300_resolution_asymmetric_right, "Sim. H_{300} #rightarrow #tau#tau #uparrow",
+	       graph_ZplusJets_resolution_asymmetric_right, "Sim. Z #rightarrow #tau#tau +",
+	       graph_ZplusJets_resolution_asymmetric_left, "Sim. Z #rightarrow #tau#tau -",
+	       graph_Higgs130_resolution_asymmetric_right, "Sim. H_{130} #rightarrow #tau#tau +",
+	       graph_Higgs130_resolution_asymmetric_left, "Sim. H_{130} #rightarrow #tau#tau -",
+	       graph_Higgs300_resolution_asymmetric_right, "Sim. H_{300} #rightarrow #tau#tau +",
+	       graph_Higgs300_resolution_asymmetric_left, "Sim. H_{300} #rightarrow #tau#tau -",	       
 	       colors_style2, markerStyles_style2,
-	       0.04, 0.61, 0.74, 0.28, 0.15,
+	       0.04, 0.59, 0.64, 0.30, 0.25,
 	       label_metResolution, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "#sigma_{X} = #sigma_{Y} / GeV", 1.2,
-	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.6,
+	       0., 25., "#sigma_{X/Y} / GeV", 1.2,
+	       0., 0.60, "#sigmaM_{#tau#tau}/M_{#tau#tau}^{max}", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_resolution_vs_metResolution_asymmetric.eps", channel->data()));
   }
 
@@ -1312,8 +1413,8 @@ void makeSVfitPerformancePlots()
 	       colors_style1, markerStyles_style1,
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_mA, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "M / GeV", 1.2,
-	       0., 0.50, "<M_{#tau#tau}>/M", 1.6,
+	       70., 470., "M / GeV", 1.2,
+	       0.75, 1.25, "<M_{#tau#tau}>/M", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_response_vs_mA.eps", channel->data()));
     TGraph* graph_response_asymmetric = makeGraph(histograms_vs_mA, y_true_array, "response_asymmetric");
     showGraphs(800, 600,
@@ -1326,8 +1427,8 @@ void makeSVfitPerformancePlots()
 	       colors_style1, markerStyles_style1,
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_mA, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "M / GeV", 1.2,
-	       0., 0.50, "<M_{#tau#tau}>/M", 1.6,
+	       70., 470., "M / GeV", 1.2,
+	       0.75, 1.25, "M_{#tau#tau}^{max}/M", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_response_vs_mA_asymmetric.eps", channel->data()));
     TGraph* graph_resolution = makeGraph(histograms_vs_mA, y_true_array, "resolution");
     showGraphs(800, 600,
@@ -1340,23 +1441,23 @@ void makeSVfitPerformancePlots()
 	       colors_style1, markerStyles_style1,
 	       0.04, 0.61, 0.74, 0.28, 0.15,
 	       label_mA, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "M / GeV", 1.2,
-	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.6,
+	       70., 470., "M / GeV", 1.2,
+	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_resolution_vs_mA.eps", channel->data()));
     TGraph* graph_resolution_asymmetric_left  = makeGraph(histograms_vs_mA, y_true_array, "resolution_asymmetric_left");
     TGraph* graph_resolution_asymmetric_right = makeGraph(histograms_vs_mA, y_true_array, "resolution_asymmetric_right");
     showGraphs(800, 600,
-	       graph_resolution_asymmetric_left, "Sim. Z/H #rightarrow #tau#tau #downarrow",
-	       graph_resolution_asymmetric_right, "Sim. Z/H #rightarrow #tau#tau #uparrow",
+	       graph_resolution_asymmetric_right, "Sim. Z/H #rightarrow #tau#tau +",
+	       graph_resolution_asymmetric_left, "Sim. Z/H #rightarrow #tau#tau -",
 	       NULL, "",
 	       NULL, "", 
 	       NULL, "", 
 	       NULL, "", 
 	       colors_style2, markerStyles_style2,
-	       0.04, 0.61, 0.74, 0.28, 0.15,
+	       0.04, 0.59, 0.74, 0.30, 0.15,
 	       label_mA, 0.04, 0.175, 0.725, 0.24, 0.165, 
-	       0., 180., "M / GeV", 1.2,
-	       0., 0.50, "#sigmaM_{#tau#tau}/<M_{#tau#tau}>", 1.6,
+	       70., 470., "M / GeV", 1.2,
+	       0., 0.50, "#sigmaM_{#tau#tau}/M_{#tau#tau}^{max}", 1.4,
 	       Form("svFitPerformance_%s_PSkine_woLogM_Int_resolution_vs_mA_asymmetric.eps", channel->data()));
   }
       
