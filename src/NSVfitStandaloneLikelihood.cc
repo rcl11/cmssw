@@ -17,7 +17,8 @@ NSVfitStandaloneLikelihood::NSVfitStandaloneLikelihood(std::vector<MeasuredTauLe
   addSinTheta_(false),
   verbose_(verbose), 
   idxObjFunctionCall_(0), 
-  invCovMET_(2,2)
+  invCovMET_(2,2),
+  errorCode_(0)
 {
   if(verbose_){
     std::cout << "<NSVfitStandaloneLikelihood::constructor>" << std::endl;
@@ -35,7 +36,7 @@ NSVfitStandaloneLikelihood::NSVfitStandaloneLikelihood(std::vector<MeasuredTauLe
   }
   if ( measuredTauLeptons_.size() != 2 ){
     std::cout << " >> ERROR : the numer of measured leptons must be 2 but is found to be: " << measuredTauLeptons_.size() << std::endl;
-    assert(0);
+    errorCode_ |= LeptonNumber;
   }
   // determine transfer matrix for MET
   invCovMET_= covMET;
@@ -45,7 +46,7 @@ NSVfitStandaloneLikelihood::NSVfitStandaloneLikelihood(std::vector<MeasuredTauLe
   } 
   else{
     std::cout << " >> ERROR: cannot invert MET covariance Matrix (det=0)." << std::endl;
-    assert(0);
+    errorCode_ |= MatrixInversion;
   }
   // set global function pointer to this
   gNSVfitStandaloneLikelihood = this;
@@ -181,6 +182,8 @@ NSVfitStandaloneLikelihood::transformint(double* xPrime, const double* x, const 
 double
 NSVfitStandaloneLikelihood::probint(const double* x, const double mtest, const int par) const 
 {
+  // in case of initialization errors don't start to do anything
+  if(error()){ return 0.;}
   double phiPenalty = 0.;
   double xPrime[kMaxNLLParams+2];
   const double* xPrime_ptr = transformint(xPrime, x, mtest, par);
@@ -265,6 +268,8 @@ NSVfitStandaloneLikelihood::transform(double* xPrime, const double* x) const
 double
 NSVfitStandaloneLikelihood::prob(const double* x) const 
 {
+  // in case of initialization errors don't start to do anything
+  if(error()){ return 0.;}
   if(verbose_){
     std::cout << "<NSVfitStandaloneLikelihood:prob(const double*)>" << std::endl;
   }

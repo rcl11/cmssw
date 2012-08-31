@@ -128,6 +128,12 @@ namespace NSVfitStandalone{
   */
   class NSVfitStandaloneLikelihood {
   public:
+    /// error codes that can be read out by NSVfitAlgorithm
+    enum ErrorCodes {
+      None            = 0x00000000,
+      MatrixInversion = 0x00000001,
+      LeptonNumber    = 0x00000010
+    };
     /// constructor with a minimla set of configurables 
     NSVfitStandaloneLikelihood(std::vector<MeasuredTauLepton> measuredTauLeptons, Vector measuredMET, const TMatrixD& covMET, bool verbose);
     /// default destructor
@@ -146,6 +152,14 @@ namespace NSVfitStandalone{
     /// modify the MET term in the nll by an additional power (default is 1.)
     void metPower(double value) { metPower_=value; };    
 
+    /// fit function to be called from outside. Has to be const to be usable by minuit. This function will call the actual 
+    /// functions transform and prob internally 
+    double prob(const double* x) const;
+    /// same as above but for integration mode.     
+    double probint(const double* x, const double mtt, const int par) const;	
+    /// read out potential likelihood errors
+    unsigned error() const { return errorCode_; };
+
     /// return vector of measured MET
     Vector measuredMET() const { return measuredMET_; };
     /// return vector of measured tau leptons
@@ -154,11 +168,6 @@ namespace NSVfitStandalone{
     /// It needs to be factored out though as transform has to be const to be usable by minuit and therefore is not allowed 
     /// change the class members.  
     void results(std::vector<LorentzVector>& fittedTauLeptons, const double* x) const;
-    /// fit function to be called from outside. Has to be const to be usable by minuit. This function will call the actual 
-    /// functions transform and prob internally 
-    double prob(const double* x) const;
-    /// same as above but for integration mode.     
-    double probint(const double* x, const double mtt, const int par) const;	
 
   private:
     /// transformation from x to xPrime, x are the actual fit parameters, xPrime are the transformed parameters that go into 
@@ -194,6 +203,8 @@ namespace NSVfitStandalone{
     TMatrixD invCovMET_;
     /// determinant of the covariance matrix of MET
     double covDet_;
+    /// error code that can be passed on
+    unsigned int errorCode_;
   };
 }
 

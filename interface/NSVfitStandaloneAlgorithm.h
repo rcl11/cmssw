@@ -92,7 +92,7 @@ namespace NSVfitStandalone{
    NSVfitStandaloneAlgorithm algo(measuredTauLeptons, measuredMET, covMET);
    // apply customized configurations if wanted (examples are given below)
    //algo.maxObjFunctionCalls(10000); // only applies for fit mode
-   //algo.addLogM(false);             // only applies for fit mode
+   //algo.addLogM(false);             // applies for fit and integration mode
    //algo.metPower(0.5);              // only applies for fit mode
    // run the fit in fit mode
    algo.fit();
@@ -141,7 +141,7 @@ class NSVfitStandaloneAlgorithm
   */
   int fitStatus() { return fitStatus_; };
   /// return whether this is a valid solution or not
-  bool isValidSolution() { return fitStatus_ == 0; };
+  bool isValidSolution() { return (nllStatus_ == 0 && fitStatus_ <= 0); };
   /// return mass of the di-tau system 
   double mass() const { return mass_; };
   /// return uncertainty on the mass of the fitted di-tau system
@@ -168,6 +168,8 @@ class NSVfitStandaloneAlgorithm
  private:
   /// return whether this is a valid solution or not
   int fitStatus_;
+  /// return whether this is a valid solution or not
+  unsigned int nllStatus_;
   /// verbosity level
   unsigned int verbosity_;
   /// stop minimization after a maximal number of function calls

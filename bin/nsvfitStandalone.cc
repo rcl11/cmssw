@@ -21,6 +21,12 @@ void singleEvent()
   Vector MET(11.7491, -51.9172, 0.); 
   // define MET covariance
   TMatrixD covMET(2, 2);
+  /*
+  covMET[0][0] = 0.;
+  covMET[1][0] = 0.;
+  covMET[0][1] = 0.;
+  covMET[1][1] = 0.;
+  */
   covMET[0][0] = 787.352;
   covMET[1][0] = -178.63;
   covMET[0][1] = -178.63;
@@ -34,9 +40,15 @@ void singleEvent()
   //define algorithm
   NSVfitStandaloneAlgorithm algo(measuredTauLeptons, MET, covMET, 3);
   algo.addLogM(false);
+  //algo.fit();
   algo.integrate();
   double mass = algo.getMass(); // mass uncertainty not implemented yet
-  std::cout << "found mass: " << mass << std::endl;
+  if(algo.isValidSolution()){
+    std::cout << "found mass    = " << mass << std::endl;
+  }
+  else{
+    std::cout << "sorry -- status of NLL is not valid [" << algo.isValidSolution() << "]" << std::endl;
+  }
   return;
 }
 

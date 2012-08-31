@@ -14,6 +14,7 @@ NSVfitStandaloneAlgorithm::NSVfitStandaloneAlgorithm(std::vector<NSVfitStandalon
   minimizer_ = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Migrad");
   // instantiate the combined likelihood
   nll_ = new NSVfitStandalone::NSVfitStandaloneLikelihood(measuredTauLeptons, measuredMET, covMET, (verbosity_ > 2));
+  nllStatus_ = nll_->error();
 }
 
 NSVfitStandaloneAlgorithm::~NSVfitStandaloneAlgorithm() 
