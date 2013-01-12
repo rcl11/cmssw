@@ -11,7 +11,6 @@
    n-tuple or single event.
 */
 
-
 void singleEvent()
 {
   /* 
@@ -31,17 +30,25 @@ void singleEvent()
   covMET[1][0] = -178.63;
   covMET[0][1] = -178.63;
   covMET[1][1] = 179.545;
-  //define lepton four vectors
+  // define lepton four vectors
   NSVfitStandalone::LorentzVector l1( 28.9132, -17.3888, 36.6411, 49.8088); //lepton
   NSVfitStandalone::LorentzVector l2(-24.19  ,  8.77449, 16.9413, 30.8086); //tau
   std::vector<NSVfitStandalone::MeasuredTauLepton> measuredTauLeptons;
   measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(NSVfitStandalone::kHadDecay, l2));
   measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(NSVfitStandalone::kLepDecay, l1));
-  //define algorithm
-  NSVfitStandaloneAlgorithm algo(measuredTauLeptons, MET, covMET, 3);
+  // define algorithm (set the debug level to 3 for testing)
+  NSVfitStandaloneAlgorithm algo(measuredTauLeptons, MET, covMET, /*debug=*/0);
   algo.addLogM(false);
+  /* 
+     the following lines show how to use the different methods on a single event
+  */
+  // minuit fit method
   //algo.fit();
-  algo.integrate();
+  // integration by VEGAS (same as function algo.integrate() that has been in use when markov chain integration had not yet been implemented)
+  //algo.integrateVEGAS();
+  // integration by markov chain MC
+  algo.integrateMarkovChain();
+
   double mass = algo.getMass(); // mass uncertainty not implemented yet
   if(algo.isValidSolution()){
     std::cout << "found mass    = " << mass << std::endl;

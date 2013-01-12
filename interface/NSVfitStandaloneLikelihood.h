@@ -147,8 +147,10 @@ namespace NSVfitStandalone{
     /// WARNING: to be used when SVfit is run in "integration" mode only
     void addDelta(bool value) { addDelta_ = value; }
     /// add sin(theta) term to likelihood for tau lepton decays
+    void addPhiPenalty(bool value) { addPhiPenalty_ = value; }    
     /// WARNING: to be used when SVfit is run in "fit" mode only
     void addSinTheta(bool value) { addSinTheta_ = value; }  
+    /// add a penalty term in case phi runs outside of interval 
     /// modify the MET term in the nll by an additional power (default is 1.)
     void metPower(double value) { metPower_=value; };    
 
@@ -176,8 +178,8 @@ namespace NSVfitStandalone{
     /// same as above but for integration mode. This function provides the mapping of integration parameters.
     const double* transformint(double* xPrime, const double* x, const double mtt, const int par) const;
     /// combined likelihood function. The same function os called for fit and integratino mode. Has to be const to be usable 
-    /// by minuit or VEGAS. The additional boolean phiPenalty is added to prevent singularities at the +/-pi boundaries of 
-    /// kPhi within the fit parameters (kFitParams).  It is only used in fit mode. In integratino mode the passed on value 
+    /// by minuit/VEGAS/MarkovChain. The additional boolean phiPenalty is added to prevent singularities at the +/-pi boundaries 
+    /// of kPhi within the fit parameters (kFitParams). It is only used in fit mode. In integration mode the passed on value 
     /// is always 0. 
     double prob(const double* xPrime, double phiPenalty) const;
     
@@ -190,6 +192,8 @@ namespace NSVfitStandalone{
     bool addDelta_;
     /// sin(theta) term in the nll
     bool addSinTheta_;
+    /// add a penalty term in case phi runs outside of interval [-pi,+pi]
+    bool addPhiPenalty_;
     /// verbosity level
     bool verbose_;
     /// monitor the number of function calls

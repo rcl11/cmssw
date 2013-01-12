@@ -56,14 +56,14 @@ namespace SVfit_namespace
   const double sinTheta_weinberg = TMath::Sqrt(sinTheta_weinberg2);
   const double cosTheta_weinberg = TMath::Sqrt(1. - sinTheta_weinberg2);
   const double qTau  = -1.;
-  const double vTau  = (-1. + 4.*sinTheta_weinberg2)/(4.*sinTheta_weinberg*cosTheta_weinberg);     // -0.044
-  const double aTau  = -1./(4.*sinTheta_weinberg*cosTheta_weinberg);                               // -0.593
+  //const double vTau  = (-1. + 4.*sinTheta_weinberg2)/(4.*sinTheta_weinberg*cosTheta_weinberg);     // -0.044
+  //const double aTau  = -1./(4.*sinTheta_weinberg*cosTheta_weinberg);                               // -0.593
   const double qUp   = +2./3;
-  const double vUp   = (1. - (8./3)*sinTheta_weinberg2)/(4.*sinTheta_weinberg*cosTheta_weinberg);  //  0.227
-  const double aUp   = 1./(4.*sinTheta_weinberg*cosTheta_weinberg);                                //  0.593
+  //const double vUp   = (1. - (8./3)*sinTheta_weinberg2)/(4.*sinTheta_weinberg*cosTheta_weinberg);  //  0.227
+  //const double aUp   = 1./(4.*sinTheta_weinberg*cosTheta_weinberg);                                //  0.593
   const double qDown = -1./3;
-  const double vDown = (-1. + (4./3)*sinTheta_weinberg2)/(4.*sinTheta_weinberg*cosTheta_weinberg); // -0.410
-  const double aDown = -1./(4.*sinTheta_weinberg*cosTheta_weinberg);                               // -0.593
+  //const double vDown = (-1. + (4./3)*sinTheta_weinberg2)/(4.*sinTheta_weinberg*cosTheta_weinberg); // -0.410
+  //const double aDown = -1./(4.*sinTheta_weinberg*cosTheta_weinberg);                               // -0.593
   //-----------------------------------------------------------------------------
 
   inline double square(double x)
