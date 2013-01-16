@@ -266,7 +266,7 @@ class NSVfitStandaloneAlgorithm
   /// fit to be called from outside
   void fit();
   /// integration by VEGAS (kept for legacy)
-  void integrate();
+  void integrate() { return integrateVEGAS(); }
   /// integration by VEGAS to be called from outside
   void integrateVEGAS();
   /// integration by Markov Chain MC to be called from outside
