@@ -98,7 +98,7 @@ void eventsFromTree(int argc, char* argv[])
     tree->GetEvent(i);
     std::cout << "event " << i+1 << std::endl;
     // setup MET input vector
-    NSVfitStandalone::Vector measuredMET(met *TMath::Sin(metPhi), met *TMath::Cos(metPhi), 0); 
+    NSVfitStandalone::Vector measuredMET(met *TMath::Cos(metPhi), met *TMath::Sin(metPhi), 0); 
     // setup the MET significance
     TMatrixD covMET(2,2);
     covMET[0][0] = covMet11;
@@ -106,8 +106,8 @@ void eventsFromTree(int argc, char* argv[])
     covMET[1][0] = covMet21;
     covMET[1][1] = covMet22;
     // setup measure tau lepton vectors 
-    NSVfitStandalone::LorentzVector l1(l1Px, l1Py, l1Pz, TMath::Sqrt(l1M*l1M+l1Px*l1Px+l1Py+l1Py+l1Pz+l1Pz));
-    NSVfitStandalone::LorentzVector l2(l2Px, l2Py, l2Pz, TMath::Sqrt(l2M*l2M+l2Px*l2Px+l2Py+l2Py+l2Pz+l2Pz));
+    NSVfitStandalone::LorentzVector l1(l1Px, l1Py, l1Pz, TMath::Sqrt(l1M*l1M+l1Px*l1Px+l1Py*l1Py+l1Pz*l1Pz));
+    NSVfitStandalone::LorentzVector l2(l2Px, l2Py, l2Pz, TMath::Sqrt(l2M*l2M+l2Px*l2Px+l2Py*l2Py+l2Pz*l2Pz));
     std::vector<NSVfitStandalone::MeasuredTauLepton> measuredTauLeptons;
     measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(std::string(argv[2])==std::string("EMu") ? NSVfitStandalone::kLepDecay : NSVfitStandalone::kLepDecay, l1));
     measuredTauLeptons.push_back(NSVfitStandalone::MeasuredTauLepton(std::string(argv[2])==std::string("EMu") ? NSVfitStandalone::kLepDecay : NSVfitStandalone::kHadDecay, l2));
