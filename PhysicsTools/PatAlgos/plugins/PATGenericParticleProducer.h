@@ -1,5 +1,5 @@
 //
-// $Id: PATGenericParticleProducer.h,v 1.9 2009/06/25 23:49:35 gpetrucc Exp $
+// $Id: PATGenericParticleProducer.h,v 1.8 2009/04/20 19:49:14 vadler Exp $
 //
 
 #ifndef PhysicsTools_PatAlgos_PATGenericParticleProducer_h
@@ -13,7 +13,7 @@
    any collection of Candidates
 
   \author   Giovanni Petrucciani
-  \version  $Id: PATGenericParticleProducer.h,v 1.9 2009/06/25 23:49:35 gpetrucc Exp $
+  \version  $Id: PATGenericParticleProducer.h,v 1.8 2009/04/20 19:49:14 vadler Exp $
 */
 
 

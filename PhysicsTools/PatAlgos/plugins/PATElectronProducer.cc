@@ -1,5 +1,5 @@
 //
-// $Id: PATElectronProducer.cc,v 1.60.2.9 2013/04/15 07:52:01 tjkim Exp $
+// $Id: PATElectronProducer.cc,v 1.60.2.6 2012/10/04 19:26:11 tjkim Exp $
 //
 #include "PhysicsTools/PatAlgos/plugins/PATElectronProducer.h"
 
@@ -55,12 +55,7 @@ PATElectronProducer::PATElectronProducer(const edm::ParameterSet & iConfig) :
   embedGsfElectronCore_ = iConfig.getParameter<bool>( "embedGsfElectronCore" );
   embedGsfTrack_ = iConfig.getParameter<bool>( "embedGsfTrack" );
   embedSuperCluster_ = iConfig.getParameter<bool>         ( "embedSuperCluster"    );
-  embedPflowSuperCluster_ = iConfig.getParameter<bool>    ( "embedPflowSuperCluster"    );
   embedSeedCluster_ = iConfig.getParameter<bool>( "embedSeedCluster" );
-  embedBasicClusters_ = iConfig.getParameter<bool>( "embedBasicClusters" );
-  embedPreshowerClusters_ = iConfig.getParameter<bool>( "embedPreshowerClusters" );
-  embedPflowBasicClusters_ = iConfig.getParameter<bool>( "embedPflowBasicClusters" );
-  embedPflowPreshowerClusters_ = iConfig.getParameter<bool>( "embedPflowPreshowerClusters" );
   embedTrack_ = iConfig.getParameter<bool>( "embedTrack" );
   embedRecHits_ = iConfig.getParameter<bool>( "embedRecHits" );
   // pflow configurables
@@ -401,30 +396,6 @@ void PATElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
 	  DetId seed = lazyTools.getMaximum(*(itElectron->superCluster()->seed())).first;
 	  std::vector<DetId> selectedCells = (barrel) ? ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalBarrel)->getWindow(seed,5,5):
 	    ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalEndcap)->getWindow(seed,5,5);          
-
-	  // Do it for all basic clusters in 5x5
-	  reco::CaloCluster_iterator itscl = itElectron->superCluster()->clustersBegin();
-	  reco::CaloCluster_iterator itsclE = itElectron->superCluster()->clustersEnd();
-	  std::vector<DetId> cellsIn5x5;
-	  for ( ; itscl!= itsclE ; ++ itscl) {
-	    DetId seed=lazyTools.getMaximum(*(*itscl)).first;
-	    bool bcbarrel = seed.subdetId()==EcalBarrel; 
-	    std::vector<DetId> cellsToAdd = (bcbarrel) ? ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalBarrel)->getWindow(seed,5,5):
-	      ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalEndcap)->getWindow(seed,5,5);
-	    cellsIn5x5.insert(cellsIn5x5.end(),cellsToAdd.begin(), cellsToAdd.end());
-
-	  }
-
-	  // Add to the list of selectedCells checking that there is no duplicate 
-	  unsigned nCellsIn5x5 = cellsIn5x5.size() ;
-
-	  for(unsigned i=0; i< nCellsIn5x5 ; ++i ) {
-	    std::vector<DetId>::const_iterator itcheck = find(selectedCells.begin(), selectedCells.end(),cellsIn5x5[i]);
-	    if (itcheck == selectedCells.end())
-	      selectedCells.push_back(cellsIn5x5[i]);
-	  }
-
-
 	  // add the DetId of the SC
 	  std::vector< std::pair<DetId, float> >::const_iterator it=itElectron->superCluster()->hitsAndFractions().begin();
 	  std::vector< std::pair<DetId, float> >::const_iterator itend=itElectron->superCluster()->hitsAndFractions().end();
@@ -617,34 +588,11 @@ void PATElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
 
       // get list of EcalDetId within 5x5 around the seed 
       bool barrel= itElectron->isEB();
-	
       DetId seed=lazyTools.getMaximum(*(itElectron->superCluster()->seed())).first;
       std::vector<DetId> selectedCells = (barrel) ? ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalBarrel)->getWindow(seed,5,5):
 	ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalEndcap)->getWindow(seed,5,5);
+      // add the DetId of the SC
 
-
-      // Do it for all basic clusters in 5x5
-      reco::CaloCluster_iterator itscl = itElectron->superCluster()->clustersBegin();
-      reco::CaloCluster_iterator itsclE = itElectron->superCluster()->clustersEnd();
-      std::vector<DetId> cellsIn5x5;
-      for ( ; itscl!= itsclE ; ++ itscl) {
-	DetId seed=lazyTools.getMaximum(*(*itscl)).first;
-	bool bcbarrel = seed.subdetId()==EcalBarrel; 
-	std::vector<DetId> cellsToAdd = (bcbarrel) ? ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalBarrel)->getWindow(seed,5,5):
-	  ecalTopology_->getSubdetectorTopology(DetId::Ecal,EcalEndcap)->getWindow(seed,5,5);
-	cellsIn5x5.insert(cellsIn5x5.end(),cellsToAdd.begin(), cellsToAdd.end());
-
-      }
-      // Add to the list of selectedCells checking that there is no duplicate 
-      unsigned nCellsIn5x5 = cellsIn5x5.size() ;
-
-      for(unsigned i=0; i< nCellsIn5x5 ; ++i ) {
-	std::vector<DetId>::const_iterator itcheck = find(selectedCells.begin(), selectedCells.end(),cellsIn5x5[i]);
-	if (itcheck == selectedCells.end())
-	  selectedCells.push_back(cellsIn5x5[i]);
-      }
-
-      // Add all RecHits of the SC if not already present
       std::vector< std::pair<DetId, float> >::const_iterator it=itElectron->superCluster()->hitsAndFractions().begin();
       std::vector< std::pair<DetId, float> >::const_iterator itend=itElectron->superCluster()->hitsAndFractions().end();
       for( ; it!=itend ; ++it) {
@@ -736,12 +684,7 @@ void PATElectronProducer::fillElectron(Electron& anElectron,
   if (embedGsfElectronCore_) anElectron.embedGsfElectronCore();
   if (embedGsfTrack_) anElectron.embedGsfTrack();
   if (embedSuperCluster_) anElectron.embedSuperCluster();
-  if (embedPflowSuperCluster_) anElectron.embedPflowSuperCluster();
   if (embedSeedCluster_) anElectron.embedSeedCluster();
-  if (embedBasicClusters_) anElectron.embedBasicClusters();
-  if (embedPreshowerClusters_) anElectron.embedPreshowerClusters();
-  if (embedPflowBasicClusters_ ) anElectron.embedPflowBasicClusters();
-  if (embedPflowPreshowerClusters_ ) anElectron.embedPflowPreshowerClusters();
   if (embedTrack_) anElectron.embedTrack();
 
   // store the match to the generated final state muons
@@ -821,12 +764,7 @@ void PATElectronProducer::fillElectron2( Electron& anElectron,
   if (embedGsfElectronCore_) anElectron.embedGsfElectronCore();
   if (embedGsfTrack_) anElectron.embedGsfTrack();
   if (embedSuperCluster_) anElectron.embedSuperCluster();
-  if (embedPflowSuperCluster_ ) anElectron.embedPflowSuperCluster();
   if (embedSeedCluster_) anElectron.embedSeedCluster();
-  if (embedBasicClusters_) anElectron.embedBasicClusters();
-  if (embedPreshowerClusters_) anElectron.embedPreshowerClusters();
-  if (embedPflowBasicClusters_ ) anElectron.embedPflowBasicClusters();
-  if (embedPflowPreshowerClusters_ ) anElectron.embedPflowPreshowerClusters();
   if (embedTrack_) anElectron.embedTrack();
 
   // store the match to the generated final state muons
@@ -900,12 +838,7 @@ void PATElectronProducer::fillDescriptions(edm::ConfigurationDescriptions & desc
   iDesc.add<bool>("embedGsfElectronCore", true)->setComment("embed external gsf electron core");
   iDesc.add<bool>("embedGsfTrack", true)->setComment("embed external gsf track");
   iDesc.add<bool>("embedSuperCluster", true)->setComment("embed external super cluster");
-  iDesc.add<bool>("embedPflowSuperCluster", true)->setComment("embed external super cluster");
   iDesc.add<bool>("embedSeedCluster", true)->setComment("embed external seed cluster");
-  iDesc.add<bool>("embedBasicClusters", true)->setComment("embed external basic clusters");
-  iDesc.add<bool>("embedPreshowerClusters", true)->setComment("embed external preshower clusters");
-  iDesc.add<bool>("embedPflowBasicClusters", true)->setComment("embed external pflow basic clusters");
-  iDesc.add<bool>("embedPflowPreshowerClusters", true)->setComment("embed external pflow preshower clusters");
   iDesc.add<bool>("embedTrack", false)->setComment("embed external track");
   iDesc.add<bool>("embedRecHits", true)->setComment("embed external RecHits");
 

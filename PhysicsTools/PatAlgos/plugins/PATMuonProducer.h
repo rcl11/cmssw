@@ -1,5 +1,5 @@
 //
-// $Id: PATMuonProducer.h,v 1.28.6.1 2012/09/04 17:31:56 vadler Exp $
+// $Id: PATMuonProducer.h,v 1.29 2012/08/22 15:02:52 bellan Exp $
 //
 
 #ifndef PhysicsTools_PatAlgos_PATMuonProducer_h
@@ -13,7 +13,7 @@
    a collection of objects of reco::Muon.
 
   \author   Steven Lowette, Roger Wolf
-  \version  $Id: PATMuonProducer.h,v 1.28.6.1 2012/09/04 17:31:56 vadler Exp $
+  \version  $Id: PATMuonProducer.h,v 1.29 2012/08/22 15:02:52 bellan Exp $
 */
 
 #include <string>
@@ -86,8 +86,6 @@ namespace pat {
 
     /// embed the track from best muon measurement
     bool embedBestTrack_;
-    /// embed the track from best muon measurement, new tuneP, 53X option only
-    bool embedImprovedBestTrack_;
     /// embed the track from inner tracker into the muon
     bool embedTrack_;
     /// embed track from muon system into the muon
