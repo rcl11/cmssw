@@ -31,6 +31,9 @@
 #include "DataFormats/Candidate/interface/Candidate.h"
 
 #include <vector>
+#include <string>
+#include <iostream>
+#include <iomanip>
 
 namespace CorrectedMETProducer_namespace
 {
@@ -76,6 +79,9 @@ class CorrectedMETProducerT : public edm::EDProducer
 
     algorithm_ = new METCorrectionAlgorithm(cfg);
 
+    verbosity_ = ( cfg.exists("verbosity") ) ?
+      cfg.getParameter<int>("verbosity") : 0;
+
     produces<METCollection>("");
   }
   ~CorrectedMETProducerT()
@@ -87,6 +93,11 @@ class CorrectedMETProducerT : public edm::EDProducer
 
   void produce(edm::Event& evt, const edm::EventSetup& es)
   {
+    if ( verbosity_ ) {
+      std::cout << "<CorrectedMETProducer::produce>:" << std::endl;
+      std::cout << " moduleLabel = " << moduleLabel_ << std::endl;
+    }
+    
     std::auto_ptr<METCollection> correctedMEtCollection(new METCollection);
 
     edm::Handle<METCollection> rawMEtCollection;
@@ -111,6 +122,8 @@ class CorrectedMETProducerT : public edm::EDProducer
   edm::InputTag src_; // input collection
 
   METCorrectionAlgorithm* algorithm_; // algorithm for computing Type 1 / Type 1 + 2 MET corrections
+
+  int verbosity_;
 };
 
 #endif

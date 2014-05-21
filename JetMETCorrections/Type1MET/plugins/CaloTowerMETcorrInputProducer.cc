@@ -1,10 +1,13 @@
-#include "JetMETCorrections/Type1MET/plugins/PFCandMETcorrInputProducer.h"
+#include "JetMETCorrections/Type1MET/plugins/CaloTowerMETcorrInputProducer.h"
 
+#include "DataFormats/CaloTowers/interface/CaloTower.h"
 #include "DataFormats/Common/interface/View.h"
+
+#include "DataFormats/HcalDetId/interface/HcalDetId.h"
 
 #include "JetMETCorrections/Objects/interface/JetCorrector.h"
 
-PFCandMETcorrInputProducer::PFCandMETcorrInputProducer(const edm::ParameterSet& cfg)
+CaloTowerMETcorrInputProducer::CaloTowerMETcorrInputProducer(const edm::ParameterSet& cfg)
   : moduleLabel_(cfg.getParameter<std::string>("@module_label"))
 {
   src_ = cfg.getParameter<edm::InputTag>("src");
@@ -26,13 +29,16 @@ PFCandMETcorrInputProducer::PFCandMETcorrInputProducer(const edm::ParameterSet& 
   extraCorrFactor_ = cfg.exists("extraCorrFactor") ? 
     cfg.getParameter<double>("extraCorrFactor") : 1.;
 
+  globalThreshold_ = cfg.getParameter<double>("globalThreshold");
+  noHF_ = cfg.getParameter<bool>("noHF");
+  
   for ( std::vector<binningEntryType*>::const_iterator binningEntry = binning_.begin();
 	binningEntry != binning_.end(); ++binningEntry ) {
     produces<CorrMETData>((*binningEntry)->binLabel_);
   }
 }
 
-PFCandMETcorrInputProducer::~PFCandMETcorrInputProducer()
+CaloTowerMETcorrInputProducer::~CaloTowerMETcorrInputProducer()
 {
   for ( std::vector<binningEntryType*>::const_iterator it = binning_.begin();
 	it != binning_.end(); ++it ) {
@@ -40,9 +46,26 @@ PFCandMETcorrInputProducer::~PFCandMETcorrInputProducer()
   }
 }
 
-void PFCandMETcorrInputProducer::produce(edm::Event& evt, const edm::EventSetup& es)
+namespace
 {
-  //std::cout << "<PFCandMETcorrInputProducer::produce>:" << std::endl;
+  DetId find_DetId_of_HCAL_cell_in_constituent_of(const CaloTower& calotower)
+  {
+    // CV: function copied from RecoMET/METAlgorithms/src/CaloSpecificAlgo.cc
+    DetId ret;
+    for ( int cell = calotower.constituentsSize() - 1; cell >= 0; --cell ) {
+      DetId id = calotower.constituent(cell);
+      if( id.det() == DetId::Hcal ) {
+	ret = id;
+	break;
+      }
+    }
+    return ret;
+  }
+}
+
+void CaloTowerMETcorrInputProducer::produce(edm::Event& evt, const edm::EventSetup& es)
+{
+  //std::cout << "<CaloTowerMETcorrInputProducer::produce>:" << std::endl;
 
   for ( std::vector<binningEntryType*>::iterator binningEntry = binning_.begin();
 	binningEntry != binning_.end(); ++binningEntry ) {
@@ -53,36 +76,48 @@ void PFCandMETcorrInputProducer::produce(edm::Event& evt, const edm::EventSetup&
   if ( residualCorrLabel_ != "" ) {
     residualCorrector = JetCorrector::getJetCorrector(residualCorrLabel_, es);
     if ( !residualCorrector )  
-      throw cms::Exception("PFCandMETcorrInputProducer")
+      throw cms::Exception("CaloTowerMETcorrInputProducer")
 	<< "Failed to access Residual corrections = " << residualCorrLabel_ << " !!\n";
   }
   
-  typedef edm::View<reco::Candidate> CandidateView;
-  edm::Handle<CandidateView> pfCandidates;
-  evt.getByLabel(src_, pfCandidates);
+  typedef edm::View<CaloTower> CaloTowerView;
+  edm::Handle<CaloTowerView> caloTowers;
+  evt.getByLabel(src_, caloTowers);
   
-  int pfCandidateIndex = 0;
-  for ( edm::View<reco::Candidate>::const_iterator pfCandidate = pfCandidates->begin();
-	pfCandidate != pfCandidates->end(); ++pfCandidate ) {
-    //std::cout << "PFCandidate #" << pfCandidateIndex << " (raw): Pt = " << pfCandidate->pt() << "," 
-    //	        << " eta = " << pfCandidate->eta() << ", phi = " << pfCandidate->phi() << std::endl;
+  int caloTowerIndex = 0;
+  for ( CaloTowerView::const_iterator caloTower = caloTowers->begin();
+	caloTower != caloTowers->end(); ++caloTower ) {
+    //std::cout << "CaloTower #" << caloTowerIndex << " (raw): Pt = " << CaloTower->pt() << "," 
+    //	        << " eta = " << CaloTower->eta() << ", phi = " << CaloTower->phi() << std::endl;
+        
     double residualCorrFactor = 1.;
-    if ( residualCorrector && fabs(pfCandidate->eta()) < residualCorrEtaMax_ ) {
-      residualCorrFactor = residualCorrector->correction(pfCandidate->p4());
+    if ( residualCorrector && fabs(caloTower->eta()) < residualCorrEtaMax_ ) {
+      residualCorrFactor = residualCorrector->correction(caloTower->p4());
       //std::cout << " residualCorrFactor = " << residualCorrFactor << " (extraCorrFactor = " << extraCorrFactor_ << ")" << std::endl;
     }
     residualCorrFactor *= extraCorrFactor_;
-    for ( std::vector<binningEntryType*>::iterator binningEntry = binning_.begin();
-	  binningEntry != binning_.end(); ++binningEntry ) {
-      if ( !(*binningEntry)->binSelection_ || (*(*binningEntry)->binSelection_)(pfCandidate->p4()) ) {
-	(*binningEntry)->binUnclEnergySum_.mex   += ((residualCorrFactor - residualCorrOffset_)*pfCandidate->px());
-	(*binningEntry)->binUnclEnergySum_.mey   += ((residualCorrFactor - residualCorrOffset_)*pfCandidate->py());
-	(*binningEntry)->binUnclEnergySum_.sumet += ((residualCorrFactor - residualCorrOffset_)*pfCandidate->et());
+    
+    if ( (residualCorrFactor*caloTower->et()) < globalThreshold_ ) continue;
+    
+    if ( noHF_ ) {
+      DetId detId_hcal = find_DetId_of_HCAL_cell_in_constituent_of(*caloTower);
+      if( !detId_hcal.null() ) {
+	HcalSubdetector subdet = HcalDetId(detId_hcal).subdet();
+	if( subdet == HcalForward ) continue;
       }
     }
-    ++pfCandidateIndex;
+
+    for ( std::vector<binningEntryType*>::iterator binningEntry = binning_.begin();
+	  binningEntry != binning_.end(); ++binningEntry ) {
+      if ( !(*binningEntry)->binSelection_ || (*(*binningEntry)->binSelection_)(caloTower->p4()) ) {
+	(*binningEntry)->binUnclEnergySum_.mex   += ((residualCorrFactor - residualCorrOffset_)*caloTower->px());
+	(*binningEntry)->binUnclEnergySum_.mey   += ((residualCorrFactor - residualCorrOffset_)*caloTower->py());
+	(*binningEntry)->binUnclEnergySum_.sumet += ((residualCorrFactor - residualCorrOffset_)*caloTower->et());
+      }
+    }
+    ++caloTowerIndex;
   }
-  
+
 //--- add momentum sum of PFCandidates not within jets ("unclustered energy") to the event
   for ( std::vector<binningEntryType*>::const_iterator binningEntry = binning_.begin();
 	binningEntry != binning_.end(); ++binningEntry ) {
@@ -92,4 +127,4 @@ void PFCandMETcorrInputProducer::produce(edm::Event& evt, const edm::EventSetup&
 
 #include "FWCore/Framework/interface/MakerMacros.h"
 
-DEFINE_FWK_MODULE(PFCandMETcorrInputProducer);
+DEFINE_FWK_MODULE(CaloTowerMETcorrInputProducer);

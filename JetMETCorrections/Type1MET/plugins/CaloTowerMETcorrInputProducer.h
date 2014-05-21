@@ -1,18 +1,16 @@
-#ifndef JetMETCorrections_Type1MET_PFCandMETcorrInputProducer_h
-#define JetMETCorrections_Type1MET_PFCandMETcorrInputProducer_h
+#ifndef JetMETCorrections_Type1MET_CaloTowerMETcorrInputProducer_h
+#define JetMETCorrections_Type1MET_CaloTowerMETcorrInputProducer_h
 
-/** \class PFCandMETcorrInputProducer
+/** \class CaloTowerMETcorrInputProducer
  *
- * Sum PFCandidates not within jets ("unclustered energy"),
+ * Sum CaloTowers not within jets ("unclustered energy"),
  * needed as input for Type 2 MET corrections
  *
- * \authors Michael Schmitt, Richard Cavanaugh, The University of Florida
- *          Florent Lacroix, University of Illinois at Chicago
- *          Christian Veelken, LLR
+ * \authors Christian Veelken, LLR
  *
  * \version $Revision: 1.2 $
  *
- * $Id: PFCandMETcorrInputProducer.h,v 1.2 2011/10/14 10:14:35 veelken Exp $
+ * $Id: CaloTowerMETcorrInputProducer.h,v 1.2 2011/10/14 10:14:35 veelken Exp $
  *
  */
 
@@ -29,12 +27,12 @@
 
 #include <string>
 
-class PFCandMETcorrInputProducer : public edm::EDProducer  
+class CaloTowerMETcorrInputProducer : public edm::EDProducer  
 {
  public:
 
-  explicit PFCandMETcorrInputProducer(const edm::ParameterSet&);
-  ~PFCandMETcorrInputProducer();
+  explicit CaloTowerMETcorrInputProducer(const edm::ParameterSet&);
+  ~CaloTowerMETcorrInputProducer();
     
  private:
 
@@ -68,6 +66,9 @@ class PFCandMETcorrInputProducer : public edm::EDProducer
   double residualCorrEtaMax_;
   double residualCorrOffset_;
   double extraCorrFactor_;
+
+  double globalThreshold_;
+  bool noHF_;
 };
 
 #endif

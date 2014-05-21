@@ -121,6 +121,8 @@ class METCorrectionAlgorithm
     std::vector<double> binCorrParameter_;
   };
   std::vector<type2BinningEntryType*> type2Binning_;
+
+  int verbosity_;
 };
 
 #endif

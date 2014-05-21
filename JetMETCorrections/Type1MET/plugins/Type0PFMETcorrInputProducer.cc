@@ -9,9 +9,11 @@
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/METReco/interface/CorrMETData.h"
 
-#include "CommonTools/RecoUtils/interface/PFCand_AssoMapAlgos.h"
-
 #include <TMath.h>
+
+typedef edm::AssociationMap<edm::OneToManyWithQuality<reco::VertexCollection, reco::PFCandidateCollection, float> > 
+  PFCandidateToVertexAssociationMap;
+typedef std::vector<std::pair<reco::PFCandidateRef, float> > PFCandidateQualityPairVector;
 
 Type0PFMETcorrInputProducer::Type0PFMETcorrInputProducer(const edm::ParameterSet& cfg)
   : moduleLabel_(cfg.getParameter<std::string>("@module_label")),
@@ -46,15 +48,15 @@ void Type0PFMETcorrInputProducer::produce(edm::Event& evt, const edm::EventSetup
   edm::Handle<reco::VertexCollection> hardScatterVertex;
   evt.getByLabel(srcHardScatterVertex_, hardScatterVertex);
 
-  edm::Handle<PFCandToVertexAssMap> pfCandidateToVertexAssociations;
+  edm::Handle<PFCandidateToVertexAssociationMap> pfCandidateToVertexAssociations;
   evt.getByLabel(srcPFCandidateToVertexAssociations_, pfCandidateToVertexAssociations);
 
   std::auto_ptr<CorrMETData> pfMEtCorrection(new CorrMETData());
 
-  for ( PFCandToVertexAssMap::const_iterator pfCandidateToVertexAssociation = pfCandidateToVertexAssociations->begin();
+  for ( PFCandidateToVertexAssociationMap::const_iterator pfCandidateToVertexAssociation = pfCandidateToVertexAssociations->begin();
 	pfCandidateToVertexAssociation != pfCandidateToVertexAssociations->end(); ++pfCandidateToVertexAssociation ) {
     reco::VertexRef vertex = pfCandidateToVertexAssociation->key;
-    const PFCandQualityPairVector& pfCandidates_vertex = pfCandidateToVertexAssociation->val;
+    const PFCandidateQualityPairVector& pfCandidates_vertex = pfCandidateToVertexAssociation->val;
     
     bool isHardScatterVertex = false;
     for ( reco::VertexCollection::const_iterator hardScatterVertex_i = hardScatterVertex->begin();
@@ -67,7 +69,7 @@ void Type0PFMETcorrInputProducer::produce(edm::Event& evt, const edm::EventSetup
     
     if ( !isHardScatterVertex ) {
       reco::Candidate::LorentzVector sumChargedPFCandP4_vertex;
-      for ( PFCandQualityPairVector::const_iterator pfCandidate_vertex = pfCandidates_vertex.begin();
+      for ( PFCandidateQualityPairVector::const_iterator pfCandidate_vertex = pfCandidates_vertex.begin();
 	    pfCandidate_vertex != pfCandidates_vertex.end(); ++pfCandidate_vertex ) {
 	const reco::PFCandidate& pfCandidate = (*pfCandidate_vertex->first);
 	if ( pfCandidate.particleId() == reco::PFCandidate::h  ||
