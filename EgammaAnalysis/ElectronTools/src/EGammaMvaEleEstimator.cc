@@ -426,7 +426,6 @@ UInt_t EGammaMvaEleEstimator::GetMVABin( double eta, double pt) const {
 
 
 //--------------------------------------------------------------------------------------------------
-// for kTrig algorithm
 Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem, 
 					Double_t kfchi2,
 					Int_t    kfhits,
@@ -456,11 +455,6 @@ Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem,
   
   if (!fisInitialized) { 
     std::cout << "Error: EGammaMvaEleEstimator not properly initialized.\n"; 
-    return -9999;
-  }
-
-  if (fMVAType != EGammaMvaEleEstimator::kTrig) {
-    std::cout << "Error: This method should be called for kTrig MVA only" << endl;
     return -9999;
   }
 
@@ -532,9 +526,8 @@ Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem,
 
   return mva;
 }
-
 //--------------------------------------------------------------------------------------------------------
-// for kTrigNoIP algorithm
+
 Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem, 
 					 Double_t kfchi2,
 					 Int_t    kfhits,
@@ -560,11 +553,6 @@ Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem,
   
   if (!fisInitialized) { 
     std::cout << "Error: EGammaMvaEleEstimator not properly initialized.\n"; 
-    return -9999;
-  }
-
-  if (fMVAType != EGammaMvaEleEstimator::kTrigNoIP) {
-    std::cout << "Error: This method should be called for kTrigNoIP MVA only" << endl;
     return -9999;
   }
 
@@ -635,7 +623,6 @@ Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem,
 }
 
 //--------------------------------------------------------------------------------------------------
-// for kNonTrig algorithm
 Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem, 
 					Double_t kfchi2,
 					Int_t    kfhits,
@@ -663,11 +650,6 @@ Double_t EGammaMvaEleEstimator::mvaValue(Double_t fbrem,
   
   if (!fisInitialized) { 
     std::cout << "Error: EGammaMvaEleEstimator not properly initialized.\n"; 
-    return -9999;
-  }
-
-  if (fMVAType != EGammaMvaEleEstimator::kNonTrig) {
-    std::cout << "Error: This method should be called for kNonTrig MVA only" << endl;
     return -9999;
   }
 
@@ -964,7 +946,6 @@ Double_t EGammaMvaEleEstimator::isoMvaValue(Double_t Pt,
 
 //--------------------------------------------------------------------------------------------------
 
-// for kTrig and kNonTrig algorithm
 Double_t EGammaMvaEleEstimator::mvaValue(const reco::GsfElectron& ele, 
 					const reco::Vertex& vertex, 
 					const TransientTrackBuilder& transientTrackBuilder,					
@@ -973,11 +954,6 @@ Double_t EGammaMvaEleEstimator::mvaValue(const reco::GsfElectron& ele,
   
   if (!fisInitialized) { 
     std::cout << "Error: EGammaMvaEleEstimator not properly initialized.\n"; 
-    return -9999;
-  }
-
-  if ( (fMVAType != EGammaMvaEleEstimator::kTrig) && (fMVAType != EGammaMvaEleEstimator::kNonTrig )) {
-    std::cout << "Error: This method should be called for kTrig or kNonTrig MVA only" << endl;
     return -9999;
   }
   
@@ -1097,7 +1073,6 @@ Double_t EGammaMvaEleEstimator::mvaValue(const reco::GsfElectron& ele,
 }
 
 
-// for kTrigNoIP algorithm
 Double_t EGammaMvaEleEstimator::mvaValue(const reco::GsfElectron& ele, 
 					 const reco::Vertex& vertex, 
 					 double rho,
@@ -1110,11 +1085,6 @@ Double_t EGammaMvaEleEstimator::mvaValue(const reco::GsfElectron& ele,
     return -9999;
   }
   
-  if (fMVAType != EGammaMvaEleEstimator::kTrigNoIP) {
-    std::cout << "Error: This method should be called for kTrigNoIP MVA only" << endl;
-    return -9999;
-  }
-
   bool validKF= false; 
   reco::TrackRef myTrackRef = ele.closestCtfTrackRef();
   validKF = (myTrackRef.isAvailable());
@@ -1207,131 +1177,9 @@ Double_t EGammaMvaEleEstimator::mvaValue(const reco::GsfElectron& ele,
   return mva;
 }
 
-// for kTrig, kNonTrig and kTrigNoIP algorithm
-Double_t EGammaMvaEleEstimator::mvaValue(const pat::Electron& ele,
-                                         const reco::Vertex& vertex,
-                                         double rho,
-                                         bool printDebug) {
-
-  if (!fisInitialized) {
-    std::cout << "Error: EGammaMvaEleEstimator not properly initialized.\n";
-    return -9999;
-  }
-
-  bool validKF= false;
-  reco::TrackRef myTrackRef = ele.closestCtfTrackRef();
-  validKF = (myTrackRef.isAvailable());
-  validKF = (myTrackRef.isNonnull());
-
-  // Pure tracking variables
-  fMVAVar_fbrem           =  ele.fbrem();
-  fMVAVar_kfchi2          =  (validKF) ? myTrackRef->normalizedChi2() : 0 ;
-  fMVAVar_kfhits          =  (validKF) ? myTrackRef->hitPattern().trackerLayersWithMeasurement() : -1. ;
-  fMVAVar_gsfchi2         =  ele.gsfTrack()->normalizedChi2();
 
 
-  // Geometrical matchings
-  fMVAVar_deta            =  ele.deltaEtaSuperClusterTrackAtVtx();
-  fMVAVar_dphi            =  ele.deltaPhiSuperClusterTrackAtVtx();
-  fMVAVar_detacalo        =  ele.deltaEtaSeedClusterTrackAtCalo();
 
-  // Pure ECAL -> shower shapes
-  fMVAVar_see             =  ele.sigmaIetaIeta();    //EleSigmaIEtaIEta
-
-  fMVAVar_spp             =  ele.sigmaIphiIphi();
-
-  fMVAVar_etawidth        =  ele.superCluster()->etaWidth();
-  fMVAVar_phiwidth        =  ele.superCluster()->phiWidth();
-  fMVAVar_OneMinusE1x5E5x5       =  (ele.e5x5()) !=0. ? 1.-(ele.e1x5()/ele.e5x5()) : -1. ;
-  fMVAVar_R9              =  ele.r9();
-
-  // Energy matching
-  fMVAVar_HoE             =  ele.hadronicOverEm();
-  fMVAVar_EoP             =  ele.eSuperClusterOverP();
-
-  // unify this in the future?
-  if( fMVAType == kTrig || fMVAType == kNonTrig){
-    fMVAVar_IoEmIoP         =  (1.0/ele.ecalEnergy()) - (1.0 / ele.p());  // in the future to be changed with ele.gsfTrack()->p()
-  }else{
-    fMVAVar_IoEmIoP         =  (1.0/ele.superCluster()->energy()) - (1.0 / ele.gsfTrack()->p());  // in the future to be changed with ele.gsfTrack()->p()
-  }
-  fMVAVar_eleEoPout       =  ele.eEleClusterOverPout();
-  fMVAVar_rho             =  rho;
-  fMVAVar_PreShowerOverRaw=  ele.superCluster()->preshowerEnergy() / ele.superCluster()->rawEnergy();
-
-  // for triggering electrons get the impact parameteres
-  if(fMVAType == kTrig) {
-    //d0
-    if (ele.gsfTrack().isNonnull()) {
-      fMVAVar_d0 = (-1.0)*ele.gsfTrack()->dxy(vertex.position());
-    } else if (ele.closestCtfTrackRef().isNonnull()) {
-      fMVAVar_d0 = (-1.0)*ele.closestCtfTrackRef()->dxy(vertex.position());
-    } else {
-      fMVAVar_d0 = -9999.0;
-    }
-
-    //default values for IP3D
-    fMVAVar_ip3d = -999.0;
-    fMVAVar_ip3dSig = 0.0;
-    if (ele.gsfTrack().isNonnull()) {
-      const double gsfsign   = ( (-ele.gsfTrack()->dxy(vertex.position()))   >=0 ) ? 1. : -1.;
-
-      std::cout << "Warning : if usePV = false when pat-electrons were produced, dB() was calculated with respect to beamspot while original mva uses primary vertex" << std::endl;
-      double ip3d = gsfsign*ele.dB();
-      double ip3derr = ele.edB();
-      fMVAVar_ip3d = ip3d;
-      fMVAVar_ip3dSig = ip3d/ip3derr;
-    }
-  }
-
-  // Spectators
-  fMVAVar_eta             =  ele.superCluster()->eta();
-  fMVAVar_pt              =  ele.pt();
-
-  // evaluate
-  bindVariables();
-  Double_t mva = -9999;
-  if (fUseBinnedVersion) {
-    mva = fTMVAReader[GetMVABin(fMVAVar_eta,fMVAVar_pt)]->EvaluateMVA(fMethodname);
-  } else {
-    mva = fTMVAReader[0]->EvaluateMVA(fMethodname);
-  }
-
-  if(printDebug) {
-    cout << " *** Inside the class fMethodname " << fMethodname << " fMVAType " << fMVAType << endl;
-    cout << " fbrem " <<  fMVAVar_fbrem
-         << " kfchi2 " << fMVAVar_kfchi2
-         << " mykfhits " << fMVAVar_kfhits
-         << " gsfchi2 " << fMVAVar_gsfchi2
-         << " deta " <<  fMVAVar_deta
-         << " dphi " << fMVAVar_dphi
-         << " detacalo " << fMVAVar_detacalo
-      // << " dphicalo " << fMVAVar_dphicalo  
-         << " see " << fMVAVar_see
-         << " spp " << fMVAVar_spp
-         << " etawidth " << fMVAVar_etawidth
-         << " phiwidth " << fMVAVar_phiwidth
-         << " e1x5e5x5 " << fMVAVar_OneMinusE1x5E5x5
-         << " R9 " << fMVAVar_R9
-      // << " mynbrems " << fMVAVar_nbrems  
-         << " HoE " << fMVAVar_HoE
-         << " EoP " << fMVAVar_EoP
-         << " IoEmIoP " << fMVAVar_IoEmIoP
-         << " eleEoPout " << fMVAVar_eleEoPout
-         << " rho " << fMVAVar_rho
-      // << " EoPout " << fMVAVar_EoPout  
-         << " d0 " << fMVAVar_d0
-         << " ip3d " << fMVAVar_ip3d
-         << " eta " << fMVAVar_eta
-         << " pt " << fMVAVar_pt << endl;
-    cout << " ### MVA " << mva << endl;
-  }
-
-  return mva;
-}
-   
-
-// for kTrigNoIP algorithm only.
 Double_t EGammaMvaEleEstimator::mvaValue(const pat::Electron& ele, 
 					 double rho,
 					 bool printDebug) {
@@ -1340,13 +1188,8 @@ Double_t EGammaMvaEleEstimator::mvaValue(const pat::Electron& ele,
     std::cout << "Error: EGammaMvaEleEstimator not properly initialized.\n"; 
     return -9999;
   }
-
-  if ( (fMVAType != EGammaMvaEleEstimator::kTrigNoIP) ) {
-    std::cout << "Error: This method should be called for kTrigNoIP mva only" << endl;
-    return -9999;
-  }
   
-
+  
   bool validKF= false; 
   reco::TrackRef myTrackRef = ele.closestCtfTrackRef();
   validKF = (myTrackRef.isAvailable());
