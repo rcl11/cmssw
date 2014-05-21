@@ -1,17 +1,18 @@
 #ifndef TauAnalysis_CandidateTools_svFitAuxFunctions_h
 #define TauAnalysis_CandidateTools_svFitAuxFunctions_h
 
-#include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
+//#include "RecoVertex/VertexPrimitives/interface/TransientVertex.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 #include "DataFormats/GeometryCommonDetAlgo/interface/GlobalError.h"
 
-#include "DataFormats/PatCandidates/interface/Electron.h"
-#include "DataFormats/PatCandidates/interface/Muon.h"
-#include "DataFormats/PatCandidates/interface/Tau.h"
+//#include "DataFormats/PatCandidates/interface/Electron.h"
+//#include "DataFormats/PatCandidates/interface/Muon.h"
+//#include "DataFormats/PatCandidates/interface/Tau.h"
 #include "DataFormats/Candidate/interface/Candidate.h"
-#include "DataFormats/JetReco/interface/GenJet.h"
+//#include "DataFormats/JetReco/interface/GenJet.h"
 
 #include <TH1.h>
+#include <TMath.h>
 
 namespace SVfit_namespace
 {
