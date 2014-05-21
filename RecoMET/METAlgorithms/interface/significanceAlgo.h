@@ -79,7 +79,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "RecoMET/METAlgorithms/interface/SigInputObj.h"
+#include "DataFormats/METReco/interface/SigInputObj.h"
 #include "TMatrixTBase.h"
 #include "TMatrixD.h"
 #include "TVectorD.h"
