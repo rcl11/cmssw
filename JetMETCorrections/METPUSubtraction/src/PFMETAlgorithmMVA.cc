@@ -61,8 +61,9 @@ PFMETAlgorithmMVA::PFMETAlgorithmMVA(const edm::ParameterSet& cfg)
   edm::FileInPath inputFileNameCovU2 = cfgInputFileNames.getParameter<edm::FileInPath>("CovU2");
   mvaReaderCovU2_ = loadMVA(inputFileNameCovU2, mvaNameCovU2_);
   
-  is42_ = ( inputFileNameU.fullPath().find("42") != std::string::npos ) ?
-    true : false;
+  //is42_ = ( inputFileNameU.fullPath().find("42") != std::string::npos ) ?
+  //  true : false;
+  is42_ = false;
   
   mvaInputU_     = new Float_t[25];
   mvaInputDPhi_  = new Float_t[23];
