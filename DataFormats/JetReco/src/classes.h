@@ -39,6 +39,7 @@
 #include "DataFormats/JetReco/interface/FFTBasicJetCollection.h"
 #include "DataFormats/JetReco/interface/FFTJetPileupSummary.h"
 #include "DataFormats/JetReco/interface/DiscretizedEnergyFlow.h"
+#include "DataFormats/JetReco/interface/PileupJetIdentifier.h"
 
 #include "DataFormats/Common/interface/Wrapper.h"
 #include "DataFormats/Common/interface/FwdRef.h" 
@@ -133,7 +134,6 @@ namespace {
     std::vector<edm::Ref<std::vector<reco::PFJet> > > vrvr5;
     std::vector<reco::PFJetRefVector> vrv5;
     edm::Wrapper<std::vector<reco::PFJetRefVector> > wfvrv5;
-    edm::reftobase::RefVectorHolder<reco::PFJetRefVector> rrpfr5;
 
     reco::TrackJetCollection o6;
     reco::TrackJetRef r6;
@@ -174,6 +174,10 @@ namespace {
     edm::reftobase::Holder<reco::Candidate, reco::PFClusterJetRef> rtb8;
     reco::JetTrackMatch<reco::PFClusterJetCollection> jtm8;
 
+    StoredPileupJetIdentifier spujetid;
+    std::vector<StoredPileupJetIdentifier> spujetidvec;
+    edm::ValueMap<StoredPileupJetIdentifier> spujetidvmap;
+    edm::Wrapper<edm::ValueMap<StoredPileupJetIdentifier> > spujetidvmapw;
 
     edm::reftobase::Holder<reco::Candidate,edm::RefToBase<reco::Jet> >  rtbb6;
 
@@ -223,7 +227,6 @@ namespace {
     // RefToBase Holders for Jets
     edm::RefToBase<reco::Jet>  rtbj;
     edm::reftobase::IndirectHolder<reco::Jet> ihj;
-    edm::reftobase::IndirectVectorHolder<reco::Jet> ihvj;
     edm::reftobase::Holder<reco::Jet, reco::CaloJetRef> hcj;
     edm::reftobase::Holder<reco::Jet, reco::JPTJetRef> hjptj;
     edm::reftobase::Holder<reco::Jet, reco::GenJetRef> hgj;

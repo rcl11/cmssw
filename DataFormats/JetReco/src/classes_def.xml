@@ -77,7 +77,6 @@
   <class name="std::vector<edm::Ref<std::vector<reco::PFJet>,reco::PFJet,edm::refhelper::FindUsingAdvance<std::vector<reco::PFJet>,reco::PFJet> > >"/>
   <class name="std::vector<reco::PFJetRefVector>"/>
   <class name="edm::Wrapper<std::vector<reco::PFJetRefVector> >"/>
-  <class name="edm::reftobase::RefVectorHolder<reco::PFJetRefVector>"/>
 
   <class name="reco::GenJet" ClassVersion="10">
    <version ClassVersion="10" checksum="1136403928"/>
@@ -138,7 +137,6 @@
   <class name="reco::TrackJetFwdPtrVector"/>
   <class name="edm::Wrapper<reco::TrackJetFwdPtrVector>"/>
 
-
   <class name="reco::PFClusterJet" ClassVersion="10">
    <version ClassVersion="10" checksum="3410834730"/>
   </class>
@@ -157,7 +155,11 @@
   <class name="reco::PFClusterJetFwdPtrVector"/>
   <class name="edm::Wrapper<reco::PFClusterJetFwdPtrVector>"/>
 
-
+  <class name="StoredPileupJetIdentifier"/>
+  <class name="std::vector<StoredPileupJetIdentifier>"/>
+  <class name="edm::ValueMap<StoredPileupJetIdentifier>"/>
+  <class name="edm::Wrapper<edm::ValueMap<StoredPileupJetIdentifier> >"/>
+  
   <class pattern="edm::AssociationVector<*>">
     <field name="transientVector_" transient="true"/>
     <field name="fixed_" transient="true"/>
@@ -211,12 +213,11 @@
   <function name="reco::JetExtendedAssociation::hasJet"/>
   
   <class name="edm::RefToBaseProd<reco::Jet>" >
-     <field name="view_" transient="true" />
+     <!-- <field name="view_" transient="true" /> -->
   </class>
   <class name="edm::RefToBase<reco::Jet>" />
   <class name="edm::reftobase::BaseHolder<reco::Jet>" />
   <class name="edm::reftobase::IndirectHolder<reco::Jet>" />
-  <class name="edm::reftobase::IndirectVectorHolder<reco::Jet>" />
   <class name="edm::reftobase::Holder<reco::Candidate,edm::RefToBase<reco::Jet> > "/>
   <class name="edm::RefToBaseVector<reco::Jet>"/>
   <class name="edm::Wrapper<edm::RefToBaseVector<reco::Jet> >"/>
